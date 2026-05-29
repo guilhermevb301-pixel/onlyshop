@@ -88,10 +88,10 @@ Formato exato:
 {"hook":"...","scenes":[{"n":1,"narration":"fala PT-BR (máx 20 palavras)","visual_prompt":"visual description in English","on_screen":"texto curto na tela"},{"n":2,...},{"n":3,"narration":"... termina com CTA de compra",...}],"caption":"legenda com hashtags"}`;
   const prompt = `Produto: ${o.productName}\nDescrição: ${o.productDescription || "(sem descrição)"}\nPersona apresentadora: ${o.personaName} — ${o.personaDescription}\n\nGera o roteiro de 3 cenas de 8s. Lembre: português perfeito, máximo 20 palavras por narração, JSON em uma linha só.`;
 
-  // Tenta até 2 vezes — se o LLM mandar JSON quebrado, a 2ª costuma vir limpa.
+  // Tenta até 3 vezes — cobre JSON quebrado E erro 500 intermitente da fal.ai.
   let parsed: any = null;
   let lastErr: unknown = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const data = await fal("fal-ai/any-llm", { model: LLM_MODEL, system_prompt: system, prompt, temperature: 0.6 });
       parsed = safeParseScript(data?.output ?? data?.text ?? "");
