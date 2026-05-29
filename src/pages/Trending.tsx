@@ -60,7 +60,7 @@ export default function Trending() {
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-5xl mx-auto py-2 space-y-5">
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center">
           <Flame className="h-5 w-5 text-white" />

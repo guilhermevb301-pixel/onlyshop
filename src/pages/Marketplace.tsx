@@ -201,7 +201,7 @@ export default function Marketplace() {
   const topCreators = [...MOCK_AFFILIATES].sort((a, b) => b.conversionRate - a.conversionRate).slice(0, 3);
 
   return (
-    <div className="max-w-2xl mx-auto pb-20">
+    <div className="max-w-6xl mx-auto pb-20">
       {/* Hero */}
       <div className="relative overflow-hidden rounded-b-3xl mb-4">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-background to-accent/10" />
