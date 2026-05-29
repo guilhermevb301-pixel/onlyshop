@@ -17,7 +17,7 @@ export const config = { maxDuration: 60 };
 // Seedance 2.0: image-to-video com áudio lip-sync nativo. A foto da persona vira
 // o rosto do vídeo, e a narração PT-BR é falada com sincronia labial.
 const FAL_MODEL = "bytedance/seedance-2.0/image-to-video";
-const LLM_MODEL = "anthropic/claude-3.5-sonnet";
+const LLM_MODEL = "anthropic/claude-sonnet-4.5";
 const DEMO_CLIP_URL =
   "https://storage.googleapis.com/falserverless/example_outputs/seedance_v1_lite_t2v.mp4";
 
@@ -93,7 +93,7 @@ Formato exato:
   let lastErr: unknown = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const data = await fal("fal-ai/any-llm", { model: LLM_MODEL, system_prompt: system, prompt });
+      const data = await fal("fal-ai/any-llm", { model: LLM_MODEL, system_prompt: system, prompt, temperature: 0.6 });
       parsed = safeParseScript(data?.output ?? data?.text ?? "");
       if (parsed?.scenes?.length) break;
     } catch (e) {
