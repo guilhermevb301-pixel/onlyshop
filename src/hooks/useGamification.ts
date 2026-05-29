@@ -12,6 +12,11 @@ const POINT_VALUES: Record<string, number> = {
   streak_bonus: 25,
   course_complete: 100,
   campaign_join: 10,
+  // Ações de RENDA — o jogo de verdade é vender, não dar scroll (Conselho dos 4).
+  video_generated: 30,
+  video_published: 50,
+  first_sale: 500,
+  live_done: 200,
 };
 
 export const LEVELS = [

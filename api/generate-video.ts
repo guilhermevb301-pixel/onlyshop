@@ -147,6 +147,21 @@ async function mergeClips(clipUrls: string[]) {
   return { url, mode: "real" };
 }
 
+// ---- influencer image (text-to-image) --------------------------------------
+// Gera o ROSTO de um influencer de IA pra quem não tem foto (áudio 1 dos sócios:
+// "o cara não tem dinheiro... dá pra gerar uma imagem"). Via fal-ai/flux/schnell.
+async function generateInfluencerImage(o: { gender: string; age: string; vibe: string; niche: string }) {
+  const DEMO_IMG = "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&h=800&fit=crop&crop=faces";
+  if (!process.env.FAL_KEY) return { url: DEMO_IMG, mode: "demo" };
+
+  // Prompt blindado pra hiper-realismo (regra do Gui: nada de look plástico).
+  const prompt = `Ultra realistic portrait photo of a Brazilian ${o.age} ${o.gender}, ${o.vibe}, ${o.niche} content creator vibe, natural skin texture with visible pores, candid genuine expression, soft natural lighting, shot on 50mm lens, photorealistic, highly detailed, NOT plastic, NOT airbrushed, NOT 3d render, vertical portrait, looking at camera`;
+  const data = await fal("fal-ai/flux/schnell", { prompt, image_size: "portrait_4_3", num_images: 1 });
+  const url = data?.images?.[0]?.url;
+  if (!url) throw new Error("não consegui gerar a imagem do influencer");
+  return { url, mode: "real" };
+}
+
 // ---- handler ----------------------------------------------------------------
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "use POST" });
@@ -173,6 +188,14 @@ export default async function handler(req: any, res: any) {
       const clipUrls: string[] = (body.clipUrls ?? []).filter(Boolean);
       if (!clipUrls.length) throw new Error("nenhum clipe pra combinar");
       return res.status(200).json(await mergeClips(clipUrls));
+    }
+    if (step === "influencer-image") {
+      return res.status(200).json(await generateInfluencerImage({
+        gender: body.gender ?? "woman",
+        age: body.age ?? "mid-20s",
+        vibe: body.vibe ?? "friendly approachable",
+        niche: body.niche ?? "lifestyle",
+      }));
     }
     return res.status(400).json({ error: `step inválido: ${step}` });
   } catch (err) {

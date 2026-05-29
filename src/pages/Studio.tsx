@@ -7,6 +7,8 @@ import {
 } from "@/lib/personas";
 import { listInfluencers } from "@/lib/influencers";
 import { CreateInfluencerDialog } from "@/components/studio/CreateInfluencerDialog";
+import { useGamification } from "@/hooks/useGamification";
+import { markMilestone } from "@/lib/journey";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +59,7 @@ async function callGen(body: Record<string, unknown>) {
 export default function Studio() {
   const { user } = useAuth();
   const location = useLocation();
+  const { addPoints } = useGamification();
 
   const [stage, setStage] = useState<Stage>("product");
   const [products, setProducts] = useState<Product[]>([]);
@@ -188,6 +191,9 @@ export default function Studio() {
       }
 
       setProgress(100);
+      // Marco de renda: gerou o 1º vídeo (ativação — desbloqueia a Comunidade).
+      addPoints("video_generated");
+      markMilestone("video_generated");
       setStage("preview");
     } catch {
       // Erro no roteiro — mensagem humana, sem jargão técnico, com ação clara.
@@ -223,6 +229,9 @@ export default function Studio() {
     a.target = "_blank";
     a.rel = "noreferrer";
     a.click();
+    // Marco: baixou pra postar no TikTok Shop.
+    addPoints("video_published");
+    markMilestone("video_published");
   }
 
   const isDemoMode = clips.some((c) => c.mode === "demo") || finalVideo?.mode === "demo";

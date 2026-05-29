@@ -50,6 +50,7 @@ import VSL from "./pages/VSL";
 import Studio from "./pages/Studio";
 import MeusInfluencers from "./pages/MeusInfluencers";
 import Inicio from "./pages/Inicio";
+import Jornada from "./pages/Jornada";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,8 @@ const App = () => (
             {/* App routes with layout */}
             <Route element={<AppLayout />}>
               <Route path="/inicio" element={<Inicio />} />
+              <Route path="/jornada" element={<Jornada />} />
+              <Route path="/comunidade" element={<Feed />} />
               <Route path="/feed" element={<Feed />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/communities" element={<Communities />} />

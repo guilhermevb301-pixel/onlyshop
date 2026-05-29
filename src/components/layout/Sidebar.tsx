@@ -1,9 +1,11 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutGrid, Wand2, Package, Users, BadgeDollarSign, Flame,
-  PanelLeftClose, PanelLeft, type LucideIcon,
+  PanelLeftClose, PanelLeft, Route, Users2, Lock, type LucideIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { hasActivated } from "@/lib/journey";
 import { useSidebar } from "./SidebarContext";
 import { UserMenu } from "./UserMenu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -58,6 +60,11 @@ export function Sidebar() {
         {/* Grupo GANHAR */}
         <GroupLabel collapsed={collapsed}>Ganhar</GroupLabel>
         {GROUP_GANHAR.map((it) => <NavItem key={it.to} item={it} collapsed={collapsed} accentActive />)}
+
+        {/* Grupo CARREIRA (áudio 2: "nova carreira") */}
+        <GroupLabel collapsed={collapsed}>Carreira</GroupLabel>
+        <NavItem item={{ to: "/jornada", icon: Route, label: "Minha jornada" }} collapsed={collapsed} />
+        <CommunityItem collapsed={collapsed} />
       </nav>
 
       {/* Rodapé — ganhos + usuário + colapsar */}
@@ -140,6 +147,39 @@ function HeroItem({ collapsed }: { collapsed: boolean }) {
     <Tooltip>
       <TooltipTrigger asChild>{link}</TooltipTrigger>
       <TooltipContent side="right">Criar vídeo</TooltipContent>
+    </Tooltip>
+  );
+}
+
+// Comunidade desbloqueia após a 1ª ação de renda (Conselho: recompensa, não porta).
+function CommunityItem({ collapsed }: { collapsed: boolean }) {
+  const navigate = useNavigate();
+  if (hasActivated()) {
+    return <NavItem item={{ to: "/comunidade", icon: Users2, label: "Comunidade" }} collapsed={collapsed} />;
+  }
+  const handleLocked = () => {
+    toast.info("🔒 Comunidade bloqueada", { description: "Gere seu 1º vídeo pra entrar na tribo de quem fatura." });
+    navigate("/studio");
+  };
+  const btn = (
+    <button
+      onClick={handleLocked}
+      className={cn(
+        "group relative flex items-center gap-3 rounded-xl h-10 px-3 text-sm font-medium mt-0.5 w-full transition-all",
+        "text-sidebar-foreground/40 hover:text-sidebar-foreground/70 hover:bg-white/[0.03]",
+        collapsed && "justify-center px-0"
+      )}
+    >
+      <Users2 className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
+      <span className={cn("truncate flex-1 text-left transition-all duration-300", collapsed && "opacity-0 w-0 overflow-hidden")}>Comunidade</span>
+      {!collapsed && <Lock className="h-3.5 w-3.5 shrink-0" />}
+    </button>
+  );
+  if (!collapsed) return btn;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{btn}</TooltipTrigger>
+      <TooltipContent side="right">Comunidade — gere 1 vídeo pra desbloquear</TooltipContent>
     </Tooltip>
   );
 }

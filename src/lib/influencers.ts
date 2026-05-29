@@ -94,6 +94,34 @@ export async function createInfluencer(input: {
   return influencerToPersona(data);
 }
 
+// Cria um influencer a partir de uma imagem JÁ hospedada (gerada por IA — áudio 1).
+// Não faz upload: a photo_url já é pública (URL do fal.ai / placeholder demo).
+export async function createInfluencerFromUrl(input: {
+  userId: string;
+  name: string;
+  niche: string;
+  description: string;
+  photoUrl: string;
+}): Promise<Persona> {
+  const { userId, name, niche, description, photoUrl } = input;
+
+  if (isDemoSession()) {
+    const persona: Persona = {
+      id: `demo-${Date.now()}`, name, niche, description, avatar: photoUrl, custom: true,
+    };
+    writeDemo([persona, ...readDemo()]);
+    return persona;
+  }
+
+  const { data, error } = await supabase
+    .from("user_influencers")
+    .insert({ user_id: userId, name, niche, description, photo_url: photoUrl })
+    .select("id, name, niche, description, photo_url")
+    .single();
+  if (error || !data) throw new Error(error?.message || "Não consegui salvar o influencer.");
+  return influencerToPersona(data);
+}
+
 // Remove um influencer customizado.
 export async function deleteInfluencer(id: string): Promise<void> {
   if (isDemoSession()) {

@@ -5,12 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { PERSONAS, type Persona } from "@/lib/personas";
 import { listInfluencers } from "@/lib/influencers";
 import { CreateInfluencerDialog } from "@/components/studio/CreateInfluencerDialog";
+import { nextMilestone, journeyProgress } from "@/lib/journey";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
   ArrowUpRight, Wand2, Package, Percent, DollarSign, BadgeDollarSign,
-  Building2, Plus, Users,
+  Building2, Plus, Users, Route,
 } from "lucide-react";
 
 type Product = {
@@ -24,6 +26,17 @@ const DEMO_PRODUCTS: Product[] = [
   { id: "demo-2", name: "Whey Protein Chocolate 900g", description: "24g de proteína por dose, sabor intenso.", image_url: "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=600", price: 129.9, currency: "BRL", commission_type: "percentage", commission_value: 40, brands: { name: "FitPro" } },
   { id: "demo-3", name: "Mini Liquidificador Portátil USB", description: "Faz seu shake em qualquer lugar.", image_url: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600", price: 79.9, currency: "BRL", commission_type: "percentage", commission_value: 30, brands: { name: "HomeEasy" } },
   { id: "demo-4", name: "Perfume Amadeirado 100ml", description: "Fixação de 12h, sofisticado e marcante.", image_url: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=600", price: 199.9, currency: "BRL", commission_type: "percentage", commission_value: 25, brands: { name: "Essenza" } },
+];
+
+// Prova social de faturamento (áudio 1: "ver quanto o pessoal já faturou").
+// Seed realista — depois plugado em eventos reais da comunidade.
+const FEED_ATIVIDADE = [
+  { nome: "Marina S.", acao: "faturou R$ 340 ontem", emoji: "💰" },
+  { nome: "João P.", acao: "subiu pra Prata", emoji: "🥈" },
+  { nome: "Bia R.", acao: "fez a 1ª venda hoje", emoji: "🎉" },
+  { nome: "Lucas F.", acao: "gerou 12 vídeos esta semana", emoji: "🎬" },
+  { nome: "Ana C.", acao: "bateu R$ 2.1k no mês", emoji: "🚀" },
+  { nome: "Pedro H.", acao: "fechou 1ª live com venda", emoji: "🎙️" },
 ];
 
 function greeting() {
@@ -64,6 +77,8 @@ export default function Inicio() {
   const personas = [...customPersonas, ...PERSONAS];
   const goProduct = (p: Product) => navigate("/studio", { state: { product: p } });
   const goPersona = (p: Persona) => navigate("/studio", { state: { persona: p } });
+  const jProgress = journeyProgress();
+  const next = nextMilestone();
 
   return (
     <div className="space-y-12 lg:space-y-16">
@@ -96,6 +111,29 @@ export default function Inicio() {
         <StatCard label="Ganhos este mês" value="Comece a faturar" icon={BadgeDollarSign} accent compact />
       </section>
 
+      {/* ===== Sua jornada (carreira gamificada) ===== */}
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+        <Link to="/jornada" className="group flex items-center gap-4 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-4 hover:ring-primary/30 transition-all">
+          <div className="h-11 w-11 rounded-xl bg-gradient-primary flex items-center justify-center shrink-0">
+            <Route className="h-5 w-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-sm font-semibold">
+                Sua jornada {jProgress > 0 && <span className="text-accent font-display">· {jProgress}%</span>}
+              </p>
+              <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </div>
+            {next ? (
+              <p className="text-xs text-muted-foreground">Próximo passo: <span className="text-foreground font-medium">{next.label}</span></p>
+            ) : (
+              <p className="text-xs text-accent">Jornada completa 👑 — bora escalar!</p>
+            )}
+            <Progress value={jProgress} className="h-1.5 mt-2" />
+          </div>
+        </Link>
+      </section>
+
       {/* ===== Seção 2 — Produtos ===== */}
       <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
         <div className="flex items-center justify-between mb-5">
@@ -113,6 +151,28 @@ export default function Inicio() {
             {products.map((p) => <ProductCard key={p.id} product={p} onClick={() => goProduct(p)} />)}
           </div>
         )}
+      </section>
+
+      {/* ===== Acontecendo agora (prova social de faturamento) ===== */}
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
+          </span>
+          <h2 className="text-base lg:text-lg font-semibold">Acontecendo agora no OnlyShop</h2>
+        </div>
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
+          {FEED_ATIVIDADE.map((e, i) => (
+            <div key={i} className="shrink-0 flex items-center gap-2.5 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] px-4 py-3">
+              <span className="text-lg">{e.emoji}</span>
+              <div>
+                <p className="text-xs font-semibold leading-tight">{e.nome}</p>
+                <p className="text-[11px] text-accent leading-tight">{e.acao}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* ===== Seção 3 — Influencers ===== */}

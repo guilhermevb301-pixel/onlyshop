@@ -221,9 +221,9 @@ export default function Feed() {
           <div className="h-16 w-16 rounded-2xl bg-muted/30 flex items-center justify-center">
             <Sparkles className="h-6 w-6 text-muted-foreground/20" />
           </div>
-          <h2 className="text-sm font-bold">Nenhum post ainda</h2>
+          <h2 className="text-sm font-bold">A tribo de quem fatura</h2>
           <p className="text-xs text-muted-foreground/40 max-w-xs">
-            Seja o primeiro a publicar! Crie conteúdo e compartilhe com a comunidade.
+            Aqui é o campo de batalha: vendas, marcos e quem subiu de nível. Faça sua primeira venda e poste seu resultado pra inspirar a galera.
           </p>
         </div>
       ) : (
