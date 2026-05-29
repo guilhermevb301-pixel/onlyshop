@@ -46,12 +46,14 @@ function safeParseScript(raw: string): any {
   const first = s.indexOf("{");
   const last = s.lastIndexOf("}");
   if (first !== -1 && last !== -1 && last > first) s = s.slice(first, last + 1);
+  // Remove vírgulas penduradas (",]" / ",}") — causa comum de JSON inválido do LLM.
+  const stripTrailingCommas = (t: string) => t.replace(/,(\s*[}\]])/g, "$1");
   try {
-    return JSON.parse(s);
+    return JSON.parse(stripTrailingCommas(s));
   } catch {
     // Fallback: troca caracteres de controle não escapados por espaço (newlines
     // literais dentro das strings são a causa nº1 de "Bad escaped character").
-    const cleaned = s.replace(/[\x00-\x1F]+/g, " ");
+    const cleaned = stripTrailingCommas(s.replace(/[\x00-\x1F]+/g, " "));
     return JSON.parse(cleaned);
   }
 }
