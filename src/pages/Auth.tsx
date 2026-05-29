@@ -75,33 +75,23 @@ export default function Auth() {
                 </Button>
               </form>
 
-              {/* Demo Accounts */}
+              {/* Acesso de teste — sem Supabase (loga direto) */}
               <div className="mt-8 pt-6 border-t border-border/10">
-                <p className="text-[10px] text-center text-muted-foreground/30 mb-4 uppercase tracking-widest font-bold">Acesso Rápido (Demo)</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="rounded-xl border-border/10 text-[10px] h-9 bg-transparent hover:bg-white/5"
-                    onClick={() => {
-                      setLoginEmail("afiliado@onlyshop.test");
-                      setLoginPassword("Test@123456");
-                    }}
-                  >
-                    Sou Afiliado
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="rounded-xl border-border/10 text-[10px] h-9 bg-transparent hover:bg-white/5"
-                    onClick={() => {
-                      setLoginEmail("marca@onlyshop.test");
-                      setLoginPassword("Test@123456");
-                    }}
-                  >
-                    Sou Marca
-                  </Button>
-                </div>
+                <p className="text-[10px] text-center text-muted-foreground/30 mb-4 uppercase tracking-widest font-bold">Acesso de Teste</p>
+                <Button
+                  variant="outline"
+                  className="w-full rounded-xl border-primary/30 text-xs h-11 bg-transparent hover:bg-primary/10"
+                  disabled={isLoading}
+                  onClick={async () => {
+                    setIsLoading(true);
+                    try { await signIn("teste@onlyshop.com", "teste123"); } catch {} finally { setIsLoading(false); }
+                  }}
+                >
+                  ⚡ Entrar com conta de teste
+                </Button>
+                <p className="text-[10px] text-center text-muted-foreground/30 mt-2">
+                  teste@onlyshop.com · teste123
+                </p>
               </div>
             </TabsContent>
 

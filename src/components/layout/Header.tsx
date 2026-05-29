@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bell, Search, Link2, Shield, MessageSquare } from "lucide-react";
+import { Bell, Search, Link2, Shield, MessageSquare, Users } from "lucide-react";
 import { CartSheet } from "@/components/cart/CartSheet";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -148,6 +148,7 @@ export function Header() {
                 </div>
                 <DropdownMenuSeparator className="bg-border/30" />
                 <DropdownMenuItem asChild className="text-xs"><Link to="/profile">Meu Perfil</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild className="text-xs"><Link to="/meus-influencers" className="flex items-center gap-2"><Users className="h-3.5 w-3.5" />Meus Influencers</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild className="text-xs"><Link to="/invites">Convites de marcas</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild className="text-xs"><Link to="/discover">Descobrir (Smart Match)</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild className="text-xs"><Link to="/trending">🔥 Em Alta</Link></DropdownMenuItem>

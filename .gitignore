@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Secrets — NUNCA commitar chaves de API (fal.ai, etc.)
+supabase/functions/.env
+.env.fal
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +26,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.vercel

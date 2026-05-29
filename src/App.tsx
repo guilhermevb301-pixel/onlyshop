@@ -47,6 +47,8 @@ import PublicProfile from "./pages/PublicProfile";
 import Invites from "./pages/Invites";
 import PostDetail from "./pages/PostDetail";
 import VSL from "./pages/VSL";
+import Studio from "./pages/Studio";
+import MeusInfluencers from "./pages/MeusInfluencers";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +92,8 @@ const App = () => (
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/create" element={<Feed />} />
+              <Route path="/studio" element={<Studio />} />
+              <Route path="/meus-influencers" element={<MeusInfluencers />} />
               <Route path="/reels" element={<Reels />} />
               <Route path="/live" element={<Live />} />
               <Route path="/live/:id" element={<LiveShop />} />

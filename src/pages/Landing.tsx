@@ -121,65 +121,119 @@ export default function Landing() {
       </nav>
 
       {/* ═══ HERO ═══ */}
-      <section className="relative z-10 pt-8 sm:pt-16 pb-20">
-        <div className="max-w-6xl mx-auto px-5">
-          <div className="max-w-2xl mx-auto text-center sm:text-left sm:mx-0">
-            <Badge className="mb-6 bg-white/[0.06] backdrop-blur-xl text-white/60 border-white/[0.08] text-[10px] font-semibold px-4 py-1.5 rounded-full uppercase tracking-[0.15em] inline-flex">
-              <Sparkles className="h-3 w-3 mr-1.5 text-[hsl(25,95%,53%)]" />
-              Social Commerce #1 do Brasil
-            </Badge>
+      <section className="relative z-10 pt-8 sm:pt-16 pb-20 overflow-hidden">
+        {/* glow atrás do título */}
+        <div className="pointer-events-none absolute top-[-10%] left-[5%] w-[55vw] h-[55vw] max-w-[640px] max-h-[640px] rounded-full bg-[hsl(330,81%,60%)] opacity-[0.10] blur-[140px]" />
+        <div className="pointer-events-none absolute top-[20%] left-[30%] w-[40vw] h-[40vw] max-w-[480px] max-h-[480px] rounded-full bg-[hsl(270,91%,65%)] opacity-[0.08] blur-[150px]" />
 
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold mb-6 leading-[0.95] tracking-tight">
-              Transforme{" "}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,95%,53%)] via-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">conteúdo</span>
-              <br />
-              em{" "}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">renda real</span>
-            </h1>
+        <div className="max-w-6xl mx-auto px-5 relative">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+            {/* ── Coluna texto ── */}
+            <div className="max-w-2xl mx-auto text-center lg:text-left lg:mx-0">
+              <Badge className="mb-6 bg-white/[0.06] backdrop-blur-xl text-white/60 border-white/[0.08] text-[10px] font-semibold px-4 py-1.5 rounded-full uppercase tracking-[0.15em] inline-flex">
+                <Sparkles className="h-3 w-3 mr-1.5 text-[hsl(25,95%,53%)]" />
+                Social Commerce #1 do Brasil
+              </Badge>
 
-            <p className="text-sm sm:text-base text-white/35 mb-8 max-w-md leading-relaxed mx-auto sm:mx-0">
-              A rede social onde cada post pode gerar receita. Junte-se a mais de 10.000 criadores que já monetizam seu conteúdo diariamente.
-            </p>
+              <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold mb-6 leading-[0.95] tracking-tight">
+                Transforme{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,95%,53%)] via-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">conteúdo</span>
+                <br />
+                em{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">renda real</span>
+              </h1>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-10">
-              <Button asChild size="lg" className="bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)] hover:opacity-90 text-white w-full sm:w-auto text-sm h-13 px-8 rounded-full font-bold border-0 shadow-[0_8px_40px_-8px_hsl(330,81%,60%,0.5)]">
-                <Link to="/auth">
-                  Começar grátis
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="ghost"
-                className="w-full sm:w-auto text-white/40 hover:text-white hover:bg-white/5 h-13 px-8 rounded-full text-sm"
-                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
-              >
-                <Play className="mr-2 h-3.5 w-3.5" />
-                Como funciona
-              </Button>
+              <p className="text-base sm:text-lg text-white/55 mb-8 max-w-md leading-relaxed mx-auto lg:mx-0">
+                A rede social onde cada post vira receita. A IA cria o vídeo de venda por você — você nem precisa aparecer.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-10 justify-center lg:justify-start">
+                <Button asChild size="lg" className="bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)] hover:opacity-90 hover:-translate-y-0.5 transition-transform text-white w-full sm:w-auto text-sm h-13 px-8 rounded-full font-bold border-0 shadow-[0_8px_40px_-8px_hsl(330,81%,60%,0.5)]">
+                  <Link to="/auth">
+                    Começar grátis
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  className="w-full sm:w-auto text-white/40 hover:text-white hover:bg-white/5 h-13 px-8 rounded-full text-sm"
+                  onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+                >
+                  <Play className="mr-2 h-3.5 w-3.5" />
+                  Como funciona
+                </Button>
+              </div>
+
+              {/* Mini social proof under CTA */}
+              <div className="flex items-center gap-3 justify-center lg:justify-start">
+                <div className="flex -space-x-2">
+                  {testimonials.slice(0, 4).map((t) => (
+                    <img key={t.name} src={t.avatar} alt="" className="h-7 w-7 rounded-full border-2 border-[hsl(240,12%,3%)] object-cover" />
+                  ))}
+                </div>
+                <div className="text-[11px] text-white/40">
+                  <span className="text-white/70 font-semibold">+10.000</span> criadores ativos
+                </div>
+              </div>
             </div>
 
-            {/* Mini social proof under CTA */}
-            <div className="flex items-center gap-3 mb-16 justify-center sm:justify-start">
-              <div className="flex -space-x-2">
-                {testimonials.slice(0, 4).map((t) => (
-                  <img key={t.name} src={t.avatar} alt="" className="h-7 w-7 rounded-full border-2 border-[hsl(240,12%,3%)] object-cover" />
-                ))}
-              </div>
-              <div className="text-[11px] text-white/40">
-                <span className="text-white/70 font-semibold">+10.000</span> criadores ativos
+            {/* ── Coluna mockup (Estúdio IA) ── */}
+            <div className="flex justify-center mt-2 lg:mt-0">
+              <div className="relative">
+                {/* halo */}
+                <div className="absolute inset-0 -m-6 rounded-[48px] bg-gradient-to-tr from-[hsl(330,81%,60%)]/20 to-[hsl(270,91%,65%)]/20 blur-2xl" />
+                {/* phone frame */}
+                <div className="relative w-[270px] rounded-[40px] border border-white/10 bg-[hsl(240,10%,5%)] p-3 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]">
+                  <div className="rounded-[30px] overflow-hidden bg-[hsl(240,10%,7%)]">
+                    {/* header do app */}
+                    <div className="flex items-center gap-2 px-4 pt-4 pb-3">
+                      <div className="h-7 w-7 rounded-xl bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)] flex items-center justify-center text-white text-sm">🪄</div>
+                      <div className="text-white text-xs font-bold">Estúdio IA</div>
+                    </div>
+                    {/* vídeo gerado */}
+                    <div className="px-4">
+                      <div className="relative aspect-[9/16] rounded-2xl overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=700&fit=crop&crop=faces" alt="" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
+                        <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full">Cena 2/3</div>
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <div className="text-white text-[11px] font-semibold leading-tight mb-1">"Esse sérum mudou minha pele em 2 semanas"</div>
+                          <div className="h-1 rounded-full bg-white/20 overflow-hidden">
+                            <div className="h-full w-2/3 bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* produto + status */}
+                    <div className="flex items-center gap-2 px-4 py-3">
+                      <div className="h-9 w-9 rounded-lg bg-white/5 overflow-hidden shrink-0">
+                        <img src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=120" alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-white text-[11px] font-medium truncate">Sérum Vitamina C Glow</div>
+                        <div className="text-[hsl(330,81%,65%)] text-[10px]">gerando vídeo de venda…</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-16">
             {stats.map((stat) => (
-              <Glass key={stat.label} className="p-4 sm:p-5 text-center">
-                <stat.icon className="h-4 w-4 mx-auto mb-2 text-[hsl(330,81%,60%)]" />
-                <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
-                <div className="text-[10px] text-white/30 mt-0.5">{stat.label}</div>
-              </Glass>
+              <div
+                key={stat.label}
+                className="rounded-2xl p-[1px] bg-gradient-to-br from-white/10 to-transparent transition-transform hover:-translate-y-1"
+              >
+                <div className="rounded-2xl bg-[hsl(240,10%,6%)] p-4 sm:p-5 text-center h-full">
+                  <stat.icon className="h-4 w-4 mx-auto mb-2 text-[hsl(330,81%,60%)]" />
+                  <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
+                  <div className="text-[10px] text-white/30 mt-0.5">{stat.label}</div>
+                </div>
+              </div>
             ))}
           </div>
         </div>

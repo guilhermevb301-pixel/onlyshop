@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Play, Sparkles, User, PlusCircle, Flame } from "lucide-react";
+import { Home, Play, Sparkles, User, Wand2, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/feed", icon: Home, label: "Feed" },
   { href: "/discover", icon: Sparkles, label: "Match" },
-  { href: "/create", icon: PlusCircle, label: "", isAction: true },
+  { href: "/studio", icon: Wand2, label: "", isAction: true },
   { href: "/trending", icon: Flame, label: "Em Alta" },
   { href: "/profile", icon: User, label: "Perfil" },
 ];

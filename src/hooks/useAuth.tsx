@@ -30,6 +30,44 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ============================================================================
+// Login de TESTE (sem Supabase) — só pra demo/QA do Estúdio IA.
+//   email: teste@onlyshop.com   senha: teste123
+// Quando logado nesse modo, o app trata como autenticado e pula o Supabase.
+// ============================================================================
+const DEMO_EMAIL = "teste@onlyshop.com";
+const DEMO_PASSWORD = "teste123";
+const DEMO_FLAG = "onlyshop_demo_session";
+
+const demoUser = {
+  id: "00000000-0000-0000-0000-000000000001",
+  email: DEMO_EMAIL,
+  aud: "authenticated",
+  role: "authenticated",
+  app_metadata: {},
+  user_metadata: {},
+  created_at: new Date().toISOString(),
+} as unknown as User;
+
+const demoSession = {
+  access_token: "demo-token",
+  refresh_token: "demo-refresh",
+  expires_in: 3600,
+  token_type: "bearer",
+  user: demoUser,
+} as unknown as Session;
+
+const demoProfile: Profile = {
+  id: "demo-profile",
+  user_id: demoUser.id,
+  username: "voce_demo",
+  display_name: "Você (Demo)",
+  avatar_url: null,
+  bio: "Conta de teste do Estúdio IA",
+};
+
+const demoRole: UserRole = { role: "affiliate" };
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -72,6 +110,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Atalho de DEMO: se logou no modo teste, restaura sem chamar o Supabase.
+    if (localStorage.getItem(DEMO_FLAG) === "1") {
+      setUser(demoUser);
+      setSession(demoSession);
+      setProfile(demoProfile);
+      setUserRole(demoRole);
+      setLoading(false);
+      return;
+    }
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
@@ -154,6 +202,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
+      // Login de teste — sem Supabase.
+      if (email.trim().toLowerCase() === DEMO_EMAIL && password === DEMO_PASSWORD) {
+        localStorage.setItem(DEMO_FLAG, "1");
+        setUser(demoUser);
+        setSession(demoSession);
+        setProfile(demoProfile);
+        setUserRole(demoRole);
+        toast({ title: "Bem-vindo! (modo teste)", description: "Login de demonstração." });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -178,6 +238,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Sai do modo de teste, se estiver nele.
+    if (localStorage.getItem(DEMO_FLAG) === "1") {
+      localStorage.removeItem(DEMO_FLAG);
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      setUserRole(null);
+      toast({ title: "Até logo!", description: "Você saiu da conta de teste." });
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
