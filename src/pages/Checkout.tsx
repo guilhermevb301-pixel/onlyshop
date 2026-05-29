@@ -53,9 +53,9 @@ export default function Checkout() {
         <div className="flex flex-col gap-2">
           <Button
             className="bg-gradient-primary border-0 rounded-xl"
-            onClick={() => navigate("/feed")}
+            onClick={() => navigate("/inicio")}
           >
-            Voltar ao Feed
+            Voltar ao início
           </Button>
           <Button variant="outline" className="rounded-xl" onClick={() => navigate("/products")}>
             Continuar Comprando

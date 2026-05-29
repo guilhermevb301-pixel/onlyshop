@@ -49,6 +49,7 @@ import PostDetail from "./pages/PostDetail";
 import VSL from "./pages/VSL";
 import Studio from "./pages/Studio";
 import MeusInfluencers from "./pages/MeusInfluencers";
+import Inicio from "./pages/Inicio";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => (
             
             {/* App routes with layout */}
             <Route element={<AppLayout />}>
+              <Route path="/inicio" element={<Inicio />} />
               <Route path="/feed" element={<Feed />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/communities" element={<Communities />} />

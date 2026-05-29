@@ -308,7 +308,7 @@ export default function Admin() {
   };
 
   if (authLoading) return <div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-  if (!user || userRole?.role !== "admin") return <Navigate to="/feed" replace />;
+  if (!user || userRole?.role !== "admin") return <Navigate to="/inicio" replace />;
 
   // Filtering & pagination
   const filteredUsers = users.filter(u => {

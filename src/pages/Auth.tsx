@@ -19,7 +19,7 @@ export default function Auth() {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupUsername, setSignupUsername] = useState("");
 
-  if (user && !loading) return <Navigate to="/feed" replace />;
+  if (user && !loading) return <Navigate to="/inicio" replace />;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

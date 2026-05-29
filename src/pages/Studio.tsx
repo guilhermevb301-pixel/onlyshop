@@ -100,10 +100,14 @@ export default function Studio() {
 
   // Pré-seleção vinda de "Meus Influencers" (navigate com state.persona).
   useEffect(() => {
-    const pre = (location.state as { persona?: Persona } | null)?.persona;
-    if (pre) {
-      setPersona(pre);
-      toast.success(`${pre.name} selecionado`, { description: "Agora escolha o produto." });
+    const st = location.state as { persona?: Persona; product?: Product } | null;
+    if (st?.product) {
+      setProduct(st.product as Product);
+      setStage("persona");
+    }
+    if (st?.persona) {
+      setPersona(st.persona);
+      if (!st.product) toast.success(`${st.persona.name} selecionado`, { description: "Agora escolha o produto." });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

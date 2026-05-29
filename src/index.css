@@ -69,6 +69,13 @@
     --shadow-lg: 0 12px 32px -8px hsl(0 0% 0% / 0.1);
     --shadow-glow: 0 0 20px hsl(330 81% 60% / 0.15);
     --shadow-glow-accent: 0 0 20px hsl(25 95% 53% / 0.12);
+
+    /* Shell (sidebar) — redesign workspace do criador */
+    --sb-w: 256px;            /* sidebar expandida */
+    --sb-w-collapsed: 76px;   /* sidebar colapsada */
+    --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+    --shadow-glow-cta: 0 8px 28px -8px hsl(346 100% 58% / 0.5);
+    --shadow-bezel-inset: inset 0 1px 0 0 hsl(0 0% 100% / 0.06);
   }
 
   .dark {
