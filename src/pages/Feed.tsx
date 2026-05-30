@@ -15,6 +15,45 @@ import { useGamification } from "@/hooks/useGamification";
 
 const PAGE_SIZE = 15;
 
+// Comunidade de exemplo (a "tribo de quem fatura" — áudios 1 e 4). Mostrada
+// quando o feed real ainda está vazio, pra a comunidade nunca parecer morta.
+function demoPosts(): PostData[] {
+  const ago = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
+  return [
+    {
+      id: "demo-p1", content: "Bati R$ 340 de comissão ONTEM com 1 vídeo só do sérum 🤯 Gerei pela IA, postei e foi. Quem tá na dúvida, começa HOJE.",
+      postType: "text", likesCount: 1240, commentsCount: 87, createdAt: ago(5), userId: "demo-u1",
+      label: "verified_result",
+      profile: { username: "marina.vende", displayName: "Marina Sales", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=faces", isVerified: true, totalEarnings: 18400 },
+      affiliateLink: { url: "#", productName: "Sérum Vitamina C Glow", commission: 35 },
+    },
+    {
+      id: "demo-p2", content: "PRIMEIRA VENDA HOJE 🎉🥹 chorei de verdade. Nunca apareci num vídeo, a influencer de IA fez tudo. Obrigada OnlyShop 🙏",
+      postType: "text", likesCount: 2110, commentsCount: 156, createdAt: ago(9), userId: "demo-u2",
+      label: "verified_result",
+      profile: { username: "bia.nova", displayName: "Bia Rocha", avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=faces", isVerified: false, totalEarnings: 290 },
+    },
+    {
+      id: "demo-p3", content: "Subi pra Prata 🥈 47 vendas no mês. Quem tá começando: NÃO desiste na 1ª semana. O jogo vira no volume.",
+      postType: "image", mediaUrl: "https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?w=600", likesCount: 870, commentsCount: 43, createdAt: ago(20), userId: "demo-u3",
+      label: null,
+      profile: { username: "joaop.afiliado", displayName: "João Pedro", avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces", isVerified: true, totalEarnings: 45200 },
+    },
+    {
+      id: "demo-p4", content: "R$ 2.140 esse mês 🚀 Mês passado eu tava no CLT. Hoje vivo disso, de casa, sem aparecer. Isso aqui é real.",
+      postType: "text", likesCount: 3320, commentsCount: 201, createdAt: ago(28), userId: "demo-u4",
+      label: "verified_result",
+      profile: { username: "ana.clara", displayName: "Ana Clara", avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=faces", isVerified: true, totalEarnings: 56200 },
+    },
+    {
+      id: "demo-p5", content: "12 vídeos essa semana, 3 estouraram 📈 Segredo não tem: volume + constância. Bora galera 🔥",
+      postType: "text", likesCount: 640, commentsCount: 29, createdAt: ago(40), userId: "demo-u5",
+      label: null,
+      profile: { username: "lucas.f", displayName: "Lucas Ferreira", avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=faces", isVerified: false, totalEarnings: 9800 },
+    },
+  ];
+}
+
 export default function Feed() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -80,7 +119,7 @@ export default function Feed() {
           .from("posts").select("*").order("created_at", { ascending: false }).limit(PAGE_SIZE);
         if (error) throw error;
         if (!postsData || postsData.length === 0) {
-          setPosts([]);
+          setPosts(demoPosts());
           setHasMore(false);
           return;
         }
@@ -90,7 +129,7 @@ export default function Feed() {
         cursorRef.current = postsData[postsData.length - 1].created_at;
       } catch (error) {
         console.error("Error fetching posts:", error);
-        setPosts([]);
+        setPosts(demoPosts());
         setHasMore(false);
       } finally {
         setLoading(false);
