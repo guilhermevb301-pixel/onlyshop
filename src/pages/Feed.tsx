@@ -7,7 +7,9 @@ import { CommentsSheet } from "@/components/feed/CommentsSheet";
 import { StoriesBar } from "@/components/feed/StoriesBar";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, MessageSquare, Users2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGamification } from "@/hooks/useGamification";
 
@@ -198,6 +200,19 @@ export default function Feed() {
 
   return (
     <div ref={containerRef} className="max-w-lg mx-auto overflow-auto hide-scrollbar">
+      {/* Header da comunidade — feed de resultados + canal de conversa (áudio 1) */}
+      <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-3">
+        <div className="min-w-0">
+          <h1 className="text-lg font-bold leading-tight flex items-center gap-1.5">
+            <Users2 className="h-4 w-4 text-primary" /> Comunidade
+          </h1>
+          <p className="text-xs text-muted-foreground">A tribo de quem fatura. Resultados, marcos e papo reto.</p>
+        </div>
+        <Button asChild size="sm" variant="outline" className="shrink-0">
+          <Link to="/chat"><MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Conversar</Link>
+        </Button>
+      </div>
+
       {/* Pull to refresh */}
       <div
         className="flex justify-center items-center overflow-hidden transition-all duration-200"

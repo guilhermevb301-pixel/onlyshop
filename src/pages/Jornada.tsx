@@ -3,7 +3,16 @@ import { getJourney, MILESTONES, journeyProgress, type Milestone } from "@/lib/j
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Check, Lock, ArrowRight, Route } from "lucide-react";
+import { Check, Lock, ArrowRight, Route, Mic } from "lucide-react";
+
+// O ritmo cíclico da live de vendas (áudio 3 dos sócios) — o "principal ensinamento".
+const RITMO = [
+  { n: 1, nome: "Chegada", desc: "\"Tô chegando, fica comigo\" — prende quem acabou de entrar." },
+  { n: 2, nome: "Apresentação", desc: "Quem é você e o que vai mostrar — com autoridade." },
+  { n: 3, nome: "Aquecimento", desc: "Vira papo caloroso: gera conexão e confiança." },
+  { n: 4, nome: "Benefícios", desc: "Mostra o produto resolvendo a dor, ao vivo." },
+  { n: 5, nome: "Fechamento", desc: "\"Corre no carrinho!\" — a hora da venda." },
+];
 
 // CTA de cada marco pendente — leva pra onde a ação acontece.
 const CTA: Partial<Record<Milestone, { label: string; to: string }>> = {
@@ -26,7 +35,7 @@ export default function Jornada() {
           <Route className="h-5 w-5 text-white" />
         </div>
         <div>
-          <p className="text-[11px] font-semibold text-primary tracking-wide uppercase">Sua carreira</p>
+          <p className="text-[11px] font-semibold text-primary tracking-wide uppercase">Carreira de OnlyShopper</p>
           <h1 className="text-lg font-bold leading-tight">Minha jornada</h1>
         </div>
       </div>
@@ -87,8 +96,35 @@ export default function Jornada() {
         })}
       </div>
 
+      {/* O ritmo da venda — método da live (áudio 3) */}
+      <section className="mt-10">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+            <Mic className="h-4 w-4 text-white" />
+          </div>
+          <h2 className="text-base lg:text-lg font-semibold">O ritmo da venda</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-5">
+          O método que os maiores faturam na live — o mesmo ciclo que você treina aqui. Dura 4-5 min e sempre termina na venda.
+        </p>
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1 lg:grid lg:grid-cols-5 lg:gap-3 lg:overflow-visible">
+          {RITMO.map((f, i) => (
+            <div key={f.n} className="shrink-0 w-[160px] lg:w-auto rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-4 relative">
+              <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center text-white font-display font-bold text-sm mb-2.5">
+                {f.n}
+              </div>
+              <p className="text-sm font-semibold">{f.nome}</p>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{f.desc}</p>
+              {i < RITMO.length - 1 && (
+                <ArrowRight className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/40 z-10" />
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
       {progress === 100 && (
-        <div className="text-center py-6 rounded-2xl bg-gradient-primary/10 ring-1 ring-primary/20">
+        <div className="text-center py-6 mt-8 rounded-2xl bg-gradient-primary/10 ring-1 ring-primary/20">
           <p className="font-display font-bold text-lg">Você fechou a jornada! 👑</p>
           <p className="text-sm text-muted-foreground mt-1">Agora é escalar. Bora pra próxima venda.</p>
         </div>

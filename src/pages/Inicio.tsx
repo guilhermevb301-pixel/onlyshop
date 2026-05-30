@@ -12,21 +12,27 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
   ArrowUpRight, Wand2, Package, Percent, DollarSign, BadgeDollarSign,
-  Building2, Plus, Users, Route,
+  Building2, Plus, Users, Route, Flame,
 } from "lucide-react";
 
 type Product = {
   id: string; name: string; description: string | null; image_url: string | null;
   price: number; currency?: string; commission_type?: string; commission_value?: number;
   brands?: { name: string } | null;
+  sales?: number; bestseller?: boolean;
 };
 
 const DEMO_PRODUCTS: Product[] = [
-  { id: "demo-1", name: "Sérum Vitamina C Glow", description: "Clareador facial com vitamina C pura.", image_url: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600", price: 89.9, currency: "BRL", commission_type: "percentage", commission_value: 35, brands: { name: "GlowLab" } },
-  { id: "demo-2", name: "Whey Protein Chocolate 900g", description: "24g de proteína por dose, sabor intenso.", image_url: "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=600", price: 129.9, currency: "BRL", commission_type: "percentage", commission_value: 40, brands: { name: "FitPro" } },
-  { id: "demo-3", name: "Mini Liquidificador Portátil USB", description: "Faz seu shake em qualquer lugar.", image_url: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600", price: 79.9, currency: "BRL", commission_type: "percentage", commission_value: 30, brands: { name: "HomeEasy" } },
-  { id: "demo-4", name: "Perfume Amadeirado 100ml", description: "Fixação de 12h, sofisticado e marcante.", image_url: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=600", price: 199.9, currency: "BRL", commission_type: "percentage", commission_value: 25, brands: { name: "Essenza" } },
+  { id: "demo-1", name: "Sérum Vitamina C Glow", description: "Clareador facial com vitamina C pura.", image_url: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600", price: 89.9, currency: "BRL", commission_type: "percentage", commission_value: 35, brands: { name: "GlowLab" }, sales: 4820, bestseller: true },
+  { id: "demo-2", name: "Whey Protein Chocolate 900g", description: "24g de proteína por dose, sabor intenso.", image_url: "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=600", price: 129.9, currency: "BRL", commission_type: "percentage", commission_value: 40, brands: { name: "FitPro" }, sales: 3110, bestseller: true },
+  { id: "demo-3", name: "Mini Liquidificador Portátil USB", description: "Faz seu shake em qualquer lugar.", image_url: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600", price: 79.9, currency: "BRL", commission_type: "percentage", commission_value: 30, brands: { name: "HomeEasy" }, sales: 1940 },
+  { id: "demo-4", name: "Perfume Amadeirado 100ml", description: "Fixação de 12h, sofisticado e marcante.", image_url: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=600", price: 199.9, currency: "BRL", commission_type: "percentage", commission_value: 25, brands: { name: "Essenza" }, sales: 870 },
 ];
+
+// Formata vendas: 4820 -> "4.8k"
+function fmtSales(n: number) {
+  return n >= 1000 ? `${(n / 1000).toFixed(1).replace(".0", "")}k` : String(n);
+}
 
 // Prova social de faturamento (áudio 1: "ver quanto o pessoal já faturou").
 // Seed realista — depois plugado em eventos reais da comunidade.
@@ -84,9 +90,14 @@ export default function Inicio() {
     <div className="space-y-12 lg:space-y-16">
       {/* ===== Seção 0 — Hero da pergunta ===== */}
       <section className="pt-2 lg:pt-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <span className="inline-flex items-center rounded-full border border-white/[0.08] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-5">
-          {greeting()}, {firstName}
-        </span>
+        <div className="flex flex-wrap items-center gap-2 mb-5">
+          <span className="inline-flex items-center rounded-full border border-white/[0.08] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            {greeting()}, {firstName}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-gradient-primary px-2.5 py-1 text-[10px] font-bold text-white uppercase tracking-wide">
+            ✦ OnlyShopper
+          </span>
+        </div>
         <h1 className="font-display text-4xl lg:text-6xl font-bold tracking-tight leading-[0.98] max-w-3xl">
           Qual produto você quer <span className="text-gradient-primary">anunciar hoje?</span>
         </h1>
@@ -137,7 +148,9 @@ export default function Inicio() {
       {/* ===== Seção 2 — Produtos ===== */}
       <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base lg:text-lg font-semibold">Produtos pra anunciar</h2>
+          <h2 className="text-base lg:text-lg font-semibold flex items-center gap-1.5">
+            <Flame className="h-4 w-4 text-accent" /> Mais vendidos pra anunciar
+          </h2>
           <Link to="/products" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Ver todos →</Link>
         </div>
         {loadingProducts ? (
@@ -148,7 +161,9 @@ export default function Inicio() {
           </div>
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
-            {products.map((p) => <ProductCard key={p.id} product={p} onClick={() => goProduct(p)} />)}
+            {[...products].sort((a, b) => (b.sales ?? 0) - (a.sales ?? 0)).map((p) => (
+              <ProductCard key={p.id} product={p} onClick={() => goProduct(p)} />
+            ))}
           </div>
         )}
       </section>
@@ -270,6 +285,11 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
               {Number(product.commission_value)}{product.commission_type === "percentage" ? "%" : ""}
             </Badge>
           )}
+          {product.bestseller && (
+            <Badge className="absolute top-2 left-2 bg-gradient-primary text-white border-0 text-[9px] px-2 py-0.5 rounded-full flex items-center gap-0.5">
+              <Flame className="h-2.5 w-2.5" /> MAIS VENDIDO
+            </Badge>
+          )}
           {/* veil hover "Criar vídeo deste" */}
           <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/85 via-black/40 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[var(--ease-fluid)]">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-primary px-3 py-1.5 text-[11px] font-semibold text-white shadow-[var(--shadow-glow-cta)]">
@@ -279,7 +299,14 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
         </div>
         <div className="p-3 space-y-1">
           <h3 className="font-semibold text-sm line-clamp-1">{product.name}</h3>
-          <p className="font-bold text-sm">{cur} {Number(product.price).toFixed(2)}</p>
+          <div className="flex items-center justify-between gap-1">
+            <p className="font-bold text-sm">{cur} {Number(product.price).toFixed(2)}</p>
+            {!!product.sales && (
+              <span className="text-[10px] text-accent font-medium flex items-center gap-0.5 shrink-0">
+                <Flame className="h-2.5 w-2.5" />{fmtSales(product.sales)} vendas
+              </span>
+            )}
+          </div>
           {product.brands && (
             <div className="flex items-center gap-1.5 pt-1">
               <div className="h-4 w-4 rounded bg-muted flex items-center justify-center shrink-0">
