@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
   LayoutGrid, Wand2, Package, Users, BadgeDollarSign, Flame,
-  PanelLeftClose, PanelLeft, Route, Users2, type LucideIcon,
+  PanelLeftClose, PanelLeft, Route, Users2, Compass, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSidebar } from "./SidebarContext";
@@ -17,6 +17,7 @@ const GROUP_CRIAR: Item[] = [
   { to: "/meus-influencers", icon: Users, label: "Meus influencers" },
 ];
 const GROUP_GANHAR: Item[] = [
+  { to: "/discover", icon: Compass, label: "Descobrir" },
   { to: "/affiliate", icon: BadgeDollarSign, label: "Ganhos" },
   { to: "/trending", icon: Flame, label: "Em alta" },
 ];

@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
   ArrowUpRight, Wand2, Package, Percent, DollarSign, BadgeDollarSign,
-  Building2, Plus, Users, Route, Flame,
+  Building2, Plus, Users, Route, Flame, Compass, MapPin,
 } from "lucide-react";
 
 type Product = {
@@ -43,6 +43,13 @@ const FEED_ATIVIDADE = [
   { nome: "Lucas F.", acao: "gerou 12 vídeos esta semana", emoji: "🎬" },
   { nome: "Ana C.", acao: "bateu R$ 2.1k no mês", emoji: "🚀" },
   { nome: "Pedro H.", acao: "fechou 1ª live com venda", emoji: "🎙️" },
+];
+
+// Marcas e lojas perto de você procurando creators (ecossistema de match — áudios 30/05).
+const MARCAS_PERTO = [
+  { nome: "Sabor Caseiro · Loja", cidade: "Sorocaba", dist: "2km", nicho: "Alimentação", score: 96, motivo: "Loja física procurando um creator local pra trazer clientes." },
+  { nome: "GlowLab Cosméticos", cidade: "São Paulo", dist: "12km", nicho: "Beleza", score: 92, motivo: "Mesmo nicho + comissão alta no TikTok Shop e Instagram Shop." },
+  { nome: "TechHype Store", cidade: "Sorocaba", dist: "5km", nicho: "Tech", score: 84, motivo: "Loja de tecnologia perto, quer creators da sua região." },
 ];
 
 function greeting() {
@@ -102,7 +109,7 @@ export default function Inicio() {
           Qual produto você quer <span className="text-gradient-primary">anunciar hoje?</span>
         </h1>
         <p className="text-muted-foreground text-base lg:text-lg max-w-xl mt-5">
-          Escolha um produto, escolha um influencer de IA, e tenha um vídeo de venda pronto pra postar. Você não precisa aparecer.
+          Escolha um produto, escolha um influencer de IA, e tenha um vídeo de venda pronto pro TikTok Shop, Instagram Shop ou sua loja. Você não precisa aparecer.
         </p>
         <Link
           to="/studio"
@@ -230,6 +237,33 @@ export default function Inicio() {
               <p className="text-xs font-semibold mt-2 leading-tight">{p.name}</p>
               <p className="text-[10px] text-muted-foreground">{p.niche}</p>
             </button>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== Marcas e lojas perto de você (ecossistema de match) ===== */}
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base lg:text-lg font-semibold flex items-center gap-1.5">
+            <Compass className="h-4 w-4 text-accent" /> Marcas e lojas perto de você
+          </h2>
+          <Link to="/discover" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Ver conexões →</Link>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
+          {MARCAS_PERTO.map((m, i) => (
+            <Link key={i} to="/discover" className="group rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-4 hover:ring-primary/30 transition-all">
+              <div className="flex items-start justify-between gap-2 mb-2.5">
+                <div className="h-9 w-9 rounded-xl bg-gradient-primary flex items-center justify-center shrink-0">
+                  <Building2 className="h-4 w-4 text-white" />
+                </div>
+                <Badge className="bg-accent text-accent-foreground border-0 text-[10px] shrink-0">{m.score} match</Badge>
+              </div>
+              <p className="text-sm font-semibold">{m.nome}</p>
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                <MapPin className="h-2.5 w-2.5" /> {m.cidade} · {m.dist} · {m.nicho}
+              </p>
+              <p className="text-[11px] text-primary/80 italic mt-2 leading-snug">"{m.motivo}"</p>
+            </Link>
           ))}
         </div>
       </section>

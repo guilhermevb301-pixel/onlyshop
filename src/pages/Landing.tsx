@@ -132,19 +132,19 @@ export default function Landing() {
             <div className="max-w-2xl mx-auto text-center lg:text-left lg:mx-0">
               <Badge className="mb-6 bg-white/[0.06] backdrop-blur-xl text-white/60 border-white/[0.08] text-[10px] font-semibold px-4 py-1.5 rounded-full uppercase tracking-[0.15em] inline-flex">
                 <Sparkles className="h-3 w-3 mr-1.5 text-[hsl(25,95%,53%)]" />
-                Social Commerce #1 do Brasil
+                O ecossistema de vendas do Brasil
               </Badge>
 
               <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold mb-6 leading-[0.95] tracking-tight">
-                Transforme{" "}
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,95%,53%)] via-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">conteúdo</span>
+                Conecta{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,95%,53%)] via-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">marcas e afiliados</span>
                 <br />
                 em{" "}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">renda real</span>
               </h1>
 
               <p className="text-base sm:text-lg text-white/55 mb-8 max-w-md leading-relaxed mx-auto lg:mx-0">
-                A rede social onde cada post vira receita. A IA cria o vídeo de venda por você — você nem precisa aparecer.
+                Marcas e lojas acham quem vende seus produtos. Afiliados acham renda — no TikTok Shop, Instagram Shop e em lojas físicas perto de você. E a IA cria o vídeo: você nem precisa aparecer.
               </p>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-10 justify-center lg:justify-start">

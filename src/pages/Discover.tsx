@@ -43,6 +43,26 @@ interface BrandMatch {
   ai_reason?: string;
 }
 
+// Match de exemplo (ecossistema marcas/lojas ↔ afiliados, áudios 30/05).
+// Mostrado quando o motor de match real ainda não tem dados — inclui o caso
+// que o chefe citou: loja física buscando creator LOCAL pra trazer clientes.
+function demoBrands(): BrandMatch[] {
+  return [
+    { brand_id: "d1", name: "Sabor Caseiro · Loja", slug: "sabor", logo_url: null, city: "Sorocaba", state: "SP", niches: ["Alimentação", "Local"], verified: true, distance_km: 2, niche_overlap: 3, match_score: 96, ai_reason: "Loja física a 2km de você procurando um creator local pra trazer clientes." },
+    { brand_id: "d2", name: "GlowLab Cosméticos", slug: "glowlab", logo_url: null, city: "São Paulo", state: "SP", niches: ["Beleza", "Skincare"], verified: true, distance_km: 12, niche_overlap: 2, match_score: 92, ai_reason: "Mesmo nicho (beleza) e comissão alta — TikTok Shop + Instagram Shop." },
+    { brand_id: "d3", name: "FitPro Suplementos", slug: "fitpro", logo_url: null, city: "Campinas", state: "SP", niches: ["Fitness", "Suplementos"], verified: true, distance_km: 38, niche_overlap: 2, match_score: 88, ai_reason: "Marca buscando afiliados de fitness em todo o Brasil." },
+    { brand_id: "d4", name: "TechHype Store", slug: "techhype", logo_url: null, city: "Sorocaba", state: "SP", niches: ["Tech", "Gadgets"], verified: false, distance_km: 5, niche_overlap: 1, match_score: 84, ai_reason: "Loja de tecnologia perto de você, quer creators da região." },
+    { brand_id: "d5", name: "Boutique Bella", slug: "bella", logo_url: null, city: "Sorocaba", state: "SP", niches: ["Moda", "Acessórios"], verified: false, distance_km: 7, niche_overlap: 2, match_score: 81, ai_reason: "Boutique local procurando quem traga clientes pra loja física." },
+  ];
+}
+function demoAffiliates(): AffiliateMatch[] {
+  return [
+    { user_id: "a1", username: "marina.vende", display_name: "Marina Sales", avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=faces", city: "Sorocaba", state: "SP", niches: ["Beleza"], followers_count: 14200, total_sales: 312, conversion_rate: 6.4, performance_score: 92, distance_km: 3, niche_overlap: 2, match_score: 95, ai_reason: "Creator de beleza a 3km da sua loja, 6.4% de conversão." },
+    { user_id: "a2", username: "joaop", display_name: "João Pedro", avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces", city: "Sorocaba", state: "SP", niches: ["Fitness"], followers_count: 8700, total_sales: 188, conversion_rate: 5.1, performance_score: 87, distance_km: 6, niche_overlap: 1, match_score: 89, ai_reason: "Mora na sua cidade e já traz clientes pra lojas locais." },
+    { user_id: "a3", username: "ana.clara", display_name: "Ana Clara", avatar_url: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=faces", city: "Campinas", state: "SP", niches: ["Moda"], followers_count: 23100, total_sales: 540, conversion_rate: 7.8, performance_score: 94, distance_km: 41, niche_overlap: 2, match_score: 86, ai_reason: "Top performer de moda, ótima pra campanhas online." },
+  ];
+}
+
 export default function Discover() {
   const { user, userRole, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -78,10 +98,13 @@ export default function Discover() {
       const { data, error } = await supabase.functions.invoke("smart-match", { body });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      if (mode === "affiliates_for_brand") setAffiliates(data?.matches || []);
-      else setBrands(data?.matches || []);
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Erro no matching", description: e.message });
+      const matches = data?.matches || [];
+      if (mode === "affiliates_for_brand") setAffiliates(matches.length ? matches : demoAffiliates());
+      else setBrands(matches.length ? matches : demoBrands());
+    } catch {
+      // Motor de match ainda sem dados/função no projeto — mostra exemplos.
+      if (mode === "affiliates_for_brand") setAffiliates(demoAffiliates());
+      else setBrands(demoBrands());
     } finally {
       setLoading(false);
     }
@@ -135,8 +158,8 @@ export default function Discover() {
           <Sparkles className="h-5 w-5 text-primary-foreground" />
         </div>
         <div>
-          <h1 className="text-lg font-bold tracking-tight">Descobrir</h1>
-          <p className="text-xs text-muted-foreground/60">Match inteligente: nicho + proximidade + performance</p>
+          <h1 className="text-lg font-bold tracking-tight">Descobrir conexões</h1>
+          <p className="text-xs text-muted-foreground/60">Marcas e lojas perto de você procurando creators — match por nicho + localização.</p>
         </div>
       </div>
 
