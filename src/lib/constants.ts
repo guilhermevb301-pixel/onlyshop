@@ -1,6 +1,6 @@
 // App constants
 export const APP_NAME = "Only Shop";
-export const APP_TAGLINE = "A rede social onde o feed gera dinheiro";
+export const APP_TAGLINE = "Vender com IA, sem aparecer. E sem fazer sozinho.";
 
 // Plan tiers
 export const PLAN_TIERS = {

@@ -194,6 +194,7 @@ export default function Studio() {
       // Marco de renda: gerou o 1º vídeo (ativação — desbloqueia a Comunidade).
       addPoints("video_generated");
       markMilestone("video_generated");
+      toast.success("Pronto. Seu primeiro vídeo tá no ar 🎬", { description: "Posta no TikTok Shop e volta pra contar. Aqui a galera comemora junto." });
       setStage("preview");
     } catch {
       // Erro no roteiro — mensagem humana, sem jargão técnico, com ação clara.
@@ -232,6 +233,7 @@ export default function Studio() {
     // Marco: baixou pra postar no TikTok Shop.
     addPoints("video_published");
     markMilestone("video_published");
+    toast.success("Tá na mão! Agora é postar e vender 🚀", { description: "Quando cair o 1º PIX, posta na comunidade — a galera quer ver." });
   }
 
   const isDemoMode = clips.some((c) => c.mode === "demo") || finalVideo?.mode === "demo";
@@ -501,6 +503,7 @@ function PhonePreview(props: {
                 <div className="w-full max-w-[200px]">
                   <Progress value={progress} className="h-1.5" />
                   <p className="text-[10px] text-white/50 mt-2">{mm}:{ss} • normalmente leva ~2 min</p>
+                  <p className="text-[10px] text-white/40 mt-1">Respira — seu primeiro vídeo vale a espera 🙏</p>
                 </div>
               </div>
             ) : (

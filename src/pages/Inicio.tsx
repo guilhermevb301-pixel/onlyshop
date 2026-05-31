@@ -43,6 +43,7 @@ const FEED_ATIVIDADE = [
   { nome: "Lucas F.", acao: "gerou 12 vídeos esta semana", emoji: "🎬" },
   { nome: "Ana C.", acao: "bateu R$ 2.1k no mês", emoji: "🚀" },
   { nome: "Pedro H.", acao: "fechou 1ª live com venda", emoji: "🎙️" },
+  { nome: "E você?", acao: "Seu nome aparece aqui quando você acertar 🔥", emoji: "✨" },
 ];
 
 // Marcas e lojas perto de você procurando creators (ecossistema de match — áudios 30/05).
@@ -126,7 +127,7 @@ export default function Inicio() {
       <section className="grid grid-cols-3 gap-3 lg:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
         <StatCard label="Produtos pra anunciar" value={loadingProducts ? "—" : String(products.length)} icon={Package} />
         <StatCard label="Influencers prontos" value={String(personas.length)} icon={Users} />
-        <StatCard label="Ganhos este mês" value="Comece a faturar" icon={BadgeDollarSign} accent compact />
+        <StatCard label="Ganhos este mês" value="Bora pro 1º PIX" icon={BadgeDollarSign} accent compact />
       </section>
 
       {/* ===== Sua jornada (carreira gamificada) ===== */}

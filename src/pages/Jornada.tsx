@@ -40,7 +40,7 @@ export default function Jornada() {
         </div>
       </div>
       <p className="text-sm text-muted-foreground mb-5">
-        Do zero à primeira venda. Cada passo te aproxima de viver disso — você não precisa aparecer.
+        Do zero à primeira venda. Cada passo te aproxima de viver disso — e você não faz esse caminho sozinho.
       </p>
 
       {/* Progresso */}
@@ -126,7 +126,7 @@ export default function Jornada() {
       {progress === 100 && (
         <div className="text-center py-6 mt-8 rounded-2xl bg-gradient-primary/10 ring-1 ring-primary/20">
           <p className="font-display font-bold text-lg">Você fechou a jornada! 👑</p>
-          <p className="text-sm text-muted-foreground mt-1">Agora é escalar. Bora pra próxima venda.</p>
+          <p className="text-sm text-muted-foreground mt-1">Agora você inspira quem tá chegando. Posta seu resultado na comunidade 👑</p>
         </div>
       )}
     </div>

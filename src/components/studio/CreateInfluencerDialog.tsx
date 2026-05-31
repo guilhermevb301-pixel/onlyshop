@@ -114,7 +114,7 @@ export function CreateInfluencerDialog({ open, onOpenChange, userId, onCreated }
         : await createInfluencer({ userId, name: name.trim(), niche, description: description.trim(), file: file! });
 
       markMilestone("influencer_created");
-      toast.success("Influencer criado!", { description: `${persona.name} já está disponível no Estúdio.` });
+      toast.success("Seu influencer nasceu 🎬", { description: "Agora bora gerar seu 1º vídeo de venda." });
       onCreated(persona);
       reset();
       onOpenChange(false);

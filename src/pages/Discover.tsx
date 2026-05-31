@@ -137,7 +137,7 @@ export default function Discover() {
         type: "brand_invite",
       });
       setInvited((prev) => new Set(prev).add(affiliateUserId));
-      toast({ title: "Convite enviado!" });
+      toast({ title: "Chamado enviado 🤝", description: "Agora é torcer pra ela topar." });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Erro", description: e.message });
     } finally {
@@ -159,7 +159,7 @@ export default function Discover() {
         </div>
         <div>
           <h1 className="text-lg font-bold tracking-tight">Descobrir conexões</h1>
-          <p className="text-xs text-muted-foreground/60">Marcas e lojas perto de você procurando creators — match por nicho + localização.</p>
+          <p className="text-xs text-muted-foreground/60">Marcas e lojas perto de você querendo creator. Aqui dá match de verdade.</p>
         </div>
       </div>
 

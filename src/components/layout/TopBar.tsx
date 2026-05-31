@@ -20,9 +20,10 @@ export function TopBar() {
 
   const notifText = (type: string, actor?: string) => {
     switch (type) {
-      case "like": return `${actor || "Alguém"} curtiu seu post`;
-      case "comment": return `${actor || "Alguém"} comentou no seu post`;
+      case "like": return `${actor || "Alguém"} curtiu seu resultado`;
+      case "comment": return `${actor || "Alguém"} respondeu você lá na comunidade`;
       case "follow": return `${actor || "Alguém"} começou a te seguir`;
+      case "brand_invite": return `Uma marca te chamou! Olha em Convites 👀`;
       default: return `${actor || "Alguém"} interagiu com você`;
     }
   };

@@ -20,7 +20,7 @@ const stats = [
 ];
 
 const features = [
-  { icon: Globe, title: "Rede Social Integrada", desc: "Feed, stories, comunidades e chat em um só lugar." },
+  { icon: Globe, title: "Comunidade que vende junto", desc: "Feed, stories, comunidades e chat em um só lugar." },
   { icon: TrendingUp, title: "Sistema de Afiliados", desc: "Links rastreáveis com dashboard em tempo real." },
   { icon: DollarSign, title: "Monetização Real", desc: "Comissões automáticas depositadas na sua conta." },
   { icon: Shield, title: "Segurança Total", desc: "Dados criptografados e tracking transparente." },
@@ -52,7 +52,7 @@ const steps = [
 ];
 
 const faqs = [
-  { q: "Preciso pagar para começar?", a: "Não! O plano Free é gratuito para sempre. Você pode explorar toda a rede social sem pagar nada." },
+  { q: "Preciso pagar para começar?", a: "Não! O plano Free é gratuito para sempre. Você pode explorar toda a comunidade sem pagar nada." },
   { q: "Como funciona o sistema de afiliados?", a: "Faça upgrade para o plano Partner e receba links rastreáveis. Cada venda gera comissão automática depositada na sua conta." },
   { q: "Quanto tempo leva para ter resultado?", a: "Alguns membros reportam ganhos na primeira semana. A maioria atinge resultados consistentes em 30-60 dias." },
   { q: "Funciona em qualquer dispositivo?", a: "Sim! Navegador, celular, tablet. Também instala como app nativo (PWA) direto no seu celular." },
@@ -636,7 +636,7 @@ export default function Landing() {
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,95%,53%)] via-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">começar?</span>
             </h2>
             <p className="text-sm text-white/30 mb-8 max-w-md mx-auto">
-              Junte-se a milhares de criadores que já monetizam seu conteúdo todos os dias.
+              Entra. Aqui ninguém vende sozinho.
             </p>
             <Button asChild size="lg" className="bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)] hover:opacity-90 text-white rounded-full h-13 px-10 text-sm font-bold border-0 shadow-[0_8px_40px_-8px_hsl(330,81%,60%,0.5)]">
               <Link to="/auth">Criar conta grátis<ArrowRight className="ml-2 h-4 w-4" /></Link>
@@ -665,7 +665,7 @@ export default function Landing() {
                 <img src={logoImg} alt={APP_NAME} className="h-7 w-7 rounded-lg object-cover" />
                 <span className="font-bold text-xs">{APP_NAME}</span>
               </div>
-              <p className="text-[10px] text-white/20 leading-relaxed">A rede social de monetização #1 do Brasil.</p>
+              <p className="text-[10px] text-white/20 leading-relaxed">O ecossistema de vendas #1 do Brasil.</p>
             </div>
             <div>
               <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Produto</p>

@@ -21,6 +21,12 @@ function demoPosts(): PostData[] {
   const ago = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
   return [
     {
+      id: "demo-p0", content: "Cheguei essa semana, ainda não vendi nada, tô com medo mas vim 😅 Alguém mais começando do zero? bora se ajudar 🙏",
+      postType: "text", likesCount: 38, commentsCount: 12, createdAt: ago(1), userId: "demo-u0",
+      label: null,
+      profile: { username: "rafa.comeco", displayName: "Rafael", avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&h=150&fit=crop&crop=faces", isVerified: false, totalEarnings: 0 },
+    },
+    {
       id: "demo-p1", content: "Bati R$ 340 de comissão ONTEM com 1 vídeo só do sérum 🤯 Gerei pela IA, postei e foi. Quem tá na dúvida, começa HOJE.",
       postType: "text", likesCount: 1240, commentsCount: 87, createdAt: ago(5), userId: "demo-u1",
       label: "verified_result",
@@ -245,7 +251,7 @@ export default function Feed() {
           <h1 className="text-lg font-bold leading-tight flex items-center gap-1.5">
             <Users2 className="h-4 w-4 text-primary" /> Comunidade
           </h1>
-          <p className="text-xs text-muted-foreground">A tribo de quem fatura. Resultados, marcos e papo reto.</p>
+          <p className="text-xs text-muted-foreground">Resultados, primeiros vídeos e quem tá começando do zero. Aqui ninguém vende sozinho.</p>
         </div>
         <Button asChild size="sm" variant="outline" className="shrink-0">
           <Link to="/chat"><MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Conversar</Link>

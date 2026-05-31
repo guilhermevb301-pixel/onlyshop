@@ -13,7 +13,7 @@ const sections = [
   {
     icon: FileText,
     title: "2. Descrição do Serviço",
-    content: `A ${APP_NAME} é uma plataforma de social commerce que combina rede social, sistema de afiliados e monetização de conteúdo. Oferecemos funcionalidades como perfil público, feed, comunidades, ranking, links de afiliado e integração com redes sociais externas.`,
+    content: `A ${APP_NAME} é uma plataforma de social commerce que combina comunidade, sistema de afiliados e monetização de conteúdo. Oferecemos funcionalidades como perfil público, feed, comunidades, ranking, links de afiliado e integração com redes sociais externas.`,
   },
   {
     icon: Users,

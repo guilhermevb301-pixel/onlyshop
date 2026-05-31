@@ -58,7 +58,7 @@ export default function MeusInfluencers() {
           <div>
             <p className="text-[11px] font-semibold text-primary tracking-wide uppercase">Estúdio IA</p>
             <h1 className="text-lg font-bold leading-tight">Meus Influencers</h1>
-            <p className="text-xs text-muted-foreground">Suas personas de IA. Use as nossas ou crie a sua.</p>
+            <p className="text-xs text-muted-foreground">Seu rosto de IA que vende por você — sem aparecer.</p>
           </div>
         </div>
         <Button size="sm" className="shrink-0" onClick={() => setDialogOpen(true)}>

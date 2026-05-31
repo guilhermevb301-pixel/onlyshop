@@ -161,7 +161,7 @@ function Footer({ collapsed, toggle }: { collapsed: boolean; toggle: () => void 
             <BadgeDollarSign className="h-4 w-4 text-accent shrink-0" />
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50 leading-none">Este mês</p>
-              <p className="text-sm font-display font-bold text-accent leading-tight mt-0.5">Comece a faturar</p>
+              <p className="text-sm font-display font-bold text-accent leading-tight mt-0.5">Bora pro 1º PIX</p>
             </div>
           </div>
         </div>

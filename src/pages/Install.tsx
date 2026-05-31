@@ -82,7 +82,7 @@ export default function Install() {
             <span className="text-4xl font-bold text-primary-foreground">O</span>
           </div>
           <h1 className="text-3xl font-bold mb-2">Only Shop</h1>
-          <p className="text-muted-foreground">A rede social que gera dinheiro</p>
+          <p className="text-muted-foreground">Conecta marcas, lojas e afiliados. Aqui ninguém vende sozinho.</p>
         </div>
 
         {/* Features */}
