@@ -63,6 +63,52 @@ function demoAffiliates(): AffiliateMatch[] {
   ];
 }
 
+// Radar de proximidade — gamifica o setor "perto de você" (pedido dos chefes:
+// mapa/globo/animação). Você no centro, marcas/lojas como pinos por distância.
+function ProximityRadar({ brands }: { brands: BrandMatch[] }) {
+  const pins = brands.slice(0, 6).filter((b) => b.distance_km != null);
+  const maxKm = Math.max(40, ...pins.map((b) => b.distance_km ?? 20));
+  return (
+    <div className="rounded-3xl bg-white/[0.03] ring-1 ring-white/[0.06] p-5 overflow-hidden">
+      <div className="flex items-center gap-1.5 mb-1">
+        <MapPin className="h-3.5 w-3.5 text-accent" />
+        <p className="text-xs font-semibold">{pins.length} marcas e lojas perto de você agora</p>
+      </div>
+      <p className="text-[11px] text-muted-foreground/60 mb-4">Quanto mais perto do centro, mais perto de você.</p>
+      <div className="relative mx-auto w-full max-w-[300px] aspect-square">
+        {[1, 0.66, 0.33].map((r, i) => (
+          <div key={i} className="absolute rounded-full border border-primary/15" style={{ inset: `${(1 - r) * 50}%` }} />
+        ))}
+        <div className="absolute inset-0 rounded-full overflow-hidden">
+          <div
+            className="absolute inset-0 origin-center animate-[spin_6s_linear_infinite]"
+            style={{ background: "conic-gradient(from 0deg, transparent 0deg, hsl(346 100% 58% / 0.18) 36deg, transparent 60deg)" }}
+          />
+        </div>
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
+          <div className="h-3 w-3 rounded-full bg-primary shadow-[0_0_18px_hsl(346_100%_58%)]" />
+          <span className="text-[9px] font-bold text-primary mt-1 tracking-wide">VOCÊ</span>
+        </div>
+        {pins.map((b, i) => {
+          const angle = (i * (360 / Math.max(pins.length, 1)) - 90) * (Math.PI / 180);
+          const km = b.distance_km ?? 20;
+          const radius = 14 + Math.min(km / maxKm, 1) * 32;
+          const x = 50 + radius * Math.cos(angle);
+          const y = 50 + radius * Math.sin(angle);
+          return (
+            <div key={b.brand_id} className="absolute -translate-x-1/2 -translate-y-1/2 z-20" style={{ left: `${x}%`, top: `${y}%` }}>
+              <div className="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_10px_hsl(174_100%_47%)] ring-2 ring-background" />
+              <span className="absolute left-1/2 -translate-x-1/2 top-3.5 whitespace-nowrap text-[8px] text-muted-foreground/80 font-medium">
+                {b.name.split(" ")[0]} · {Math.round(km)}km
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Discover() {
   const { user, userRole, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -162,6 +208,8 @@ export default function Discover() {
           <p className="text-xs text-muted-foreground/60">Marcas e lojas perto de você querendo creator. Aqui dá match de verdade.</p>
         </div>
       </div>
+
+      <ProximityRadar brands={brands.length ? brands : demoBrands()} />
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
         <TabsList className="grid w-full grid-cols-2 rounded-full">

@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Package, Percent, DollarSign, Building2, Megaphone, Check, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, Package, Percent, DollarSign, Building2, Megaphone, Check, Loader2, ShoppingBag, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,6 +23,16 @@ interface CampaignForProduct {
 }
 
 const CATEGORIES = ["Todos", "Saúde", "Beleza", "Educação", "Tecnologia", "Finanças", "Fitness", "Alimentação", "Moda", "Outro"];
+
+// Catálogo de exemplo quando o real ainda está vazio (mesmo padrão da home/feed).
+const DEMO_PRODUCTS_HUB: ProductWithBrand[] = [
+  { id: "dp1", name: "Sérum Vitamina C Glow", description: "Clareador facial com vitamina C pura, uniformiza em 2 semanas.", image_url: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600", price: 89.9, currency: "BRL", commission_type: "percentage", commission_value: 35, category: "Beleza", active: true, brand_id: "b1", brands: { name: "GlowLab", slug: "glowlab", logo_url: null, verified: true } },
+  { id: "dp2", name: "Whey Protein Chocolate 900g", description: "24g de proteína por dose, sabor chocolate intenso.", image_url: "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=600", price: 129.9, currency: "BRL", commission_type: "percentage", commission_value: 40, category: "Fitness", active: true, brand_id: "b2", brands: { name: "FitPro", slug: "fitpro", logo_url: null, verified: true } },
+  { id: "dp3", name: "Mini Liquidificador Portátil USB", description: "Faz seu shake em qualquer lugar, recarregável por USB.", image_url: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600", price: 79.9, currency: "BRL", commission_type: "percentage", commission_value: 30, category: "Outro", active: true, brand_id: "b3", brands: { name: "HomeEasy", slug: "homeeasy", logo_url: null, verified: false } },
+  { id: "dp4", name: "Perfume Amadeirado 100ml", description: "Fixação de 12h, sofisticado e marcante.", image_url: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=600", price: 199.9, currency: "BRL", commission_type: "percentage", commission_value: 25, category: "Beleza", active: true, brand_id: "b4", brands: { name: "Essenza", slug: "essenza", logo_url: null, verified: true } },
+  { id: "dp5", name: "Colágeno Hidrolisado Verisol", description: "Pele, cabelo e unhas — sabor neutro, 30 doses.", image_url: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600", price: 119.9, currency: "BRL", commission_type: "percentage", commission_value: 45, category: "Saúde", active: true, brand_id: "b5", brands: { name: "VitaLab", slug: "vitalab", logo_url: null, verified: true } },
+  { id: "dp6", name: "Tênis Esportivo Leve Pro", description: "Amortecimento e respirabilidade pro dia a dia.", image_url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600", price: 249.9, currency: "BRL", commission_type: "percentage", commission_value: 20, category: "Moda", active: true, brand_id: "b6", brands: { name: "StepUp", slug: "stepup", logo_url: null, verified: false } },
+];
 
 export default function Products() {
   const { user, userRole } = useAuth();
@@ -40,7 +51,7 @@ export default function Products() {
     const fetch = async () => {
       setLoading(true);
       const { data } = await supabase.from("products").select("*, brands(name, slug, logo_url, verified)").eq("active", true).order("created_at", { ascending: false });
-      setProducts((data as ProductWithBrand[]) || []);
+      setProducts(data && data.length ? (data as ProductWithBrand[]) : DEMO_PRODUCTS_HUB);
 
       // Fetch active campaigns
       const { data: campaignsData } = await supabase.from("campaigns").select("id, name, product_id, brand_id, status, bonus_percentage").eq("status", "active");
@@ -89,9 +100,19 @@ export default function Products() {
 
   return (
     <div className="w-full space-y-6">
-      <div>
-        <h1 className="text-lg font-bold tracking-tight">Produtos</h1>
-        <p className="text-[11px] text-muted-foreground/40">Encontre produtos para promover</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shrink-0">
+            <ShoppingBag className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight">Produtos</h1>
+            <p className="text-[11px] text-muted-foreground/50">Os mais vendidos pra anunciar — escolha e crie seu vídeo.</p>
+          </div>
+        </div>
+        <Button asChild variant="outline" size="sm" className="shrink-0 rounded-full">
+          <Link to="/affiliate"><TrendingUp className="h-3.5 w-3.5 mr-1.5" /> Relatório de vendas</Link>
+        </Button>
       </div>
 
       <div className="relative">
