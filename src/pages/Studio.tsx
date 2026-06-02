@@ -7,6 +7,7 @@ import {
 } from "@/lib/personas";
 import { listInfluencers } from "@/lib/influencers";
 import { CreateInfluencerDialog } from "@/components/studio/CreateInfluencerDialog";
+import { ConnectTikTok } from "@/components/tiktok/ConnectTikTok";
 import { useGamification } from "@/hooks/useGamification";
 import { markMilestone } from "@/lib/journey";
 import { Card, CardContent } from "@/components/ui/card";
@@ -393,14 +394,19 @@ export default function Studio() {
 
           {/* Ações do preview */}
           {stage === "preview" && (
-            <div className="flex gap-2 mt-3">
-              <Button variant="outline" className="flex-1" onClick={reset}>
-                <RotateCcw className="h-4 w-4 mr-1.5" /> Novo
-              </Button>
-              <Button className="flex-1" disabled={!previewUrl} onClick={() => previewUrl && downloadVideo(previewUrl)}>
-                <Download className="h-4 w-4 mr-1.5" /> Baixar pra postar
-              </Button>
-            </div>
+            <>
+              <div className="flex gap-2 mt-3">
+                <Button variant="outline" className="flex-1" onClick={reset}>
+                  <RotateCcw className="h-4 w-4 mr-1.5" /> Novo
+                </Button>
+                <Button className="flex-1" disabled={!previewUrl} onClick={() => previewUrl && downloadVideo(previewUrl)}>
+                  <Download className="h-4 w-4 mr-1.5" /> Baixar pra postar
+                </Button>
+              </div>
+              <div className="mt-3">
+                <ConnectTikTok />
+              </div>
+            </>
           )}
         </div>
       </div>

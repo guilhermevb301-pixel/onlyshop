@@ -51,6 +51,7 @@ import Studio from "./pages/Studio";
 import MeusInfluencers from "./pages/MeusInfluencers";
 import Inicio from "./pages/Inicio";
 import Jornada from "./pages/Jornada";
+import TikTokCallback from "./pages/TikTokCallback";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/tiktok/callback" element={<TikTokCallback />} />
             <Route path="/install" element={<Install />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
