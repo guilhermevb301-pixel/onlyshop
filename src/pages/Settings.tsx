@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Lock, Moon, Sun, Bell, Shield, Loader2, ArrowLeft, LogOut } from "lucide-react";
+import { Lock, Moon, Sun, Bell, Shield, Loader2, ArrowLeft, LogOut, Music2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { LocationNichesCard } from "@/components/profile/LocationNichesCard";
+import { ConnectTikTok } from "@/components/tiktok/ConnectTikTok";
 
 export default function Settings() {
   const { user, loading, signOut } = useAuth();
@@ -94,6 +95,20 @@ export default function Settings() {
 
       {/* Location & niches */}
       <LocationNichesCard />
+
+      {/* TikTok connection */}
+      <Card className="border-border/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Music2 className="h-4 w-4" />
+            Redes Sociais
+          </CardTitle>
+          <CardDescription className="text-xs">Conecte sua conta do TikTok para postar vídeos</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ConnectTikTok />
+        </CardContent>
+      </Card>
 
       <Card className="border-border/30">
         <CardHeader className="pb-3">

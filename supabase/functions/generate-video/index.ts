@@ -9,9 +9,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 //   step="clip"   → gera UM clipe de vídeo (8s) via fal.ai a partir do prompt da cena
 //
 // Chaves (Deno.env / Supabase secrets):
-//   LOVABLE_API_KEY → já configurada (usada pelo ai-copilot). Gera o roteiro de graça.
-//   FAL_KEY         → chave da fal.ai. SE AUSENTE, a função cai em MODO DEMO
-//                     (retorna clipe placeholder) — o app nunca quebra.
+//   OPENAI_API_KEY → chave da OpenAI. Gera o roteiro (copy das cenas).
+//   OPENAI_MODEL   → opcional. Modelo do GPT (default: gpt-4o).
+//   FAL_KEY        → chave da fal.ai. SE AUSENTE, a função cai em MODO DEMO
+//                    (retorna clipe placeholder) — o app nunca quebra.
 // =============================================================================
 
 const corsHeaders = {
@@ -28,7 +29,7 @@ const FAL_MODEL = "fal-ai/bytedance/seedance/v1/lite/text-to-video";
 const DEMO_CLIP_URL =
   "https://storage.googleapis.com/falserverless/example_outputs/seedance_v1_lite_t2v.mp4";
 
-const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
 type Scene = { n: number; narration: string; visual_prompt: string; on_screen: string };
 
@@ -39,8 +40,9 @@ async function generateScript(opts: {
   personaName: string;
   personaDescription: string;
 }): Promise<{ hook: string; scenes: Scene[]; caption: string }> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
+  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY não configurada");
+  const OPENAI_MODEL = Deno.env.get("OPENAI_MODEL") ?? "gpt-4o";
 
   const system = `Você é roteirista de vídeos de venda virais pro TikTok Shop brasileiro.
 Cria roteiros que vendem em 24 segundos (3 cenas de 8s), no estilo UGC nativo do TikTok.
@@ -64,19 +66,20 @@ Estilo da persona: ${opts.personaDescription}
 
 Gera o roteiro de 3 cenas de 8s pra essa persona vender esse produto no TikTok Shop.`;
 
-  const res = await fetch(LOVABLE_GATEWAY, {
+  const res = await fetch(OPENAI_API_URL, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: OPENAI_MODEL,
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
       ],
       temperature: 0.8,
+      response_format: { type: "json_object" },
     }),
   });
 
