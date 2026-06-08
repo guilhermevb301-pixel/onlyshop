@@ -8,7 +8,7 @@ import { StoriesBar } from "@/components/feed/StoriesBar";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { Loader2, Sparkles, MessageSquare, Users2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGamification } from "@/hooks/useGamification";
@@ -64,6 +64,7 @@ export default function Feed() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { addPoints } = useGamification();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -233,7 +234,9 @@ export default function Feed() {
     toast({ title: "Seguindo!", description: "Você começou a seguir este usuário" });
   };
 
-  const handleProfileClick = () => { };
+  const handleProfileClick = (post: PostData) => {
+    if (post.profile?.username) navigate(`/u/${post.profile.username}`);
+  };
 
   if (loading) {
     return (
@@ -297,7 +300,7 @@ export default function Feed() {
                 onShare={() => handleShare(post)}
                 onSave={() => handleSave(post.id)}
                 onFollow={handleFollow}
-                onProfileClick={handleProfileClick}
+                onProfileClick={() => handleProfileClick(post)}
               />
             </div>
           ))}

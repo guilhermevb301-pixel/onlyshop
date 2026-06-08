@@ -60,9 +60,7 @@ export function CommunityCard({ community, onJoinLeave }: CommunityCardProps) {
   };
 
   const handleCardClick = () => {
-    if (community.isMember) {
-      navigate(`/communities/${community.id}`);
-    }
+    navigate(`/communities/${community.id}`);
   };
 
   return (
@@ -70,7 +68,7 @@ export function CommunityCard({ community, onJoinLeave }: CommunityCardProps) {
       onClick={handleCardClick}
       className={cn(
         "rounded-2xl border border-border overflow-hidden bg-card dark:bg-white/[0.03] dark:backdrop-blur-2xl dark:border-white/[0.08] transition-all duration-200 animate-fade-in",
-        community.isMember && "cursor-pointer active:scale-[0.98]"
+        "cursor-pointer active:scale-[0.98]"
       )}
     >
       {/* Cover */}

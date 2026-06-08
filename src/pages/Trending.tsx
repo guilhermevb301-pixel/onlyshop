@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,6 +32,7 @@ const STATES = ["", "SP", "RJ", "MG", "RS", "PR", "BA", "SC", "PE", "CE", "GO", 
 
 export default function Trending() {
   const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<TrendingProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"1" | "7" | "30">("7");
@@ -103,7 +104,11 @@ export default function Trending() {
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {products.map((p, i) => (
-            <Card key={p.product_id} className="border-border/30 overflow-hidden">
+            <Card
+              key={p.product_id}
+              onClick={() => navigate("/products")}
+              className="border-border/30 overflow-hidden cursor-pointer hover:border-border/60 transition-colors active:scale-[0.98]"
+            >
               <div className="aspect-square bg-muted/30 relative">
                 {p.image_url ? (
                   <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />

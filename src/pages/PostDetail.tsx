@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,6 +30,12 @@ export default function PostDetail() {
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [sending, setSending] = useState(false);
+  const commentInputRef = useRef<HTMLInputElement>(null);
+
+  const focusComment = () => {
+    commentInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    commentInputRef.current?.focus();
+  };
 
   useEffect(() => { if (id) load(); }, [id, user?.id]);
 
@@ -132,7 +138,11 @@ export default function PostDetail() {
       <div className="max-w-2xl mx-auto p-4 space-y-4">
         <Card className="overflow-hidden bg-card/40 backdrop-blur-2xl border-white/10">
           {/* Author */}
-          <Link to={author?.username ? `/u/${author.username}` : "#"} className="flex items-center gap-3 p-4">
+          <Link
+            to={author?.username ? `/u/${author.username}` : "#"}
+            onClick={(e) => { if (!author?.username) e.preventDefault(); }}
+            className="flex items-center gap-3 p-4"
+          >
             <Avatar className="w-10 h-10">
               <AvatarImage src={author?.avatar_url || undefined} />
               <AvatarFallback>{author?.display_name?.[0] || "U"}</AvatarFallback>
@@ -164,7 +174,7 @@ export default function PostDetail() {
             <Button variant="ghost" size="sm" onClick={toggleLike} className={liked ? "text-red-500" : ""}>
               <Heart className={`w-5 h-5 mr-1 ${liked ? "fill-current" : ""}`} /> {post.likes_count}
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={focusComment}>
               <MessageCircle className="w-5 h-5 mr-1" /> {post.comments_count}
             </Button>
             <Button variant="ghost" size="sm" onClick={share} className="ml-auto">
@@ -203,6 +213,7 @@ export default function PostDetail() {
         <div className="fixed bottom-16 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border/40 p-3">
           <div className="max-w-2xl mx-auto flex items-center gap-2">
             <Input
+              ref={commentInputRef}
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Comentar..."

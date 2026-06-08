@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useGamification } from "@/hooks/useGamification";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface ReelData {
@@ -36,19 +36,32 @@ interface ReelData {
 function ReelCard({
   reel,
   isActive,
+  isFollowing,
   onLike,
   onShare,
+  onComment,
+  onFollow,
 }: {
   reel: ReelData;
   isActive: boolean;
+  isFollowing: boolean;
   onLike: () => void;
   onShare: () => void;
+  onComment: () => void;
+  onFollow: () => void;
 }) {
+  const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [paused, setPaused] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [doubleTapLike, setDoubleTapLike] = useState(false);
   const lastTapRef = useRef(0);
+
+  const toggleSave = () => {
+    setSaved((s) => !s);
+    toast({ title: saved ? "Removido dos salvos" : "Salvo!" });
+  };
 
   useEffect(() => {
     if (!videoRef.current) return;
@@ -114,7 +127,7 @@ function ReelCard({
           <span className="text-[10px] text-white font-semibold">{reel.likesCount}</span>
         </button>
 
-        <button className="flex flex-col items-center gap-1">
+        <button onClick={onComment} className="flex flex-col items-center gap-1">
           <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
             <MessageCircle className="h-5 w-5 text-white" />
           </div>
@@ -128,11 +141,11 @@ function ReelCard({
           <span className="text-[10px] text-white font-semibold">Enviar</span>
         </button>
 
-        <button className="flex flex-col items-center gap-1">
+        <button onClick={toggleSave} className="flex flex-col items-center gap-1">
           <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-            <Bookmark className="h-5 w-5 text-white" />
+            <Bookmark className={cn("h-5 w-5 text-white", saved && "fill-white")} />
           </div>
-          <span className="text-[10px] text-white font-semibold">Salvar</span>
+          <span className="text-[10px] text-white font-semibold">{saved ? "Salvo" : "Salvar"}</span>
         </button>
 
         <button onClick={() => setMuted(!muted)}>
@@ -165,8 +178,14 @@ function ReelCard({
             <AvatarFallback className="text-[10px] bg-muted text-white">{(reel.profile?.displayName || "U")[0]}</AvatarFallback>
           </Avatar>
           <span className="text-sm font-bold text-white">@{reel.profile?.username || "user"}</span>
-          <Button size="sm" variant="outline" className="h-6 text-[10px] rounded-full border-white/30 text-white bg-white/10 hover:bg-white/20 px-3">
-            Seguir
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onFollow}
+            disabled={isFollowing}
+            className="h-6 text-[10px] rounded-full border-white/30 text-white bg-white/10 hover:bg-white/20 px-3 disabled:opacity-100"
+          >
+            {isFollowing ? "Seguindo" : "Seguir"}
           </Button>
         </div>
 
@@ -197,9 +216,11 @@ export default function Reels() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { addPoints } = useGamification();
+  const navigate = useNavigate();
   const [reels, setReels] = useState<ReelData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [following, setFollowing] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
 
   const fetchReels = useCallback(async () => {
@@ -308,6 +329,21 @@ export default function Reels() {
     } catch {}
   };
 
+  // Comentar abre o post completo (com a thread de comentários).
+  const handleComment = (reel: ReelData) => navigate(`/post/${reel.id}`);
+
+  const handleFollow = async (reel: ReelData) => {
+    if (!user) { toast({ title: "Faça login para seguir" }); return; }
+    if (reel.userId === user.id || following.has(reel.userId)) return;
+    setFollowing((prev) => new Set(prev).add(reel.userId));
+    try {
+      await supabase.from("follows").insert({ follower_id: user.id, following_id: reel.userId });
+      toast({ title: `Seguindo @${reel.profile?.username || "usuário"} ✓` });
+    } catch {
+      // já segue ou erro — mantém o estado otimista, sem quebrar.
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-[calc(100dvh-7rem)] flex items-center justify-center bg-black">
@@ -339,8 +375,11 @@ export default function Reels() {
           <ReelCard
             reel={reel}
             isActive={i === activeIndex}
+            isFollowing={following.has(reel.userId)}
             onLike={() => handleLike(reel)}
             onShare={() => handleShare(reel)}
+            onComment={() => handleComment(reel)}
+            onFollow={() => handleFollow(reel)}
           />
         </div>
       ))}

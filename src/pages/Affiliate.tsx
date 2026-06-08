@@ -168,7 +168,7 @@ export default function Affiliate() {
       <div className="h-14 w-14 rounded-2xl bg-primary/5 flex items-center justify-center"><TrendingUp className="h-5 w-5 text-primary/50" /></div>
       <h2 className="text-base font-bold">Torne-se Afiliado</h2>
       <p className="text-xs text-muted-foreground/40 max-w-xs">Upgrade para Partner ou superior</p>
-      <Button asChild size="sm" className="mt-2 rounded-full"><Link to="/#plans">Ver Planos</Link></Button>
+      <Button asChild size="sm" className="mt-2 rounded-full"><a href="/#plans">Ver Planos</a></Button>
     </div>
   );
 

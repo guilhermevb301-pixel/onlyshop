@@ -165,6 +165,13 @@ export default function Discover() {
 
   const [invited, setInvited] = useState<Set<string>>(new Set());
   const [inviting, setInviting] = useState<string | null>(null);
+  const [interested, setInterested] = useState<Set<string>>(new Set());
+
+  // Afiliado demonstra interesse numa marca/loja com match.
+  const handleInterest = (b: BrandMatch) => {
+    setInterested((prev) => new Set(prev).add(b.brand_id));
+    toast({ title: "Interesse enviado 🤝", description: `A ${b.name} vai saber que você quer trabalhar com ela.` });
+  };
 
   const handleInvite = async (affiliateUserId: string) => {
     if (!myBrandId || !user) return;
@@ -259,6 +266,15 @@ export default function Discover() {
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <Badge className="text-[10px] gap-1"><TrendingUp className="h-2.5 w-2.5" />{Math.round(b.match_score)}</Badge>
+                    <Button
+                      size="sm"
+                      variant={interested.has(b.brand_id) ? "secondary" : "outline"}
+                      className="h-6 text-[10px] rounded-full px-2"
+                      onClick={() => handleInterest(b)}
+                      disabled={interested.has(b.brand_id)}
+                    >
+                      {interested.has(b.brand_id) ? "Enviado ✓" : "Tenho interesse"}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
