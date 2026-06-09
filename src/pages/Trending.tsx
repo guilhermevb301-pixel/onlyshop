@@ -91,7 +91,9 @@ export default function Trending() {
   const fetchTrends = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/trends?type=${tab}&country=${country}&period=${period}&limit=24`);
+      // Lê o snapshot real (gerado pelo script refresh-trends, servido pela CDN).
+      const res = await fetch(`/trends-data/${tab}-${country}.json`, { cache: "no-cache" });
+      if (!res.ok) throw new Error("sem dados");
       const data = await res.json();
       const items: any[] = Array.isArray(data?.items) ? data.items : [];
       const demo = !items.length;
