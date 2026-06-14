@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import {
-  LayoutGrid, MapPin, BadgeDollarSign, Wallet, User, Megaphone,
+  LayoutGrid, MapPin, BadgeDollarSign, Wallet, User, Megaphone, Rocket,
   PanelLeftClose, PanelLeft, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,11 +19,13 @@ const INFLUENCER_NAV: Item[] = [
   { to: "/affiliate", icon: BadgeDollarSign, label: "Meus ganhos", accent: true },
   { to: "/wallet", icon: Wallet, label: "Carteira" },
   { to: "/profile", icon: User, label: "Perfil" },
+  { to: "/em-breve", icon: Rocket, label: "Em breve" },
 ];
 const BRAND_NAV: Item[] = [
   { to: "/brands", icon: Megaphone, label: "Minhas campanhas", accent: true },
   { to: "/wallet", icon: Wallet, label: "Carteira" },
   { to: "/profile", icon: User, label: "Perfil" },
+  { to: "/em-breve", icon: Rocket, label: "Em breve" },
 ];
 
 export function Sidebar() {

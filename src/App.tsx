@@ -27,6 +27,7 @@ import Privacy from "./pages/Privacy";
 import Wallet from "./pages/Wallet";
 import Inicio from "./pages/Inicio";
 import Mapa from "./pages/Mapa";
+import EmBreve from "./pages/EmBreve";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/em-breve" element={<EmBreve />} />
             </Route>
 
             {/* Catch-all */}
