@@ -97,9 +97,9 @@ export default function Checkout() {
         <div className="flex flex-col gap-2">
           <Button
             className="bg-gradient-primary border-0 rounded-xl h-12 font-semibold"
-            onClick={() => navigate("/discover")}
+            onClick={() => navigate("/brands")}
           >
-            Ver creators perto de você
+            Ver minhas campanhas
           </Button>
           <Button variant="outline" className="rounded-xl" onClick={() => navigate("/inicio")}>
             Voltar ao início
@@ -117,7 +117,7 @@ export default function Checkout() {
         const ref = demoId("camp");
         demo.addCredit({
           id: demoId("cr"),
-          user_id: user.id,
+          user_id: campaign.brand_id,
           kind: "topup",
           amount: total,
           campaign_id: campaign.campaign_id,
@@ -128,7 +128,7 @@ export default function Checkout() {
         });
         demo.addCredit({
           id: demoId("cr"),
-          user_id: user.id,
+          user_id: campaign.brand_id,
           kind: "campaign_hold",
           amount: -total,
           campaign_id: campaign.campaign_id,
@@ -281,7 +281,7 @@ export default function Checkout() {
 
       <p className="text-center text-[11px] text-muted-foreground/40">
         Sem campanha definida?{" "}
-        <Link to="/discover" className="text-primary hover:underline">
+        <Link to="/brands" className="text-primary hover:underline">
           Volte e escolha uma
         </Link>
       </p>

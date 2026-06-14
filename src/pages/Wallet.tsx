@@ -88,7 +88,7 @@ export default function Wallet() {
     if (!user) return;
     // Demo: a carteira reflete o MESMO ledger de "Meus Ganhos" (platform_credits).
     if (demoMode) {
-      const mapped: WalletTransaction[] = demo.credits().map((c) => ({
+      const mapped: WalletTransaction[] = demo.credits(user.id).map((c) => ({
         id: c.id,
         type: c.kind === "withdrawal" ? "withdrawal" : c.kind === "platform_fee" ? "refund" : c.amount >= 0 ? "commission" : "withdrawal",
         amount: c.amount,
@@ -113,7 +113,7 @@ export default function Wallet() {
 
   // Saldo: no demo usa o ledger de split; no real, soma das transações concluídas.
   const balance = demoMode
-    ? demo.balance()
+    ? demo.balance(user?.id)
     : transactions.filter(t => t.status === "completed").reduce((sum, t) => sum + Number(t.amount), 0);
 
   const pendingBalance = transactions

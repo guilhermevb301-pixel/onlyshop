@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { Bell, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
-import { CartSheet } from "@/components/cart/CartSheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -42,7 +41,7 @@ export function TopBar() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
             <input
               type="text"
-              placeholder="Buscar produto, influencer..."
+              placeholder="Buscar campanha, marca, cidade..."
               className="w-full h-9 pl-10 pr-4 rounded-full bg-white/[0.04] border-0 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/40"
             />
           </div>
@@ -56,8 +55,6 @@ export function TopBar() {
           <Button variant="ghost" size="icon" className="md:hidden h-9 w-9 rounded-full text-muted-foreground">
             <Search className="h-4 w-4" />
           </Button>
-
-          <CartSheet />
 
           {/* Notificações */}
           <DropdownMenu>

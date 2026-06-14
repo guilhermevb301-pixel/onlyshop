@@ -17,7 +17,7 @@ export function useCampaignApplications() {
     try {
       if (demo.isOn() || !user) {
         setApplications(demo.apps());
-        setBalance(demo.balance());
+        setBalance(demo.balance(user?.id));
         return;
       }
       const { data } = await supabase
@@ -33,7 +33,7 @@ export function useCampaignApplications() {
       setBalance(((credits as any[]) || []).reduce((s, c) => s + Number(c.amount || 0), 0));
     } catch {
       setApplications(demo.apps());
-      setBalance(demo.balance());
+      setBalance(demo.balance(user?.id));
     } finally {
       setLoading(false);
     }

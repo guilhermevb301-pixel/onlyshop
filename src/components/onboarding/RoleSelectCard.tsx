@@ -20,7 +20,7 @@ const OPTIONS: {
     role: "brand",
     icon: Building2,
     title: "Sou loja / marca",
-    desc: "Quero creators vendendo meus produtos com IA — sem precisar aparecer.",
+    desc: "Quero influencers da minha região divulgando meus produtos.",
     accent: "primary",
   },
   {

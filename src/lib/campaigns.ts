@@ -172,9 +172,16 @@ export const demo = {
     write(APPS_KEY, read<CampaignApplication>(APPS_KEY).map((a) => (a.id === id ? { ...a, ...patch } : a)));
   },
   // ledger de créditos (split)
-  credits(): PlatformCredit[] { return read<PlatformCredit>(CREDITS_KEY); },
+  credits(uid?: string): PlatformCredit[] {
+    const all = read<PlatformCredit>(CREDITS_KEY);
+    return uid ? all.filter((c) => c.user_id === uid) : all;
+  },
   addCredit(c: PlatformCredit) { write(CREDITS_KEY, [c, ...read<PlatformCredit>(CREDITS_KEY)]); },
-  balance(): number { return read<PlatformCredit>(CREDITS_KEY).reduce((s, c) => s + (c.amount || 0), 0); },
+  // Saldo de UM usuário (payout entra, withdrawal sai). Sem uid soma tudo (compat).
+  balance(uid?: string): number {
+    const all = read<PlatformCredit>(CREDITS_KEY);
+    return (uid ? all.filter((c) => c.user_id === uid) : all).reduce((s, c) => s + (c.amount || 0), 0);
+  },
   // campanhas criadas pelo lojista em demo
   myCampaigns(): Campaign[] { return read<Campaign>(MY_CAMPAIGNS_KEY); },
   addCampaign(c: Campaign) { write(MY_CAMPAIGNS_KEY, [c, ...read<Campaign>(MY_CAMPAIGNS_KEY)]); },

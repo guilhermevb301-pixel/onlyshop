@@ -58,7 +58,7 @@ export default function Auth() {
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 h-9 p-0.5 bg-muted/30 rounded-full border-0 mb-5">
               <TabsTrigger value="login" className="rounded-full text-xs">Entrar</TabsTrigger>
-              <TabsTrigger value="signup" className="rounded-full text-xs">Entrar pra dentro</TabsTrigger>
+              <TabsTrigger value="signup" className="rounded-full text-xs">Criar conta</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login" className="mt-0">
@@ -126,7 +126,7 @@ export default function Auth() {
                   </div>
                 </div>
                 <Button type="submit" className="w-full rounded-xl h-11 bg-foreground text-background hover:bg-foreground/90 text-sm font-semibold" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Entrar pra dentro"}
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Criar conta"}
                 </Button>
                 <p className="text-[10px] text-center text-muted-foreground/30">
                   Ao criar conta, você concorda com nossos{" "}

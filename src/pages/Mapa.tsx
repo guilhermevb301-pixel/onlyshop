@@ -23,7 +23,19 @@ export default function Mapa() {
   const { user, loading: authLoading } = useAuth();
   const { loading: geoLoading, requestBrowserLocation, reverseGeocode, forwardGeocode } = useGeolocation();
 
-  const [loc, setLoc] = useState<GeoLocation | null>(null);
+  // Reaproveita a localização salva no onboarding (não pede de novo).
+  const [loc, setLoc] = useState<GeoLocation | null>(() => {
+    try {
+      const raw = localStorage.getItem("onlyshop_demo_location");
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d?.lat != null && d?.lon != null) {
+          return { latitude: d.lat, longitude: d.lon, city: d.city ?? undefined, state: d.state ?? undefined };
+        }
+      }
+    } catch { /* ignora */ }
+    return null;
+  });
   const [view, setView] = useState<View>("map");
   const [selected, setSelected] = useState<CampaignNear | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);

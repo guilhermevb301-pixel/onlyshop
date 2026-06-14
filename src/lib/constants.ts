@@ -1,6 +1,6 @@
 // App constants
 export const APP_NAME = "Only Shop";
-export const APP_TAGLINE = "Vender com IA, sem aparecer. E sem fazer sozinho.";
+export const APP_TAGLINE = "Conecta marcas e influencers perto de você.";
 
 // Plan tiers
 export const PLAN_TIERS = {
