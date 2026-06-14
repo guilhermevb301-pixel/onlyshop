@@ -1,7 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  demo, demoId,
+  type Campaign, type CampaignApplication,
+  PLATFORM_FEE_PCT, computeBudget, computeSplit,
+} from "@/lib/campaigns";
 
+// Marca do lojista. Demo grava em localStorage; real em brands (Supabase).
 export interface Brand {
   id: string;
   user_id: string;
@@ -10,11 +16,20 @@ export interface Brand {
   description: string | null;
   logo_url: string | null;
   website: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  city?: string | null;
+  state?: string | null;
   verified: boolean;
   status: string;
   created_at: string;
 }
 
+// Re-exporta o contrato canônico — quem importa Campaign daqui pega o mesmo de @/lib/campaigns.
+export type { Campaign } from "@/lib/campaigns";
+
+// Compat: tipo legado usado por componentes antigos de produto (ProductCard/EditProductSheet,
+// fora do modelo de campanha localizada). Mantido só pra não quebrar a compilação deles.
 export interface Product {
   id: string;
   brand_id: string;
@@ -32,123 +47,291 @@ export interface Product {
   created_at: string;
 }
 
-export interface Campaign {
-  id: string;
-  brand_id: string;
-  product_id: string | null;
+// Input do lojista ao criar um gig (campanha localizada).
+export interface CreateCampaignInput {
   name: string;
-  description: string | null;
-  starts_at: string;
-  ends_at: string | null;
-  bonus_percentage: number;
-  max_affiliates: number | null;
-  status: string;
-  created_at: string;
+  description?: string | null;
+  reward_amount: number;
+  slots: number;
+  target_city?: string | null;
+  target_state?: string | null;
+  target_gender: Campaign["target_gender"];
+  min_followers: number;
+  deadline_hours: number;
+  physical_item?: string | null;
+}
+
+const DEMO_BRAND_KEY = "onlyshop_demo_brand";
+
+function readDemoBrand(): Brand | null {
+  try {
+    const r = localStorage.getItem(DEMO_BRAND_KEY);
+    return r ? (JSON.parse(r) as Brand) : null;
+  } catch {
+    return null;
+  }
+}
+function writeDemoBrand(b: Brand) {
+  localStorage.setItem(DEMO_BRAND_KEY, JSON.stringify(b));
 }
 
 export function useBrand() {
   const { user } = useAuth();
   const [brand, setBrand] = useState<Brand | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [applications, setApplications] = useState<CampaignApplication[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchBrand = async () => {
-    if (!user) { setLoading(false); return; }
+  const fetchCampaigns = useCallback(async (brandId: string) => {
+    if (demo.isOn()) {
+      setCampaigns(demo.myCampaigns().filter((c) => c.brand_id === brandId));
+      return;
+    }
     try {
+      const { data } = await supabase
+        .from("campaigns" as any)
+        .select("*")
+        .eq("brand_id", brandId)
+        .order("created_at", { ascending: false });
+      setCampaigns(((data as unknown as Campaign[]) || []));
+    } catch {
+      setCampaigns(demo.myCampaigns().filter((c) => c.brand_id === brandId));
+    }
+  }, []);
+
+  // Candidaturas recebidas (em todas as campanhas da marca) — pra aprovar entregas.
+  const fetchApplications = useCallback(async (campaignIds: string[]) => {
+    if (campaignIds.length === 0) { setApplications([]); return; }
+    if (demo.isOn()) {
+      setApplications(demo.apps().filter((a) => campaignIds.includes(a.campaign_id)));
+      return;
+    }
+    try {
+      const { data } = await supabase
+        .from("campaign_applications" as any)
+        .select("*")
+        .in("campaign_id", campaignIds)
+        .order("created_at", { ascending: false });
+      setApplications(((data as unknown as CampaignApplication[]) || []));
+    } catch {
+      setApplications(demo.apps().filter((a) => campaignIds.includes(a.campaign_id)));
+    }
+  }, []);
+
+  const fetchBrand = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (demo.isOn() || !user) {
+        const b = readDemoBrand();
+        setBrand(b);
+        if (b) {
+          const camps = demo.myCampaigns().filter((c) => c.brand_id === b.id);
+          setCampaigns(camps);
+          setApplications(demo.apps().filter((a) => camps.some((c) => c.id === a.campaign_id)));
+        }
+        return;
+      }
       const { data } = await supabase
         .from("brands")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
-      setBrand(data as Brand | null);
-      if (data) {
-        await Promise.all([fetchProducts(data.id), fetchCampaigns(data.id)]);
+      const b = (data as Brand | null) ?? null;
+      setBrand(b);
+      if (b) {
+        await fetchCampaigns(b.id);
       }
     } catch (e) {
       console.error("Error fetching brand:", e);
+      // Fallback demo.
+      const b = readDemoBrand();
+      setBrand(b);
     } finally {
       setLoading(false);
     }
+  }, [user, fetchCampaigns]);
+
+  // Sempre que mudam as campanhas, recarrega as candidaturas delas.
+  useEffect(() => {
+    if (brand) fetchApplications(campaigns.map((c) => c.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaigns]);
+
+  const createBrand = async (input: {
+    name: string; slug: string; description?: string; logo_url?: string; website?: string;
+  }): Promise<Brand | null> => {
+    // Demo: grava a marca no localStorage (demoUser não existe em auth.users).
+    if (demo.isOn() || !user) {
+      const b: Brand = {
+        id: demoId("brand"),
+        user_id: user?.id || "demo",
+        name: input.name,
+        slug: input.slug,
+        description: input.description ?? null,
+        logo_url: input.logo_url ?? null,
+        website: input.website ?? null,
+        latitude: null,
+        longitude: null,
+        city: null,
+        state: null,
+        verified: false,
+        status: "active",
+        created_at: new Date().toISOString(),
+      };
+      writeDemoBrand(b);
+      setBrand(b);
+      return b;
+    }
+    try {
+      const { data, error } = await supabase
+        .from("brands")
+        .insert({ ...input, user_id: user.id } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      setBrand(data as Brand);
+      return data as Brand;
+    } catch (e) {
+      console.error("createBrand:", e);
+      throw e;
+    }
   };
 
-  const fetchProducts = async (brandId: string) => {
-    const { data } = await supabase
-      .from("products")
-      .select("*")
-      .eq("brand_id", brandId)
-      .order("created_at", { ascending: false });
-    setProducts((data as Product[]) || []);
-  };
-
-  const fetchCampaigns = async (brandId: string) => {
-    const { data } = await supabase
-      .from("campaigns")
-      .select("*")
-      .eq("brand_id", brandId)
-      .order("created_at", { ascending: false });
-    setCampaigns((data as Campaign[]) || []);
-  };
-
-  const createBrand = async (input: { name: string; slug: string; description?: string; logo_url?: string; website?: string }) => {
-    if (!user) return null;
-    const { data, error } = await supabase
-      .from("brands")
-      .insert({ ...input, user_id: user.id })
-      .select()
-      .single();
-    if (error) throw error;
-    setBrand(data as Brand);
-    return data;
-  };
-
-  const createProduct = async (input: Omit<Product, "id" | "created_at" | "brand_id"> & { brand_id?: string }) => {
+  // Cria um gig localizado. Já calcula total_budget (base + fee da plataforma).
+  const createCampaign = async (input: CreateCampaignInput): Promise<Campaign | null> => {
     if (!brand) return null;
-    const { data, error } = await supabase
-      .from("products")
-      .insert({ ...input, brand_id: brand.id })
-      .select()
-      .single();
-    if (error) throw error;
-    setProducts((prev) => [data as Product, ...prev]);
-    return data;
+    const { total } = computeBudget(input.slots, input.reward_amount);
+    const base: Campaign = {
+      id: demoId("camp"),
+      brand_id: brand.id,
+      name: input.name,
+      description: input.description ?? null,
+      reward_type: "per_video",
+      reward_amount: input.reward_amount,
+      slots: input.slots,
+      slots_filled: 0,
+      target_city: input.target_city ?? null,
+      target_state: input.target_state ?? null,
+      target_gender: input.target_gender,
+      min_followers: input.min_followers,
+      deadline_hours: input.deadline_hours,
+      physical_item: input.physical_item ?? null,
+      platform_fee_pct: PLATFORM_FEE_PCT,
+      total_budget: total,
+      funded: false, // pago só depois (CampaignPaymentStep)
+      status: "active",
+    };
+
+    if (demo.isOn() || !user) {
+      demo.addCampaign(base);
+      setCampaigns((prev) => [base, ...prev]);
+      return base;
+    }
+    try {
+      const { data, error } = await supabase
+        .from("campaigns" as any)
+        .insert({
+          brand_id: brand.id,
+          name: base.name,
+          description: base.description,
+          reward_type: base.reward_type,
+          reward_amount: base.reward_amount,
+          slots: base.slots,
+          slots_filled: 0,
+          target_city: base.target_city,
+          target_state: base.target_state,
+          target_gender: base.target_gender,
+          min_followers: base.min_followers,
+          deadline_hours: base.deadline_hours,
+          physical_item: base.physical_item,
+          platform_fee_pct: base.platform_fee_pct,
+          total_budget: base.total_budget,
+          funded: false,
+          status: "active",
+        } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      const created = data as unknown as Campaign;
+      setCampaigns((prev) => [created, ...prev]);
+      return created;
+    } catch (e) {
+      console.error("createCampaign (fallback demo):", e);
+      demo.addCampaign(base);
+      setCampaigns((prev) => [base, ...prev]);
+      return base;
+    }
   };
 
-  const createCampaign = async (input: Partial<Campaign>) => {
-    if (!brand) return null;
-    const { data, error } = await supabase
-      .from("campaigns")
-      .insert({ ...input, brand_id: brand.id } as any)
-      .select()
-      .single();
-    if (error) throw error;
-    setCampaigns((prev) => [data as Campaign, ...prev]);
-    return data;
-  };
+  // Marca a campanha como paga/ativa (chamado pelo CampaignPaymentStep).
+  const markCampaignFunded = useCallback(async (campaignId: string) => {
+    setCampaigns((prev) => prev.map((c) => (c.id === campaignId ? { ...c, funded: true } : c)));
+    if (demo.isOn() || !user) {
+      // Persiste no localStorage de campanhas demo.
+      const all = demo.myCampaigns().map((c) => (c.id === campaignId ? { ...c, funded: true } : c));
+      localStorage.setItem("onlyshop_demo_my_campaigns", JSON.stringify(all));
+      return;
+    }
+    try {
+      await supabase
+        .from("campaigns" as any)
+        .update({ funded: true } as any)
+        .eq("id", campaignId);
+    } catch (e) {
+      console.error("markCampaignFunded:", e);
+    }
+  }, [user]);
 
-  const deleteProduct = async (id: string) => {
-    const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) throw error;
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-  };
+  // Aprova uma entrega: split 80/20 vira créditos no ledger (demo).
+  const approveApplication = useCallback(async (app: CampaignApplication, reward: number) => {
+    if (demo.isOn() || !user) {
+      demo.updateApp(app.id, { status: "approved" });
+      const split = computeSplit(reward);
+      const now = new Date().toISOString();
+      // Payout 80% pro influencer.
+      demo.addCredit({
+        id: demoId("cr"),
+        user_id: app.influencer_user_id,
+        kind: "payout",
+        amount: split.influencer,
+        campaign_id: app.campaign_id,
+        status: "completed",
+        provider: null,
+        provider_ref: null,
+        created_at: now,
+      });
+      // Fee 20% pra plataforma.
+      demo.addCredit({
+        id: demoId("cr"),
+        user_id: "platform",
+        kind: "platform_fee",
+        amount: split.platform,
+        campaign_id: app.campaign_id,
+        status: "completed",
+        provider: null,
+        provider_ref: null,
+        created_at: now,
+      });
+      setApplications((prev) => prev.map((a) => (a.id === app.id ? { ...a, status: "approved" } : a)));
+      return;
+    }
+    try {
+      await supabase
+        .from("campaign_applications" as any)
+        .update({ status: "approved", updated_at: new Date().toISOString() } as any)
+        .eq("id", app.id);
+      // TODO Mercado Pago: edge function release-payout (split 80/20 via platform_credits).
+      setApplications((prev) => prev.map((a) => (a.id === app.id ? { ...a, status: "approved" } : a)));
+    } catch (e) {
+      console.error("approveApplication:", e);
+    }
+  }, [user]);
 
-  const updateProduct = async (id: string, input: Partial<Product>) => {
-    const { data, error } = await supabase
-      .from("products")
-      .update(input as any)
-      .eq("id", id)
-      .select()
-      .single();
-    if (error) throw error;
-    setProducts((prev) => prev.map((p) => (p.id === id ? (data as Product) : p)));
-    return data;
-  };
-
-  useEffect(() => { fetchBrand(); }, [user]);
+  useEffect(() => { fetchBrand(); }, [fetchBrand]);
 
   return {
-    brand, products, campaigns, loading,
-    createBrand, createProduct, createCampaign, deleteProduct, updateProduct,
+    brand, campaigns, applications, loading,
+    createBrand, createCampaign, markCampaignFunded, approveApplication,
     refetch: fetchBrand,
   };
 }

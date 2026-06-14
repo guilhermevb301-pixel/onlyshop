@@ -48,6 +48,22 @@ export function useGeolocation() {
     }
   }, []);
 
+  // Cidade/estado -> coordenadas (pra quem nega o GPS mas quer aparecer no mapa).
+  const forwardGeocode = useCallback(async (city: string, state?: string): Promise<GeoLocation | null> => {
+    try {
+      const q = encodeURIComponent([city, state, "Brasil"].filter(Boolean).join(", "));
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&accept-language=pt-BR`,
+        { headers: { Accept: "application/json" } }
+      );
+      const d = await r.json();
+      if (!d?.[0]) return null;
+      return { latitude: parseFloat(d[0].lat), longitude: parseFloat(d[0].lon), city, state };
+    } catch {
+      return null;
+    }
+  }, []);
+
   const saveLocation = useCallback(
     async (loc: Partial<GeoLocation> & { target?: "profile" | "brand"; brand_id?: string }) => {
       if (!user) return;
@@ -96,5 +112,5 @@ export function useGeolocation() {
     [requestBrowserLocation, reverseGeocode, saveLocation, toast]
   );
 
-  return { loading, requestBrowserLocation, reverseGeocode, saveLocation, detectAndSave };
+  return { loading, requestBrowserLocation, reverseGeocode, forwardGeocode, saveLocation, detectAndSave };
 }

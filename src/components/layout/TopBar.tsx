@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bell, Search, MessageSquare } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { CartSheet } from "@/components/cart/CartSheet";
@@ -56,12 +56,6 @@ export function TopBar() {
           <Button variant="ghost" size="icon" className="md:hidden h-9 w-9 rounded-full text-muted-foreground">
             <Search className="h-4 w-4" />
           </Button>
-
-          {user && (
-            <Button variant="ghost" size="icon" asChild className="h-9 w-9 rounded-full text-muted-foreground">
-              <Link to="/chat"><MessageSquare className="h-4 w-4" /></Link>
-            </Button>
-          )}
 
           <CartSheet />
 

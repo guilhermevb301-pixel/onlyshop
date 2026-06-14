@@ -19,6 +19,17 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
+import { demo, demoId, type CreditKind } from "@/lib/campaigns";
+
+// Rótulo de cada lançamento do ledger de créditos (demo).
+const CREDIT_LABEL: Record<CreditKind, string> = {
+  topup: "Recarga de crédito",
+  campaign_hold: "Reserva de campanha",
+  payout: "Pagamento de campanha",
+  platform_fee: "Taxa da plataforma",
+  refund: "Estorno",
+  withdrawal: "Saque PIX",
+};
 
 interface WalletTransaction {
   id: string;
@@ -71,8 +82,25 @@ export default function Wallet() {
     else setLoading(false);
   }, [user]);
 
+  const demoMode = demo.isOn();
+
   const fetchTransactions = async () => {
     if (!user) return;
+    // Demo: a carteira reflete o MESMO ledger de "Meus Ganhos" (platform_credits).
+    if (demoMode) {
+      const mapped: WalletTransaction[] = demo.credits().map((c) => ({
+        id: c.id,
+        type: c.kind === "withdrawal" ? "withdrawal" : c.kind === "platform_fee" ? "refund" : c.amount >= 0 ? "commission" : "withdrawal",
+        amount: c.amount,
+        status: "completed",
+        description: CREDIT_LABEL[c.kind] ?? "Lançamento",
+        pix_key: null, pix_key_type: null,
+        created_at: c.created_at, completed_at: c.created_at,
+      }));
+      setTransactions(mapped);
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from("wallet_transactions")
       .select("*")
@@ -83,10 +111,10 @@ export default function Wallet() {
     setLoading(false);
   };
 
-  // Calculate balance
-  const balance = transactions
-    .filter(t => t.status === "completed")
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+  // Saldo: no demo usa o ledger de split; no real, soma das transações concluídas.
+  const balance = demoMode
+    ? demo.balance()
+    : transactions.filter(t => t.status === "completed").reduce((sum, t) => sum + Number(t.amount), 0);
 
   const pendingBalance = transactions
     .filter(t => t.status === "pending" && t.type !== "withdrawal")
@@ -113,6 +141,18 @@ export default function Wallet() {
     }
     if (amount < 10) {
       toast({ variant: "destructive", title: "Valor mínimo", description: "O saque mínimo é R$ 10,00" });
+      return;
+    }
+
+    // Demo: registra o saque no ledger local (sem Mercado Pago).
+    if (demoMode) {
+      demo.addCredit({
+        id: demoId("wd"), user_id: user.id, kind: "withdrawal", amount: -amount,
+        status: "completed", created_at: new Date().toISOString(),
+      });
+      toast({ title: "Saque solicitado! 💸", description: `${fmt(amount)} via PIX a caminho.` });
+      setWithdrawAmount(""); setPixKey("");
+      fetchTransactions();
       return;
     }
 

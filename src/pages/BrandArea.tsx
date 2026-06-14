@@ -9,33 +9,37 @@ import { LogIn } from "lucide-react";
 
 export default function BrandArea() {
   const { user, loading: authLoading } = useAuth();
-  const { brand, products, campaigns, loading, createBrand, createProduct, createCampaign, deleteProduct, updateProduct } = useBrand();
+  const {
+    brand, campaigns, applications, loading,
+    createBrand, createCampaign, markCampaignFunded, approveApplication, refetch,
+  } = useBrand();
 
   if (authLoading || loading) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-6 space-y-4">
-        <Skeleton className="h-20 w-full rounded-2xl" />
-        <div className="grid grid-cols-3 gap-3">
-          <Skeleton className="h-24 rounded-xl" />
-          <Skeleton className="h-24 rounded-xl" />
-          <Skeleton className="h-24 rounded-xl" />
+      <div className="container max-w-2xl mx-auto px-4 py-6 space-y-4">
+        <Skeleton className="h-16 w-full rounded-2xl" />
+        <div className="grid grid-cols-3 gap-2">
+          <Skeleton className="h-20 rounded-2xl" />
+          <Skeleton className="h-20 rounded-2xl" />
+          <Skeleton className="h-20 rounded-2xl" />
         </div>
-        <Skeleton className="h-10 w-full rounded-xl" />
-        <div className="grid grid-cols-2 gap-3">
-          <Skeleton className="h-48 rounded-xl" />
-          <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-10 w-full rounded-full" />
+        <div className="space-y-3">
+          <Skeleton className="h-24 rounded-2xl" />
+          <Skeleton className="h-24 rounded-2xl" />
         </div>
       </div>
     );
   }
 
+  // Em modo real exige login; no demo o useBrand já cai no localStorage.
   if (!user) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
         <LogIn className="h-12 w-12 text-muted-foreground/30 mb-4" />
         <h2 className="text-xl font-display font-bold mb-2">Faça login para continuar</h2>
-        <p className="text-muted-foreground mb-6">Você precisa estar logado para acessar a área de marcas.</p>
-        <Button asChild className="bg-gradient-primary border-0 text-primary-foreground">
+        <p className="text-muted-foreground mb-6">Você precisa estar logado para acessar a área da loja.</p>
+        <Button asChild className="bg-gradient-primary border-0 text-primary-foreground rounded-full">
           <Link to="/auth">Entrar</Link>
         </Button>
       </div>
@@ -43,18 +47,17 @@ export default function BrandArea() {
   }
 
   if (!brand) {
-    return <BrandRegistration onRegister={createBrand} />;
+    return <BrandRegistration onRegister={createBrand} onDone={refetch} />;
   }
 
   return (
     <BrandDashboard
       brand={brand}
-      products={products}
       campaigns={campaigns}
-      onCreateProduct={createProduct}
+      applications={applications}
       onCreateCampaign={createCampaign}
-      onDeleteProduct={deleteProduct}
-      onUpdateProduct={updateProduct}
+      onFunded={markCampaignFunded}
+      onApprove={approveApplication}
     />
   );
 }

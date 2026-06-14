@@ -46,11 +46,8 @@ export function UserMenu({ variant = "icon" }: { variant?: "icon" | "full" }) {
         </div>
         <DropdownMenuSeparator className="bg-border/30" />
         <DropdownMenuItem asChild className="text-xs"><Link to="/profile">Meu Perfil</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild className="text-xs"><Link to="/wallet">Carteira</Link></DropdownMenuItem>
         <DropdownMenuItem asChild className="text-xs"><Link to="/settings">Configurações</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild className="text-xs"><Link to="/feed">Comunidade</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild className="text-xs"><Link to="/discover">Descobrir (Smart Match)</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild className="text-xs"><Link to="/invites">Convites de marcas</Link></DropdownMenuItem>
-        <DropdownMenuItem asChild className="text-xs"><Link to="/brands">Área de Marcas</Link></DropdownMenuItem>
         <DropdownMenuItem asChild className="text-xs"><Link to="/install">Instalar App</Link></DropdownMenuItem>
         {userRole?.role === "admin" && (
           <DropdownMenuItem asChild className="text-xs">

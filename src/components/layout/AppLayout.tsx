@@ -1,8 +1,10 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, Navigate } from "react-router-dom";
 import { TopBar } from "./TopBar";
 import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
 import { SidebarProvider, useSidebar } from "./SidebarContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { cn } from "@/lib/utils";
 
 export function AppLayout() {
@@ -15,6 +17,13 @@ export function AppLayout() {
 
 function Shell() {
   const { collapsed } = useSidebar();
+  const { user, loading } = useAuth();
+  const { needsOnboarding } = useOnboarding();
+
+  // Gate: logado mas sem papel/localização → manda pro onboarding antes de tudo.
+  if (!loading && user && needsOnboarding) {
+    return <Navigate to="/onboarding" replace />;
+  }
   return (
     <div className="min-h-[100dvh] bg-background relative">
       {/* Dark mode mesh background — matches landing page */}

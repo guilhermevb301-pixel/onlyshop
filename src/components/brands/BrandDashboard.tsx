@@ -1,107 +1,87 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Brand, Product, Campaign } from "@/hooks/useBrand";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo } from "react";
+import type { Brand, Campaign } from "@/hooks/useBrand";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ProductCard } from "./ProductCard";
-import { CreateProductSheet } from "./CreateProductSheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CampaignCard } from "@/components/campaigns/CampaignCard";
 import { CreateCampaignSheet } from "./CreateCampaignSheet";
-import { EditProductSheet } from "./EditProductSheet";
-import { CampaignAffiliatesSheet } from "./CampaignAffiliatesSheet";
-import { useCreatorCourses } from "@/hooks/useCourses";
-import { Package, Megaphone, Users, TrendingUp, Building2, Globe, CheckCircle2, Clock, DollarSign, ShoppingCart, GraduationCap, Plus, Eye } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  Building2, CheckCircle2, Globe, MapPin, Megaphone, Wallet,
+  Users, ExternalLink, CircleCheck, BadgeDollarSign,
+} from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import {
+  computeBudget, computeSplit, PLATFORM_FEE_PCT,
+  type CampaignApplication, type CampaignNear,
+} from "@/lib/campaigns";
 
 interface Props {
   brand: Brand;
-  products: Product[];
   campaigns: Campaign[];
-  onCreateProduct: (data: any) => Promise<any>;
-  onCreateCampaign: (data: any) => Promise<any>;
-  onDeleteProduct: (id: string) => Promise<void>;
-  onUpdateProduct: (id: string, data: Partial<Product>) => Promise<any>;
+  applications: CampaignApplication[];
+  onCreateCampaign: (data: any) => Promise<Campaign | null>;
+  onFunded: (campaignId: string) => Promise<void>;
+  onApprove: (app: CampaignApplication, reward: number) => Promise<void>;
 }
 
-interface BrandStats {
-  totalSales: number;
-  totalRevenue: number;
-  totalAffiliates: number;
-  activeProducts: number;
+// Converte a Campaign (lojista) no formato CampaignNear que o CampaignCard consome.
+function toNear(c: Campaign, brand: Brand): CampaignNear {
+  return {
+    campaign_id: c.id,
+    brand_id: c.brand_id,
+    brand_name: brand.name,
+    title: c.name,
+    reward_amount: c.reward_amount,
+    reward_type: c.reward_type,
+    slots: c.slots,
+    slots_filled: c.slots_filled,
+    target_city: c.target_city ?? null,
+    target_state: c.target_state ?? null,
+    physical_item: c.physical_item ?? null,
+    deadline_hours: c.deadline_hours,
+    distance_km: null as any, // dashboard do dono não mostra distância
+    brand_lat: brand.latitude ?? 0,
+    brand_lon: brand.longitude ?? 0,
+  };
 }
 
-export function BrandDashboard({ brand, products, campaigns, onCreateProduct, onCreateCampaign, onDeleteProduct, onUpdateProduct }: Props) {
-  const [stats, setStats] = useState<BrandStats>({ totalSales: 0, totalRevenue: 0, totalAffiliates: 0, activeProducts: 0 });
-  const [salesChart, setSalesChart] = useState<{ date: string; vendas: number; receita: number }[]>([]);
-  const [editProduct, setEditProduct] = useState<Product | null>(null);
-  const navigate = useNavigate();
-  const { courses, createCourse } = useCreatorCourses(brand.id);
-
-  const activeCampaigns = campaigns.filter((c) => c.status === "active");
-  const activeProducts = products.filter((p) => p.active);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      // Count affiliates across all campaigns
-      const campaignIds = campaigns.map((c) => c.id);
-      let totalAffiliates = 0;
-      if (campaignIds.length > 0) {
-        const { count } = await supabase
-          .from("campaign_affiliates")
-          .select("*", { count: "exact", head: true })
-          .in("campaign_id", campaignIds)
-          .eq("status", "approved");
-        totalAffiliates = count || 0;
-      }
-
-      // Count orders for brand products
-      const productIds = products.map((p) => p.id);
-      let totalSales = 0;
-      let totalRevenue = 0;
-      const chartMap = new Map<string, { vendas: number; receita: number }>();
-
-      if (productIds.length > 0) {
-        const { data: orderItems } = await supabase
-          .from("order_items")
-          .select("quantity, unit_price, created_at")
-          .in("product_id", productIds);
-
-        if (orderItems) {
-          totalSales = orderItems.length;
-          totalRevenue = orderItems.reduce((s, oi) => s + Number(oi.unit_price) * oi.quantity, 0);
-
-          orderItems.forEach((oi) => {
-            const day = new Date(oi.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-            const existing = chartMap.get(day) || { vendas: 0, receita: 0 };
-            chartMap.set(day, { vendas: existing.vendas + oi.quantity, receita: existing.receita + Number(oi.unit_price) * oi.quantity });
-          });
-        }
-      }
-
-      setStats({ totalSales, totalRevenue, totalAffiliates, activeProducts: activeProducts.length });
-
-      // Last 14 days chart data
-      const chartData: typeof salesChart = [];
-      for (let i = 13; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-        const existing = chartMap.get(label);
-        chartData.push({ date: label, vendas: existing?.vendas || 0, receita: existing?.receita || 0 });
-      }
-      setSalesChart(chartData);
-    };
-
-    fetchStats();
-  }, [campaigns, products]);
-
+export function BrandDashboard({ brand, campaigns, applications, onCreateCampaign, onFunded, onApprove }: Props) {
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
+  // Candidaturas que pedem ação do lojista (entregou e espera aprovação).
+  const pending = useMemo(
+    () => applications.filter((a) => a.status === "delivered"),
+    [applications]
+  );
+
+  const stats = useMemo(() => {
+    const live = campaigns.filter((c) => c.funded).length;
+    const investing = campaigns
+      .filter((c) => c.funded)
+      .reduce((s, c) => s + computeBudget(c.slots, c.reward_amount).total, 0);
+    const approved = applications.filter((a) => a.status === "approved" || a.status === "paid").length;
+    return { live, investing, approved };
+  }, [campaigns, applications]);
+
+  const rewardFor = (campaignId: string) =>
+    campaigns.find((c) => c.id === campaignId)?.reward_amount ??
+    (applications.find((a) => a.campaign_id === campaignId)?.campaign?.reward_amount ?? 0);
+
+  const handleApprove = async (app: CampaignApplication) => {
+    const reward = rewardFor(app.campaign_id);
+    const split = computeSplit(reward);
+    await onApprove(app, reward);
+    toast.success("Entrega aprovada!", {
+      description: `${fmt(split.influencer)} liberados pro influencer · taxa ${fmt(split.platform)}.`,
+    });
+  };
+
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-6 space-y-6">
-      {/* Brand Header */}
+    <div className="container max-w-2xl mx-auto px-4 py-6 space-y-6">
+      {/* Header da marca */}
       <div className="flex items-center gap-4">
         <div className="h-16 w-16 rounded-2xl bg-gradient-primary flex items-center justify-center shrink-0 overflow-hidden">
           {brand.logo_url ? (
@@ -113,186 +93,168 @@ export function BrandDashboard({ brand, products, campaigns, onCreateProduct, on
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-display font-bold truncate">{brand.name}</h1>
-            {brand.verified ? (
-              <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
-            ) : (
-              <Badge variant="secondary" className="text-[10px] shrink-0">
-                <Clock className="h-3 w-3 mr-0.5" /> Pendente
-              </Badge>
-            )}
+            {brand.verified && <CheckCircle2 className="h-5 w-5 text-success shrink-0" />}
           </div>
+          {brand.city && (
+            <p className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
+              <MapPin className="h-3 w-3 text-accent" /> {brand.city}{brand.state ? `, ${brand.state}` : ""}
+            </p>
+          )}
           {brand.website && (
-            <a href={brand.website} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground flex items-center gap-1 hover:text-primary transition-colors">
-              <Globe className="h-3.5 w-3.5" /> {brand.website.replace(/https?:\/\//, "")}
+            <a href={brand.website} target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/60 flex items-center gap-1 hover:text-primary transition-colors">
+              <Globe className="h-3 w-3" /> {brand.website.replace(/https?:\/\//, "")}
             </a>
           )}
-          {brand.description && <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{brand.description}</p>}
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {[
-          { icon: Package, label: "Produtos", value: activeProducts.length, color: "text-primary" },
-          { icon: ShoppingCart, label: "Vendas", value: stats.totalSales, color: "text-accent" },
-          { icon: DollarSign, label: "Receita", value: fmt(stats.totalRevenue), color: "text-success" },
-          { icon: Users, label: "Afiliados", value: stats.totalAffiliates, color: "text-primary" },
+          { icon: Megaphone, label: "Campanhas no ar", value: stats.live, color: "text-primary" },
+          { icon: BadgeDollarSign, label: "Investido", value: fmt(stats.investing), color: "text-accent" },
+          { icon: CircleCheck, label: "Entregas aprovadas", value: stats.approved, color: "text-success" },
         ].map((s) => (
-          <Card key={s.label} className="border-border/50">
-            <CardContent className="p-3 text-center">
-              <s.icon className={`h-4 w-4 mx-auto ${s.color} mb-1`} />
-              <p className="text-lg font-bold">{s.value}</p>
-              <p className="text-[9px] text-muted-foreground">{s.label}</p>
-            </CardContent>
-          </Card>
+          <div key={s.label} className="p-3 rounded-2xl bg-muted/20 border border-border/15 text-center">
+            <s.icon className={cn("h-4 w-4 mx-auto mb-1", s.color)} />
+            <p className="text-base font-bold leading-none">{s.value}</p>
+            <p className="text-[9px] text-muted-foreground/40 mt-1 uppercase tracking-wide">{s.label}</p>
+          </div>
         ))}
       </div>
 
-      {/* Sales Chart */}
-      <Card className="border-border/50">
-        <CardHeader className="pb-2 p-4">
-          <CardTitle className="text-sm font-semibold">Vendas — Últimos 14 dias</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
-          <div className="h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={salesChart}>
-                <defs>
-                  <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
-                  labelStyle={{ color: "hsl(var(--foreground))" }}
-                />
-                <Area type="monotone" dataKey="vendas" stroke="hsl(var(--primary))" fill="url(#salesGradient)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs */}
-      <Tabs defaultValue="products">
-        <TabsList className="w-full">
-          <TabsTrigger value="products" className="flex-1">Produtos ({products.length})</TabsTrigger>
-          <TabsTrigger value="courses" className="flex-1">Cursos ({courses.length})</TabsTrigger>
-          <TabsTrigger value="campaigns" className="flex-1">Campanhas ({campaigns.length})</TabsTrigger>
+      <Tabs defaultValue="campaigns">
+        <TabsList className="grid w-full grid-cols-2 rounded-full">
+          <TabsTrigger value="campaigns" className="rounded-full text-xs gap-1.5">
+            <Megaphone className="h-3 w-3" /> Campanhas ({campaigns.length})
+          </TabsTrigger>
+          <TabsTrigger value="applications" className="rounded-full text-xs gap-1.5">
+            <Users className="h-3 w-3" /> Candidaturas{pending.length > 0 ? ` (${pending.length})` : ""}
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="products" className="space-y-4 mt-4">
+        {/* CAMPANHAS */}
+        <TabsContent value="campaigns" className="mt-4 space-y-3">
           <div className="flex justify-end">
-            <CreateProductSheet onCreate={onCreateProduct} />
+            <CreateCampaignSheet onCreate={onCreateCampaign} onFunded={onFunded} />
           </div>
-          {products.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Nenhum produto cadastrado</p>
-              <p className="text-sm">Crie seu primeiro produto para começar</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {products.map((p) => (
-                <ProductCard key={p.id} product={p} onDelete={onDeleteProduct} onEdit={setEditProduct} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
 
-        <TabsContent value="courses" className="space-y-4 mt-4">
-          <div className="flex justify-end">
-            <Button
-              className="bg-gradient-primary border-0 text-primary-foreground"
-              onClick={async () => {
-                try {
-                  const data = await createCourse({ title: "Novo Curso", published: false });
-                  if (data) navigate(`/courses/${(data as any).id}/builder`);
-                } catch {}
-              }}
-            >
-              <Plus className="h-4 w-4 mr-1" /> Novo Curso
-            </Button>
-          </div>
-          {courses.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <GraduationCap className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Nenhum curso criado</p>
-              <p className="text-sm">Crie seu primeiro curso digital</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {courses.map((c) => (
-                <Card key={c.id} className="border-border/50 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => navigate(`/courses/${c.id}/builder`)}>
-                  <CardContent className="p-4 flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-xl bg-gradient-primary/10 flex items-center justify-center flex-shrink-0">
-                      <GraduationCap className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{c.title}</p>
-                      <p className="text-xs text-muted-foreground">{c.students_count} alunos</p>
-                    </div>
-                    <Badge variant={c.published ? "default" : "secondary"} className={c.published ? "bg-success text-success-foreground border-0" : ""}>
-                      {c.published ? "Publicado" : "Rascunho"}
-                    </Badge>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="campaigns" className="space-y-4 mt-4">
-          <div className="flex justify-end">
-            <CreateCampaignSheet products={products} onCreate={onCreateCampaign} />
-          </div>
           {campaigns.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="text-center py-14 text-muted-foreground/50">
               <Megaphone className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Nenhuma campanha criada</p>
-              <p className="text-sm">Crie campanhas para atrair afiliados</p>
+              <p className="font-medium text-sm">Nenhuma campanha ainda</p>
+              <p className="text-xs">Crie uma e influencers locais vão gravar vídeos do seu produto.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {campaigns.map((c) => (
-                <Card key={c.id} className="border-border/50">
-                  <CardHeader className="p-4 pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-semibold">{c.name}</CardTitle>
-                      <div className="flex items-center gap-2">
-                        <CampaignAffiliatesSheet campaignId={c.id} campaignName={c.name} />
-                        <Badge variant={c.status === "active" ? "default" : "secondary"} className={c.status === "active" ? "bg-success text-success-foreground border-0" : ""}>
-                          {c.status === "active" ? "Ativa" : "Encerrada"}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    {c.description && <p className="text-xs text-muted-foreground mb-2">{c.description}</p>}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      {c.bonus_percentage && Number(c.bonus_percentage) > 0 && <span className="text-success font-medium">+{Number(c.bonus_percentage)}% bônus</span>}
-                      {c.max_affiliates && <span><Users className="h-3 w-3 inline mr-0.5" /> Máx. {c.max_affiliates}</span>}
-                      {c.ends_at && <span>Até {new Date(c.ends_at).toLocaleDateString("pt-BR")}</span>}
-                    </div>
-                  </CardContent>
-                </Card>
+                <div key={c.id} className="relative">
+                  <CampaignCard c={toNear(c, brand)} />
+                  <div className="absolute top-3 right-3">
+                    {c.funded ? (
+                      <Badge className="bg-success/15 text-success border-0 gap-1 text-[10px]">
+                        <CircleCheck className="h-3 w-3" /> No ar
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-warning/15 text-warning border-0 gap-1 text-[10px]">
+                        <Wallet className="h-3 w-3" /> Aguardando pagamento
+                      </Badge>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
           )}
         </TabsContent>
-      </Tabs>
 
-      {/* Edit Product Sheet */}
-      <EditProductSheet
-        product={editProduct}
-        open={!!editProduct}
-        onOpenChange={(open) => !open && setEditProduct(null)}
-        onUpdate={onUpdateProduct}
-      />
+        {/* CANDIDATURAS */}
+        <TabsContent value="applications" className="mt-4 space-y-3">
+          {applications.length === 0 ? (
+            <div className="text-center py-14 text-muted-foreground/50">
+              <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium text-sm">Nenhuma candidatura ainda</p>
+              <p className="text-xs">Assim que um influencer aceitar sua campanha, ele aparece aqui.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {applications.map((a) => {
+                const reward = rewardFor(a.campaign_id);
+                const split = computeSplit(reward);
+                const isDelivered = a.status === "delivered";
+                const isApproved = a.status === "approved" || a.status === "paid";
+                return (
+                  <Card key={a.id} className="border-border/30">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={undefined} />
+                          <AvatarFallback className="text-[11px]">{(a.campaign?.title || "?")[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate">{a.campaign?.title || "Campanha"}</p>
+                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60">
+                            <StatusBadge status={a.status} />
+                            {a.distance_km != null && (
+                              <span className="flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{a.distance_km} km</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold text-accent">{fmt(reward)}</p>
+                          <p className="text-[9px] text-muted-foreground/40">por vídeo</p>
+                        </div>
+                      </div>
+
+                      {a.delivery_url && (
+                        <a
+                          href={a.delivery_url} target="_blank" rel="noopener noreferrer"
+                          className="mt-2.5 flex items-center gap-1.5 text-[11px] text-primary hover:underline truncate"
+                        >
+                          <ExternalLink className="h-3 w-3 shrink-0" /> {a.delivery_url}
+                        </a>
+                      )}
+
+                      {isDelivered && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <p className="text-[10px] text-muted-foreground/50 flex-1">
+                            Aprovar libera {fmt(split.influencer)} pro influencer (taxa {PLATFORM_FEE_PCT}%).
+                          </p>
+                          <Button
+                            size="sm"
+                            className="rounded-full bg-gradient-primary border-0 text-primary-foreground h-8 text-[11px] gap-1"
+                            onClick={() => handleApprove(a)}
+                          >
+                            <CircleCheck className="h-3.5 w-3.5" /> Aprovar entrega
+                          </Button>
+                        </div>
+                      )}
+
+                      {isApproved && (
+                        <p className="mt-2 text-[11px] text-success flex items-center gap-1">
+                          <CircleCheck className="h-3 w-3" /> Pago: {fmt(split.influencer)} pro influencer
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
+}
+
+function StatusBadge({ status }: { status: CampaignApplication["status"] }) {
+  const map: Record<CampaignApplication["status"], { label: string; cls: string }> = {
+    applied: { label: "Candidatou", cls: "bg-muted/40 text-muted-foreground" },
+    accepted: { label: "Aceitou", cls: "bg-accent/10 text-accent" },
+    delivered: { label: "Entregou", cls: "bg-warning/10 text-warning" },
+    approved: { label: "Aprovado", cls: "bg-success/10 text-success" },
+    paid: { label: "Pago", cls: "bg-success/10 text-success" },
+    rejected: { label: "Recusado", cls: "bg-destructive/10 text-destructive" },
+  };
+  const cfg = map[status];
+  return <Badge variant="secondary" className={cn("text-[9px] rounded-full border-0 px-1.5 py-0", cfg.cls)}>{cfg.label}</Badge>;
 }

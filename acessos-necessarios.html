@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acessos Necessários — OnlyShop</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #f8f9fa;
+    color: #1a1a1a;
+    padding: 40px 20px;
+  }
+
+  .page {
+    max-width: 680px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 16px;
+    padding: 48px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 32px;
+    border-bottom: 2px solid #f0f0f0;
+    margin-bottom: 36px;
+  }
+
+  .logo {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: -0.5px;
+  }
+
+  .logo span {
+    color: #e8446a;
+  }
+
+  .badge {
+    background: #fff0f3;
+    color: #e8446a;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .intro {
+    margin-bottom: 36px;
+  }
+
+  .intro h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
+  }
+
+  .intro p {
+    font-size: 15px;
+    color: #555;
+    line-height: 1.6;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #999;
+    margin-bottom: 16px;
+  }
+
+  .card {
+    border: 1.5px solid #f0f0f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .icon-openai { background: #f0fdf4; }
+  .icon-fal    { background: #fef3ff; }
+  .icon-supa   { background: #f0f9ff; }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  .card-subtitle {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  .tag-critical {
+    background: #fff0f3;
+    color: #e8446a;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: auto;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  .card-body {
+    font-size: 14px;
+    color: #444;
+    line-height: 1.6;
+  }
+
+  .steps {
+    list-style: none;
+    margin-top: 10px;
+  }
+
+  .steps li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 7px 0;
+    font-size: 13.5px;
+    color: #333;
+    border-bottom: 1px solid #fafafa;
+  }
+
+  .steps li:last-child {
+    border-bottom: none;
+  }
+
+  .step-num {
+    width: 20px;
+    height: 20px;
+    background: #f5f5f5;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .highlight {
+    background: #f8f8f8;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #333;
+    margin-top: 12px;
+    border-left: 3px solid #e8446a;
+  }
+
+  .highlight strong {
+    color: #1a1a1a;
+  }
+
+  .note-box {
+    background: #fffbf0;
+    border: 1.5px solid #fde68a;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-top: 32px;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.6;
+  }
+
+  .note-box strong {
+    color: #1a1a1a;
+  }
+
+  .footer {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1.5px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-left {
+    font-size: 13px;
+    color: #999;
+  }
+
+  .footer-left strong {
+    color: #555;
+  }
+
+  .url {
+    font-family: monospace;
+    font-size: 12px;
+    background: #f5f5f5;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #333;
+  }
+
+  @media print {
+    body { background: white; padding: 0; }
+    .page { box-shadow: none; border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="logo">Only<span>Shop</span></div>
+    <div class="badge">Confidencial</div>
+  </div>
+
+  <div class="intro">
+    <h1>Acessos Necessários</h1>
+    <p>Para dar continuidade ao desenvolvimento do OnlyShop, preciso dos acessos abaixo. Infraestrutura (TikTok Developer, GitHub, Vercel) já está na minha conta. Preciso de você apenas os itens listados aqui.</p>
+  </div>
+
+  <p class="section-title">O que preciso de você</p>
+
+  <!-- OpenAI -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon icon-openai">🤖</div>
+      <div>
+        <div class="card-title">OpenAI — API Key</div>
+        <div class="card-subtitle">platform.openai.com</div>
+      </div>
+      <div class="tag-critical">Urgente</div>
+    </div>
+    <div class="card-body">
+      <p>Usada para geração de copy dos vídeos, roteiro de cenas e o copiloto de performance da plataforma. <strong>Substitui o Lovable</strong> que estava configurado antes.</p>
+      <ul class="steps">
+        <li><span class="step-num">1</span> Acesse <span class="url">platform.openai.com/api-keys</span></li>
+        <li><span class="step-num">2</span> Crie uma nova chave (nome sugerido: <em>onlyshop-prod</em>)</li>
+        <li><span class="step-num">3</span> Me envie a chave (começa com <span class="url">sk-proj-...</span>)</li>
+        <li><span class="step-num">4</span> Garanta que a conta tem saldo/créditos em <span class="url">platform.openai.com/settings/billing</span></li>
+      </ul>
+      <div class="highlight">
+        ⚠️ <strong>Importante:</strong> não é a assinatura do ChatGPT Plus. É a API key do platform.openai.com — conta separada com billing próprio. Modelo usado: GPT-4o.
+      </div>
+    </div>
+  </div>
+
+  <!-- fal.ai -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon icon-fal">🎬</div>
+      <div>
+        <div class="card-title">fal.ai — API Key</div>
+        <div class="card-subtitle">fal.ai/dashboard/keys</div>
+      </div>
+      <div class="tag-critical">Urgente</div>
+    </div>
+    <div class="card-body">
+      <p>Usada para gerar os clipes de vídeo com IA (modelo Seedance). É o motor principal de criação de conteúdo da plataforma.</p>
+      <ul class="steps">
+        <li><span class="step-num">1</span> Acesse <span class="url">fal.ai/dashboard/keys</span></li>
+        <li><span class="step-num">2</span> Crie uma nova chave (nome sugerido: <em>onlyshop-prod</em>)</li>
+        <li><span class="step-num">3</span> Me envie a chave</li>
+        <li><span class="step-num">4</span> Verifique que a conta tem créditos/billing ativo — cada vídeo gerado consome créditos</li>
+      </ul>
+      <div class="highlight">
+        💡 Sem essa chave, o app roda em <strong>modo demonstração</strong> (vídeo placeholder). Funciona para testar, mas não gera vídeos reais.
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon icon-supa">🗄️</div>
+      <div>
+        <div class="card-title">Supabase — Acesso à organização</div>
+        <div class="card-subtitle">supabase.com/dashboard</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p>Preciso de acesso para deployar as edge functions atualizadas e configurar os secrets das chaves acima.</p>
+      <ul class="steps">
+        <li><span class="step-num">1</span> Acesse o projeto no dashboard do Supabase</li>
+        <li><span class="step-num">2</span> Vá em <strong>Settings → Team</strong></li>
+        <li><span class="step-num">3</span> Me adicione com o email <span class="url">guilhermevb301@gmail.com</span> como <strong>Owner</strong> ou <strong>Admin</strong></li>
+      </ul>
+      <div class="highlight">
+        📌 Confirme qual é o projeto de produção — há dois IDs no código e preciso garantir que estou trabalhando no certo.
+      </div>
+    </div>
+  </div>
+
+  <div class="note-box">
+    📋 <strong>Não precisa me enviar:</strong> acesso ao TikTok Developer (tenho), GitHub (meu), Vercel (minha conta), ChatGPT Plus (não é usado — precisamos da API, não da assinatura).<br><br>
+    🔒 As chaves devem ser enviadas por canal seguro (WhatsApp direto, não grupo). Depois de configuradas no servidor, você pode revogar e gerar novas quando quiser.
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">
+      Preparado por <strong>Guilherme Vilas Boas</strong><br>
+      Desenvolvedor — OnlyShop
+    </div>
+    <div style="font-size: 12px; color: #ccc;">onlyshoptok.vercel.app</div>
+  </div>
+
+</div>
+</body>
+</html>

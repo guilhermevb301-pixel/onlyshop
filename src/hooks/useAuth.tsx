@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from "react
 import { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getDemoRole, setDemoRole } from "@/lib/onboarding";
 
 interface Profile {
   id: string;
@@ -26,6 +27,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  setRole: (role: "affiliate" | "brand") => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,8 +67,6 @@ const demoProfile: Profile = {
   avatar_url: null,
   bio: "Conta de teste do Estúdio IA",
 };
-
-const demoRole: UserRole = { role: "affiliate" };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -115,7 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(demoUser);
       setSession(demoSession);
       setProfile(demoProfile);
-      setUserRole(demoRole);
+      const dr = getDemoRole();
+      setUserRole(dr ? { role: dr } : { role: "viewer" }); // viewer = ainda precisa escolher papel
       setLoading(false);
       return;
     }
@@ -208,7 +209,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(demoUser);
         setSession(demoSession);
         setProfile(demoProfile);
-        setUserRole(demoRole);
+        const dr = getDemoRole();
+        setUserRole(dr ? { role: dr } : { role: "viewer" });
         toast({ title: "Bem-vindo! (modo teste)", description: "Login de demonstração." });
         setLoading(false);
         return;
@@ -266,6 +268,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Define o papel do usuário (loja/influencer) — usado no onboarding.
+  const setRole = async (role: "affiliate" | "brand") => {
+    if (localStorage.getItem(DEMO_FLAG) === "1") {
+      setDemoRole(role);
+      setUserRole({ role });
+      return;
+    }
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from("user_roles")
+        .upsert({ user_id: user.id, role } as any, { onConflict: "user_id" });
+      if (error) throw error;
+    } catch (e) {
+      console.error("setRole:", e);
+    }
+    setUserRole({ role }); // otimista (real valida após deploy do Supabase)
+  };
+
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return;
 
@@ -305,6 +326,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signOut,
         updateProfile,
+        setRole,
       }}
     >
       {children}

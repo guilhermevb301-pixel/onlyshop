@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
-  LayoutGrid, Wand2, Package, Users, BadgeDollarSign, Flame,
-  PanelLeftClose, PanelLeft, Route, Users2, Compass, type LucideIcon,
+  LayoutGrid, MapPin, BadgeDollarSign, Wallet, User, Megaphone,
+  PanelLeftClose, PanelLeft, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSidebar } from "./SidebarContext";
@@ -10,20 +10,26 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import logoImg from "@/assets/color-palette-ref.png";
 
-type Item = { to: string; icon: LucideIcon; label: string };
+type Item = { to: string; icon: LucideIcon; label: string; accent?: boolean };
 
-const GROUP_CRIAR: Item[] = [
-  { to: "/products", icon: Package, label: "Produtos" },
-  { to: "/meus-influencers", icon: Users, label: "Meus influencers" },
+// Navegação enxuta por papel (MVP localizado).
+const INFLUENCER_NAV: Item[] = [
+  { to: "/inicio", icon: LayoutGrid, label: "Início" },
+  { to: "/mapa", icon: MapPin, label: "Perto de você", accent: true },
+  { to: "/affiliate", icon: BadgeDollarSign, label: "Meus ganhos", accent: true },
+  { to: "/wallet", icon: Wallet, label: "Carteira" },
+  { to: "/profile", icon: User, label: "Perfil" },
 ];
-const GROUP_GANHAR: Item[] = [
-  { to: "/discover", icon: Compass, label: "Descobrir" },
-  { to: "/affiliate", icon: BadgeDollarSign, label: "Ganhos" },
-  { to: "/trending", icon: Flame, label: "Em alta" },
+const BRAND_NAV: Item[] = [
+  { to: "/brands", icon: Megaphone, label: "Minhas campanhas", accent: true },
+  { to: "/wallet", icon: Wallet, label: "Carteira" },
+  { to: "/profile", icon: User, label: "Perfil" },
 ];
 
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar();
+  const { userRole } = useAuth();
+  const items = userRole?.role === "brand" ? BRAND_NAV : INFLUENCER_NAV;
 
   return (
     <aside
@@ -34,55 +40,25 @@ export function Sidebar() {
         collapsed ? "w-[var(--sb-w-collapsed)]" : "w-[var(--sb-w)]"
       )}
     >
-      {/* Topo — logo + wordmark */}
       <div className="flex items-center gap-2.5 h-14 px-4 shrink-0">
         <img src={logoImg} alt="OnlyShop" className="h-8 w-8 rounded-lg object-cover shrink-0" />
         <span className={cn(
           "font-display text-sm font-bold tracking-tight whitespace-nowrap transition-all duration-300",
           collapsed && "opacity-0 w-0 overflow-hidden"
-        )}>
-          OnlyShop
-        </span>
+        )}>OnlyShop</span>
       </div>
 
-      <nav className="flex-1 overflow-y-auto hide-scrollbar px-3 pb-4">
-        {/* Início */}
-        <NavItem item={{ to: "/inicio", icon: LayoutGrid, label: "Início" }} collapsed={collapsed} />
-
-        {/* CTA herói — Criar vídeo */}
-        <HeroItem collapsed={collapsed} />
-
-        {/* Grupo CRIAR */}
-        <GroupLabel collapsed={collapsed}>Criar</GroupLabel>
-        {GROUP_CRIAR.map((it) => <NavItem key={it.to} item={it} collapsed={collapsed} />)}
-
-        {/* Grupo GANHAR */}
-        <GroupLabel collapsed={collapsed}>Ganhar</GroupLabel>
-        {GROUP_GANHAR.map((it) => <NavItem key={it.to} item={it} collapsed={collapsed} accentActive />)}
-
-        {/* Grupo CARREIRA (áudio 2: "nova carreira") */}
-        <GroupLabel collapsed={collapsed}>Carreira</GroupLabel>
-        <NavItem item={{ to: "/jornada", icon: Route, label: "Minha jornada" }} collapsed={collapsed} />
-        <NavItem item={{ to: "/comunidade", icon: Users2, label: "Comunidade" }} collapsed={collapsed} />
+      <nav className="flex-1 overflow-y-auto hide-scrollbar px-3 pb-4 pt-1">
+        {items.map((it) => <NavItem key={it.to} item={it} collapsed={collapsed} />)}
       </nav>
 
-      {/* Rodapé — ganhos + usuário + colapsar */}
       <Footer collapsed={collapsed} toggle={toggle} />
     </aside>
   );
 }
 
-function GroupLabel({ children, collapsed }: { children: string; collapsed: boolean }) {
-  if (collapsed) return <div className="h-4" />;
-  return (
-    <p className="text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/40 px-3 mt-5 mb-1">
-      {children}
-    </p>
-  );
-}
-
-function NavItem({ item, collapsed, accentActive }: { item: Item; collapsed: boolean; accentActive?: boolean }) {
-  const { to, icon: Icon, label } = item;
+function NavItem({ item, collapsed }: { item: Item; collapsed: boolean }) {
+  const { to, icon: Icon, label, accent } = item;
   const link = (
     <NavLink
       to={to}
@@ -102,10 +78,7 @@ function NavItem({ item, collapsed, accentActive }: { item: Item; collapsed: boo
           {isActive && (
             <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-primary shadow-[0_0_12px_hsl(var(--primary)/0.6)]" />
           )}
-          <Icon
-            className={cn("h-[18px] w-[18px] shrink-0", isActive && accentActive && "text-accent")}
-            strokeWidth={1.75}
-          />
+          <Icon className={cn("h-[18px] w-[18px] shrink-0", isActive && accent && "text-accent")} strokeWidth={1.75} />
           <span className={cn("truncate transition-all duration-300", collapsed && "opacity-0 w-0 overflow-hidden")}>
             {label}
           </span>
@@ -113,7 +86,6 @@ function NavItem({ item, collapsed, accentActive }: { item: Item; collapsed: boo
       )}
     </NavLink>
   );
-
   if (!collapsed) return link;
   return (
     <Tooltip>
@@ -123,50 +95,9 @@ function NavItem({ item, collapsed, accentActive }: { item: Item; collapsed: boo
   );
 }
 
-function HeroItem({ collapsed }: { collapsed: boolean }) {
-  const link = (
-    <NavLink
-      to="/studio"
-      className={cn(
-        "flex items-center gap-3 rounded-2xl h-12 px-3 mt-1 text-white font-semibold",
-        "bg-gradient-primary shadow-[var(--shadow-glow-cta)]",
-        "transition-all duration-500 ease-[var(--ease-fluid)]",
-        "hover:-translate-y-0.5 hover:shadow-[0_12px_34px_-8px_hsl(346_100%_58%/0.62)] active:scale-[0.98]",
-        collapsed && "justify-center px-0"
-      )}
-    >
-      <Wand2 className="h-[18px] w-[18px] shrink-0" />
-      <span className={cn("truncate transition-all duration-300", collapsed && "opacity-0 w-0 overflow-hidden")}>
-        Criar vídeo
-      </span>
-    </NavLink>
-  );
-  if (!collapsed) return link;
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{link}</TooltipTrigger>
-      <TooltipContent side="right">Criar vídeo</TooltipContent>
-    </Tooltip>
-  );
-}
-
 function Footer({ collapsed, toggle }: { collapsed: boolean; toggle: () => void }) {
-  const { userRole } = useAuth();
   return (
     <div className="shrink-0 border-t border-sidebar-border p-3 space-y-2">
-      {/* Mini-card de ganhos (cyan = dinheiro) — estado motivacional */}
-      {!collapsed && (
-        <div className="bg-white/[0.03] ring-1 ring-white/[0.06] rounded-2xl px-3 py-2.5">
-          <div className="flex items-center gap-2">
-            <BadgeDollarSign className="h-4 w-4 text-accent shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50 leading-none">Este mês</p>
-              <p className="text-sm font-display font-bold text-accent leading-tight mt-0.5">Bora pro 1º PIX</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className={cn("flex items-center gap-1", collapsed ? "flex-col" : "justify-between")}>
         <UserMenu variant={collapsed ? "icon" : "full"} />
         <button

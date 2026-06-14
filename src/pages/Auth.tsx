@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,8 @@ import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
 import logoImg from "@/assets/color-palette-ref.png";
 
 export default function Auth() {
-  const { user, loading, signIn, signUp } = useAuth();
+  const { user, loading, userRole, signIn, signUp } = useAuth();
+  const { needsOnboarding } = useOnboarding();
   const [isLoading, setIsLoading] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState("");
@@ -19,7 +21,12 @@ export default function Auth() {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupUsername, setSignupUsername] = useState("");
 
-  if (user && !loading) return <Navigate to="/inicio" replace />;
+  // Redirect pós-login: 1º acesso vai pro onboarding; depois, pro destino do papel.
+  if (user && !loading) {
+    if (needsOnboarding) return <Navigate to="/onboarding" replace />;
+    const target = userRole?.role === "brand" ? "/brands" : "/inicio";
+    return <Navigate to={target} replace />;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
