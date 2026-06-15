@@ -1,20 +1,19 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Brand, Campaign } from "@/hooks/useBrand";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CampaignCard } from "@/components/campaigns/CampaignCard";
 import { CreateCampaignSheet } from "./CreateCampaignSheet";
 import {
   Building2, CheckCircle2, Globe, MapPin, Megaphone, Wallet,
-  Users, ExternalLink, CircleCheck, BadgeDollarSign,
+  Users, ExternalLink, CircleCheck, BadgeDollarSign, X, User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  computeBudget, computeSplit, PLATFORM_FEE_PCT,
+  computeBudget, computeSplit, PLATFORM_FEE_PCT, demo,
   type CampaignApplication, type CampaignNear,
 } from "@/lib/campaigns";
 
@@ -51,10 +50,17 @@ function toNear(c: Campaign, brand: Brand): CampaignNear {
 export function BrandDashboard({ brand, campaigns, applications, onCreateCampaign, onFunded, onApprove }: Props) {
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
+  // Overrides locais de status (reject) — useBrand não expõe reject, então refletimos aqui.
+  const [overrides, setOverrides] = useState<Record<string, CampaignApplication["status"]>>({});
+  // Trava de ação por candidatura (evita duplo clique → pagamento duplicado).
+  const [busy, setBusy] = useState<Record<string, boolean>>({});
+
+  const statusOf = (a: CampaignApplication) => overrides[a.id] ?? a.status;
+
   // Candidaturas que pedem ação do lojista (entregou e espera aprovação).
   const pending = useMemo(
-    () => applications.filter((a) => a.status === "delivered"),
-    [applications]
+    () => applications.filter((a) => statusOf(a) === "delivered"),
+    [applications, overrides]
   );
 
   const stats = useMemo(() => {
@@ -62,28 +68,49 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
     const investing = campaigns
       .filter((c) => c.funded)
       .reduce((s, c) => s + computeBudget(c.slots, c.reward_amount).total, 0);
-    const approved = applications.filter((a) => a.status === "approved" || a.status === "paid").length;
+    const approved = applications.filter((a) => statusOf(a) === "approved" || statusOf(a) === "paid").length;
     return { live, investing, approved };
-  }, [campaigns, applications]);
+  }, [campaigns, applications, overrides]);
 
   const rewardFor = (campaignId: string) =>
     campaigns.find((c) => c.id === campaignId)?.reward_amount ??
     (applications.find((a) => a.campaign_id === campaignId)?.campaign?.reward_amount ?? 0);
 
   const handleApprove = async (app: CampaignApplication) => {
-    const reward = rewardFor(app.campaign_id);
-    const split = computeSplit(reward);
-    await onApprove(app, reward);
-    toast.success("Entrega aprovada!", {
-      description: `${fmt(split.influencer)} liberados pro influencer · taxa ${fmt(split.platform)}.`,
-    });
+    const s = statusOf(app);
+    if (busy[app.id] || s === "approved" || s === "paid") return; // idempotência
+    setBusy((b) => ({ ...b, [app.id]: true }));
+    try {
+      const reward = rewardFor(app.campaign_id);
+      const split = computeSplit(reward);
+      await onApprove(app, reward);
+      toast.success("Entrega aprovada!", {
+        description: `${fmt(split.influencer)} liberados pro influencer · taxa ${fmt(split.platform)}.`,
+      });
+    } finally {
+      setBusy((b) => ({ ...b, [app.id]: false }));
+    }
+  };
+
+  const handleReject = async (app: CampaignApplication) => {
+    if (busy[app.id] || statusOf(app) !== "delivered") return;
+    setBusy((b) => ({ ...b, [app.id]: true }));
+    try {
+      if (demo.isOn()) demo.updateApp(app.id, { status: "rejected" });
+      setOverrides((o) => ({ ...o, [app.id]: "rejected" }));
+      toast("Entrega recusada", {
+        description: "O influencer pode reenviar o vídeo corrigido.",
+      });
+    } finally {
+      setBusy((b) => ({ ...b, [app.id]: false }));
+    }
   };
 
   return (
     <div className="container max-w-2xl mx-auto px-4 py-6 space-y-6">
       {/* Header da marca */}
-      <div className="flex items-center gap-4">
-        <div className="h-16 w-16 rounded-2xl bg-gradient-primary flex items-center justify-center shrink-0 overflow-hidden">
+      <div className="flex items-center gap-4 animate-fade-in">
+        <div className="h-16 w-16 rounded-2xl bg-gradient-primary flex items-center justify-center shrink-0 overflow-hidden shadow-[var(--shadow-glow-cta)]">
           {brand.logo_url ? (
             <img src={brand.logo_url} alt={brand.name} className="h-full w-full rounded-2xl object-cover" />
           ) : (
@@ -96,29 +123,37 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
             {brand.verified && <CheckCircle2 className="h-5 w-5 text-success shrink-0" />}
           </div>
           {brand.city && (
-            <p className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
+            <p className="text-xs text-muted-foreground/60 flex items-center gap-1">
               <MapPin className="h-3 w-3 text-accent" /> {brand.city}{brand.state ? `, ${brand.state}` : ""}
             </p>
           )}
           {brand.website && (
-            <a href={brand.website} target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/60 flex items-center gap-1 hover:text-primary transition-colors">
+            <a href={brand.website} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground/60 flex items-center gap-1 hover:text-primary transition-colors">
               <Globe className="h-3 w-3" /> {brand.website.replace(/https?:\/\//, "")}
             </a>
           )}
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* Stats — double-bezel + fade-up stagger */}
+      <div className="grid grid-cols-3 gap-2.5">
         {[
-          { icon: Megaphone, label: "Campanhas no ar", value: stats.live, color: "text-primary" },
-          { icon: BadgeDollarSign, label: "Investido", value: fmt(stats.investing), color: "text-accent" },
-          { icon: CircleCheck, label: "Entregas aprovadas", value: stats.approved, color: "text-success" },
-        ].map((s) => (
-          <div key={s.label} className="p-3 rounded-2xl bg-muted/20 border border-border/15 text-center">
-            <s.icon className={cn("h-4 w-4 mx-auto mb-1", s.color)} />
-            <p className="text-base font-bold leading-none">{s.value}</p>
-            <p className="text-[9px] text-muted-foreground/40 mt-1 uppercase tracking-wide">{s.label}</p>
+          { icon: Megaphone, label: "Campanhas no ar", value: String(stats.live), color: "text-primary", glow: "from-primary/12" },
+          { icon: BadgeDollarSign, label: "Investido", value: fmt(stats.investing), color: "text-accent", glow: "from-accent/14", money: true },
+          { icon: CircleCheck, label: "Entregas aprovadas", value: String(stats.approved), color: "text-success", glow: "from-success/12" },
+        ].map((s, i) => (
+          <div
+            key={s.label}
+            className={cn("rounded-[1.5rem] bg-gradient-to-b p-px animate-fade-in", s.glow, "to-transparent")}
+            style={{ animationDelay: `${i * 70}ms` }}
+          >
+            <div className="rounded-[calc(1.5rem-1px)] bg-card/60 backdrop-blur p-3 text-center ring-1 ring-white/[0.05] shadow-[var(--shadow-bezel-inset)]">
+              <span className={cn("mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-full", s.color, "bg-current/10")}>
+                <s.icon className={cn("h-4 w-4", s.color)} />
+              </span>
+              <p className={cn("text-base font-black leading-none tabular-nums truncate", s.money && "text-accent")}>{s.value}</p>
+              <p className="text-[10px] text-muted-foreground/50 mt-1.5 uppercase tracking-wider leading-tight">{s.label}</p>
+            </div>
           </div>
         ))}
       </div>
@@ -140,17 +175,24 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
           </div>
 
           {campaigns.length === 0 ? (
-            <div className="text-center py-14 text-muted-foreground/50">
-              <Megaphone className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium text-sm">Nenhuma campanha ainda</p>
-              <p className="text-xs">Crie uma e influencers locais vão gravar vídeos do seu produto.</p>
+            <div className="rounded-[1.5rem] border border-dashed border-border/40 bg-muted/[0.04] py-12 px-6 text-center animate-fade-in">
+              <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/20 shadow-[var(--shadow-glow-cta)]">
+                <Megaphone className="h-7 w-7 text-primary" />
+              </span>
+              <p className="font-bold text-base">Sua primeira campanha começa aqui</p>
+              <p className="text-xs text-muted-foreground/60 mt-1 max-w-xs mx-auto">
+                Crie um gig e influencers locais gravam vídeos do seu produto. Você só paga por entrega aprovada.
+              </p>
+              <div className="mt-5 flex justify-center">
+                <CreateCampaignSheet onCreate={onCreateCampaign} onFunded={onFunded} triggerLabel="Criar primeira campanha" />
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
-              {campaigns.map((c) => (
-                <div key={c.id} className="relative">
-                  <CampaignCard c={toNear(c, brand)} />
-                  <div className="absolute top-3 right-3">
+              {campaigns.map((c, i) => (
+                <div key={c.id} className="space-y-2 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
+                  {/* Status renderizado ACIMA do card — nunca sobre o badge de R$ */}
+                  <div className="flex items-center justify-between px-1">
                     {c.funded ? (
                       <Badge className="bg-success/15 text-success border-0 gap-1 text-[10px]">
                         <CircleCheck className="h-3 w-3" /> No ar
@@ -160,7 +202,11 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
                         <Wallet className="h-3 w-3" /> Aguardando pagamento
                       </Badge>
                     )}
+                    {!c.funded && (
+                      <ResumePaymentButton campaign={c} onFunded={onFunded} />
+                    )}
                   </div>
+                  <CampaignCard c={toNear(c, brand)} />
                 </div>
               ))}
             </div>
@@ -170,72 +216,110 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
         {/* CANDIDATURAS */}
         <TabsContent value="applications" className="mt-4 space-y-3">
           {applications.length === 0 ? (
-            <div className="text-center py-14 text-muted-foreground/50">
-              <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium text-sm">Nenhuma candidatura ainda</p>
-              <p className="text-xs">Assim que um influencer aceitar sua campanha, ele aparece aqui.</p>
+            <div className="rounded-[1.5rem] border border-dashed border-border/40 bg-muted/[0.04] py-12 px-6 text-center animate-fade-in">
+              <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/20 shadow-[var(--shadow-glow-cta)]">
+                <Users className="h-7 w-7 text-primary" />
+              </span>
+              <p className="font-bold text-base">Nenhuma candidatura ainda</p>
+              <p className="text-xs text-muted-foreground/60 mt-1 max-w-xs mx-auto">
+                Suas campanhas atraem influencers locais — eles aparecem aqui assim que aceitarem a vaga.
+              </p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {applications.map((a) => {
+            <div className="space-y-2.5">
+              {applications.map((a, i) => {
+                const status = statusOf(a);
                 const reward = rewardFor(a.campaign_id);
                 const split = computeSplit(reward);
-                const isDelivered = a.status === "delivered";
-                const isApproved = a.status === "approved" || a.status === "paid";
+                const isDelivered = status === "delivered";
+                const isApproved = status === "approved" || status === "paid";
+                const isRejected = status === "rejected";
+                const acting = !!busy[a.id];
                 return (
-                  <Card key={a.id} className="border-border/30">
-                    <CardContent className="p-3">
+                  <div
+                    key={a.id}
+                    className="rounded-[1.5rem] bg-gradient-to-b from-border/25 to-transparent p-px animate-slide-up"
+                    style={{ animationDelay: `${i * 50}ms` }}
+                  >
+                    <div className="rounded-[calc(1.5rem-1px)] bg-card/80 backdrop-blur p-3.5 ring-1 ring-white/[0.04] shadow-[var(--shadow-bezel-inset)]">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={undefined} />
-                          <AvatarFallback className="text-[11px]">{(a.campaign?.title || "?")[0]}</AvatarFallback>
+                        <Avatar className="h-10 w-10 ring-1 ring-white/[0.06]">
+                          <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/10 text-muted-foreground">
+                            <User className="h-4 w-4" />
+                          </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate">{a.campaign?.title || "Campanha"}</p>
                           <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60">
-                            <StatusBadge status={a.status} />
+                            <StatusBadge status={status} />
                             {a.distance_km != null && (
                               <span className="flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{a.distance_km} km</span>
                             )}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-accent">{fmt(reward)}</p>
-                          <p className="text-[9px] text-muted-foreground/40">por vídeo</p>
+                          <p className="text-sm font-bold text-accent tabular-nums">{fmt(reward)}</p>
+                          <p className="text-[10px] text-muted-foreground/40">por vídeo</p>
                         </div>
                       </div>
 
                       {a.delivery_url && (
                         <a
                           href={a.delivery_url} target="_blank" rel="noopener noreferrer"
-                          className="mt-2.5 flex items-center gap-1.5 text-[11px] text-primary hover:underline truncate"
+                          className="mt-2.5 flex items-center gap-1.5 text-[11px] text-primary hover:underline truncate min-h-[36px] py-1"
                         >
-                          <ExternalLink className="h-3 w-3 shrink-0" /> {a.delivery_url}
+                          <ExternalLink className="h-3 w-3 shrink-0" /> <span className="truncate">{a.delivery_url}</span>
                         </a>
                       )}
 
                       {isDelivered && (
-                        <div className="mt-3 flex items-center gap-2">
-                          <p className="text-[10px] text-muted-foreground/50 flex-1">
+                        <div className="mt-3 space-y-2">
+                          <p className="text-[10px] text-muted-foreground/50">
                             Aprovar libera {fmt(split.influencer)} pro influencer (taxa {PLATFORM_FEE_PCT}%).
                           </p>
-                          <Button
-                            size="sm"
-                            className="rounded-full bg-gradient-primary border-0 text-primary-foreground h-8 text-[11px] gap-1"
-                            onClick={() => handleApprove(a)}
-                          >
-                            <CircleCheck className="h-3.5 w-3.5" /> Aprovar entrega
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              className="rounded-full h-10 px-4 text-xs gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive active:scale-[.98] transition-transform"
+                              onClick={() => handleReject(a)}
+                              disabled={acting}
+                            >
+                              <X className="h-3.5 w-3.5" /> Recusar
+                            </Button>
+                            <Button
+                              className="group flex-1 rounded-full bg-gradient-primary border-0 text-primary-foreground h-10 text-xs gap-1.5 active:scale-[.98] transition-transform shadow-[var(--shadow-glow-cta)] disabled:opacity-70 disabled:active:scale-100"
+                              onClick={() => handleApprove(a)}
+                              disabled={acting}
+                              aria-busy={acting}
+                            >
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/15">
+                                <CircleCheck className="h-3 w-3" />
+                              </span>
+                              Aprovar entrega
+                            </Button>
+                          </div>
                         </div>
                       )}
 
                       {isApproved && (
-                        <p className="mt-2 text-[11px] text-success flex items-center gap-1">
-                          <CircleCheck className="h-3 w-3" /> Pago: {fmt(split.influencer)} pro influencer
+                        <p className="mt-2.5 text-[11px] text-success flex items-center gap-1.5">
+                          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-success/15">
+                            <CircleCheck className="h-3 w-3" />
+                          </span>
+                          Pago · {fmt(split.influencer)} liberados pro influencer
                         </p>
                       )}
-                    </CardContent>
-                  </Card>
+
+                      {isRejected && (
+                        <p className="mt-2.5 text-[11px] text-destructive flex items-center gap-1.5">
+                          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-destructive/15">
+                            <X className="h-3 w-3" />
+                          </span>
+                          Entrega recusada
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -243,6 +327,19 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// Reabre o passo de pagamento de uma campanha criada mas ainda não paga (fluxo interrompido).
+function ResumePaymentButton({ campaign, onFunded }: { campaign: Campaign; onFunded: (id: string) => Promise<void> }) {
+  return (
+    <CreateCampaignSheet
+      onCreate={async () => null}
+      onFunded={onFunded}
+      resumeCampaign={campaign}
+      triggerLabel="Pagar agora"
+      triggerVariant="link"
+    />
   );
 }
 

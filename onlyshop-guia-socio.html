@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnlyShop — Como funciona e o que falta</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:#eef0f3; color:#1a1a1a; padding:32px 16px; line-height:1.55; }
+  .page { max-width:720px; margin:0 auto 28px; background:#fff; border-radius:20px; padding:44px; box-shadow:0 6px 30px rgba(0,0,0,.08); }
+
+  .logo { font-size:24px; font-weight:900; letter-spacing:-.5px; }
+  .logo span { color:#e8446a; }
+  .kicker { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:#e8446a; margin-bottom:8px; }
+  h1 { font-size:30px; font-weight:900; letter-spacing:-1px; line-height:1.15; margin-bottom:14px; }
+  h2 { font-size:22px; font-weight:800; letter-spacing:-.5px; margin:0 0 6px; display:flex; align-items:center; gap:10px; }
+  h3 { font-size:15px; font-weight:700; margin-bottom:4px; }
+  p.lead { font-size:16px; color:#444; }
+  .muted { color:#666; font-size:14px; }
+
+  .sectlabel { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:#999; margin:38px 0 14px; padding-bottom:8px; border-bottom:2px solid #f0f0f0; }
+
+  /* steps */
+  .step { display:flex; gap:16px; padding:16px 0; border-bottom:1px solid #f4f4f5; }
+  .step:last-child { border-bottom:none; }
+  .num { width:30px; height:30px; border-radius:50%; background:#1a1a1a; color:#fff; font-weight:800; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .num.pink { background:#e8446a; }
+  .num.green { background:#16a34a; }
+  .step-body p { font-size:14px; color:#555; margin-top:2px; }
+
+  .role { border-radius:14px; padding:18px 20px; margin:14px 0; }
+  .role.inf { background:#fdf2f6; border:1px solid #f8d3e0; }
+  .role.loja { background:#eff6ff; border:1px solid #cfe2fd; }
+  .role-tag { display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; margin-bottom:10px; }
+  .role.inf .role-tag { background:#e8446a; color:#fff; }
+  .role.loja .role-tag { background:#2563eb; color:#fff; }
+  .flow { font-size:14px; color:#333; font-weight:600; line-height:2; }
+  .flow b { color:#e8446a; }
+  .role.loja .flow b { color:#2563eb; }
+
+  .check { display:flex; align-items:flex-start; gap:10px; padding:7px 0; font-size:14px; color:#333; }
+  .check .ic { color:#16a34a; font-weight:800; flex-shrink:0; }
+
+  .big { border-radius:14px; padding:20px; margin:12px 0; display:flex; gap:16px; align-items:flex-start; }
+  .big.warn { background:#fffbeb; border:1.5px solid #fde68a; }
+  .big .emoji { font-size:26px; flex-shrink:0; }
+  .big h3 { font-size:16px; }
+  .big p { font-size:14px; color:#555; margin-top:3px; }
+
+  .howto { background:#f8f9fb; border:1px solid #e8eaee; border-radius:14px; padding:20px 22px; margin:14px 0; }
+  .howto .head { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .howto .head .emoji { font-size:22px; }
+  .howto ol { margin:12px 0 0 0; padding-left:0; counter-reset:s; list-style:none; }
+  .howto ol li { position:relative; padding:8px 0 8px 36px; font-size:14px; color:#333; border-bottom:1px solid #eef0f3; }
+  .howto ol li:last-child { border-bottom:none; }
+  .howto ol li::before { counter-increment:s; content:counter(s); position:absolute; left:0; top:7px; width:22px; height:22px; background:#1a1a1a; color:#fff; border-radius:50%; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .code { font-family:monospace; font-size:12.5px; background:#1a1a1a; color:#7CFFB2; padding:2px 7px; border-radius:5px; }
+  .tag { font-family:monospace; font-size:12px; background:#eef0f3; padding:1px 6px; border-radius:4px; color:#333; }
+
+  .footer { margin-top:36px; padding-top:18px; border-top:1.5px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#aaa; }
+  .footer strong { color:#666; }
+
+  @media print {
+    body { background:#fff; padding:0; }
+    .page { box-shadow:none; border-radius:0; margin:0; max-width:100%; padding:32px 40px; page-break-after:always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PÁGINA 1 — CAPA + O QUE É -->
+<div class="page">
+  <div class="logo">Only<span>Shop</span></div>
+  <div style="margin-top:40px;">
+    <div class="kicker">Guia rápido pro sócio</div>
+    <h1>Como o app funciona<br>e o que falta pra ficar pronto</h1>
+    <p class="lead">Em linguagem simples, sem termo técnico. Lê do começo ao fim que em 5 minutos você entende tudo.</p>
+  </div>
+
+  <div class="sectlabel">O que é o OnlyShop (em 1 frase)</div>
+  <div class="big" style="background:#fdf2f6; border:1.5px solid #f8d3e0;">
+    <div class="emoji">📍</div>
+    <div>
+      <h3>É um "Uber de influencers locais".</h3>
+      <p>A <strong>loja</strong> cria uma campanha e paga. O <strong>influencer perto dela</strong> vê no mapa, aceita, grava um vídeo do produto e posta. A loja aprova e o influencer recebe. <strong>A gente conecta os dois e fica com 20%</strong> de cada campanha — igual o Uber fica com a parte dele de cada corrida.</p>
+    </div>
+  </div>
+
+  <div class="sectlabel">Os 2 lados do app</div>
+  <div class="role loja">
+    <span class="role-tag">🏪 LADO LOJA / MARCA</span>
+    <div class="flow">Cria conta → <b>cria campanha</b> (quero X influencers, pago R$Y por vídeo, dessa cidade) → <b>paga</b> → recebe os vídeos → aprova.</div>
+  </div>
+  <div class="role inf">
+    <span class="role-tag">⭐ LADO INFLUENCER</span>
+    <div class="flow">Cria conta → abre o <b>mapa</b> → vê campanhas perto → <b>aceita</b> → grava e posta no canal dele → <b>recebe</b>.</div>
+  </div>
+
+  <div class="footer">
+    <div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div>
+    <div>Página 1 de 3</div>
+  </div>
+</div>
+
+<!-- PÁGINA 2 — PASSO A PASSO + ESTADO ATUAL -->
+<div class="page">
+  <div class="sectlabel">Passo a passo — do login até receber</div>
+
+  <div class="step">
+    <div class="num">1</div>
+    <div class="step-body"><h3>Login</h3><p>A pessoa entra com email e senha. (Pra testar agora tem um botão "conta de teste" que entra direto.)</p></div>
+  </div>
+  <div class="step">
+    <div class="num">2</div>
+    <div class="step-body"><h3>Escolhe o lado</h3><p>Na primeira vez, ela escolhe: "Sou loja" ou "Sou influencer". Depois informa a localização (é o coração do app).</p></div>
+  </div>
+  <div class="step">
+    <div class="num pink">3</div>
+    <div class="step-body"><h3>Influencer: vê o mapa "perto de você"</h3><p>Um mapa estilo Uber mostra as campanhas das lojas próximas, com o valor que paga cada uma.</p></div>
+  </div>
+  <div class="step">
+    <div class="num pink">4</div>
+    <div class="step-body"><h3>Influencer: aceita e entrega</h3><p>Toca na campanha, vê quanto recebe (já com a taxa descontada), aceita, grava o vídeo, posta no canal dele e cola o link no app.</p></div>
+  </div>
+  <div class="step">
+    <div class="num" style="background:#2563eb;">5</div>
+    <div class="step-body"><h3>Loja: cria e paga a campanha</h3><p>A loja cadastra a campanha (vagas, valor, filtros, prazo). O app já mostra o total a pagar + os 20% da plataforma. Ela paga.</p></div>
+  </div>
+  <div class="step">
+    <div class="num" style="background:#2563eb;">6</div>
+    <div class="step-body"><h3>Loja: aprova a entrega</h3><p>A loja vê os vídeos enviados e aprova. Na hora da aprovação, o dinheiro se divide sozinho: <strong>80% pro influencer, 20% pra plataforma.</strong></p></div>
+  </div>
+  <div class="step">
+    <div class="num green">7</div>
+    <div class="step-body"><h3>Influencer: recebe e saca</h3><p>O valor cai na carteira dele dentro do app. Ele pede o saque por PIX.</p></div>
+  </div>
+
+  <div class="sectlabel">Como está o MVP hoje</div>
+  <p class="muted" style="margin-bottom:12px;">Tudo isso abaixo <strong>já está construído e funcionando</strong> no app (em "modo demonstração" — dá pra clicar e ver o fluxo inteiro):</p>
+  <div class="check"><span class="ic">✓</span> Login + escolha de lado (loja/influencer) + localização</div>
+  <div class="check"><span class="ic">✓</span> Mapa "perto de você" com as campanhas por distância</div>
+  <div class="check"><span class="ic">✓</span> Influencer: aceitar campanha, enviar entrega, ver ganhos e carteira</div>
+  <div class="check"><span class="ic">✓</span> Loja: cadastrar loja, criar campanha, ver o custo, aprovar entregas</div>
+  <div class="check"><span class="ic">✓</span> A divisão do dinheiro (80/20) calculada e mostrada certinho</div>
+  <div class="check"><span class="ic">✓</span> App enxuto e focado só no que importa agora</div>
+
+  <div class="footer">
+    <div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div>
+    <div>Página 2 de 3</div>
+  </div>
+</div>
+
+<!-- PÁGINA 3 — O QUE FALTA + O QUE PRECISO DE VOCÊ -->
+<div class="page">
+  <div class="sectlabel">O que falta pra ficar 100% (só 2 coisas)</div>
+  <p class="muted" style="margin-bottom:8px;">Hoje o app mostra tudo funcionando em modo demonstração. Pra <strong>mover dinheiro de verdade</strong>, faltam 2 acessos — e os dois dependem de você:</p>
+
+  <div class="big warn">
+    <div class="emoji">🗄️</div>
+    <div>
+      <h3>1. Acesso ao banco de dados (Supabase)</h3>
+      <p>É onde ficam guardadas as campanhas, os influencers e o dinheiro. Sem o acesso, o app não consegue salvar nada de verdade — só demonstrar.</p>
+    </div>
+  </div>
+  <div class="big warn">
+    <div class="emoji">💳</div>
+    <div>
+      <h3>2. Conta do Mercado Pago (pagamento)</h3>
+      <p>É o que faz o dinheiro entrar (a loja paga) e sair (o influencer saca), já dividindo os 80/20 automaticamente e dentro da lei.</p>
+    </div>
+  </div>
+
+  <div class="sectlabel">Como me dar o acesso ao Supabase</div>
+  <div class="howto">
+    <div class="head"><span class="emoji">🗄️</span><h3>Banco de dados — passo a passo</h3></div>
+    <ol>
+      <li>Entre em <span class="tag">supabase.com</span> e faça login na conta onde está o projeto OnlyShop.</li>
+      <li>Abra o projeto <strong>OnlyShop</strong>.</li>
+      <li>No menu, clique na engrenagem <strong>"Settings"</strong> → <strong>"Team"</strong> (ou "Members").</li>
+      <li>Clique em <strong>"Invite"</strong> / "Add member".</li>
+      <li>Digite o email <span class="tag">guilhermevb301@gmail.com</span> e escolha o nível <strong>"Owner"</strong> ou <strong>"Admin"</strong>.</li>
+      <li>Confirma. Pronto — me avisa que eu cuido do resto.</li>
+    </ol>
+  </div>
+
+  <div class="sectlabel">Como me dar a chave do Mercado Pago</div>
+  <div class="howto">
+    <div class="head"><span class="emoji">💳</span><h3>Pagamento — passo a passo</h3></div>
+    <ol>
+      <li>Crie (ou use) uma conta no <span class="tag">mercadopago.com.br</span> — de preferência a da empresa.</li>
+      <li>Entre no <strong>Mercado Pago Developers</strong>: <span class="tag">mercadopago.com.br/developers</span>.</li>
+      <li>Vá em <strong>"Suas integrações"</strong> → crie uma aplicação (nome: "OnlyShop").</li>
+      <li>Dentro dela, abra <strong>"Credenciais de produção"</strong>.</li>
+      <li>Copie o <strong>"Access Token"</strong> (começa com <span class="tag">APP_USR-...</span>).</li>
+      <li>Me manda esse token <strong>por mensagem privada</strong> (não em grupo). A parte de dividir o pagamento (80/20) eu configuro.</li>
+    </ol>
+  </div>
+
+  <div class="big" style="background:#f0fdf4; border:1.5px solid #bbf7d0;">
+    <div class="emoji">✅</div>
+    <div>
+      <h3>Resumindo o que preciso de você</h3>
+      <p>(1) Me adicionar no <strong>Supabase</strong> · (2) Me mandar o <strong>Access Token do Mercado Pago</strong>. Com esses dois, em pouco tempo o app sai do modo demonstração e começa a movimentar dinheiro de verdade.</p>
+    </div>
+  </div>
+
+  <div class="sectlabel">Em breve (próximas fases)</div>
+  <p class="muted">Pra não complicar agora, deixamos pra depois: gerador de vídeo com IA, postar direto no TikTok/Instagram, comunidade de criadores, cursos, lives e ranking. Já estão listados dentro do app, na seção <strong>"Em breve"</strong>. O foco agora é só uma coisa bem feita: <strong>conectar loja e influencer perto.</strong></p>
+
+  <div class="footer">
+    <div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div>
+    <div>Página 3 de 3</div>
+  </div>
+</div>
+
+</body>
+</html>

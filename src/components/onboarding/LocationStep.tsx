@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Loader2, Navigation, Check } from "lucide-react";
+import { MapPin, Loader2, Navigation, Check, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGeolocation, type GeoLocation } from "@/hooks/useGeolocation";
 import { isDemoSession } from "@/lib/onboarding";
@@ -97,16 +97,20 @@ export default function LocationStep({ onDone, target = "profile" }: LocationSte
   const working = busy || loading;
 
   return (
-    <div className="space-y-4">
-      {/* Detectar localização */}
+    <div className="space-y-4 animate-[fadeIn_.35s_cubic-bezier(0.32,0.72,0,1)]">
+      {/* Detectar localização — CTA da marca (gradiente magenta) */}
       <Button
         type="button"
         onClick={handleDetect}
         disabled={working}
-        className="w-full rounded-xl h-12 gap-2 bg-foreground text-background hover:bg-foreground/90 text-sm font-semibold"
+        aria-busy={working}
+        className="w-full rounded-xl h-12 gap-2 bg-gradient-primary text-white border-0 shadow-lg shadow-primary/25 text-sm font-semibold active:scale-[.98] transition-transform ease-[var(--ease-fluid)] disabled:opacity-50 disabled:active:scale-100"
       >
         {working ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="sr-only">Detectando…</span>
+          </>
         ) : (
           <Navigation className="h-4 w-4" />
         )}
@@ -157,37 +161,44 @@ export default function LocationStep({ onDone, target = "profile" }: LocationSte
               setResolved(null);
             }}
           />
+          <span className="block text-[10px] text-muted-foreground/40">
+            Opcional, mas melhora o match local.
+          </span>
         </div>
 
-        {!resolved && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleManual}
-            disabled={working || !city.trim()}
-            className="w-full rounded-xl h-11 border-border/15 text-xs bg-transparent hover:bg-muted/30"
-          >
-            {working ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirmar cidade"}
-          </Button>
-        )}
+        {!resolved &&
+          (working ? (
+            // Loading caprichado: skeleton no lugar do botão, nunca um gap cru.
+            <div className="h-11 w-full rounded-xl bg-muted/20 animate-pulse" />
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleManual}
+              disabled={!city.trim()}
+              className="w-full rounded-xl h-11 border-border/15 text-xs bg-transparent hover:bg-muted/30 active:scale-[.98] transition-transform ease-[var(--ease-fluid)] disabled:opacity-50 disabled:active:scale-100"
+            >
+              Confirmar cidade
+            </Button>
+          ))}
       </div>
 
       {error && <p className="text-[11px] text-destructive text-center">{error}</p>}
 
-      {/* Confirmação de localização resolvida */}
+      {/* Confirmação de localização resolvida (cyan = dinheiro/match) */}
       {resolved && (
-        <div className="rounded-2xl border border-accent/30 bg-accent/5 p-4 space-y-3">
+        <div className="rounded-[1.4rem] border border-accent/30 bg-accent/5 p-4 space-y-3 shadow-[var(--shadow-bezel-inset)] animate-[fadeIn_.35s_cubic-bezier(0.32,0.72,0,1)]">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+            <div className="h-9 w-9 rounded-full bg-accent/10 ring-1 ring-accent/25 flex items-center justify-center shrink-0">
               <Check className="h-4 w-4 text-accent" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold truncate">
+              <p className="text-sm font-semibold truncate">
                 {resolved.city
                   ? `${resolved.city}${resolved.state ? `, ${resolved.state}` : ""}`
                   : "Localização confirmada"}
               </p>
-              <p className="text-[10px] text-muted-foreground/40">
+              <p className="text-[10px] text-muted-foreground/50 tabular-nums">
                 {resolved.latitude.toFixed(3)}, {resolved.longitude.toFixed(3)}
               </p>
             </div>
@@ -196,11 +207,17 @@ export default function LocationStep({ onDone, target = "profile" }: LocationSte
             type="button"
             onClick={() => onDone(resolved)}
             className={cn(
-              "w-full rounded-xl h-11 text-sm font-semibold",
-              "bg-accent text-accent-foreground hover:bg-accent/90"
+              "group w-full rounded-xl h-11 text-sm font-semibold",
+              "bg-accent text-accent-foreground hover:bg-accent/90",
+              "active:scale-[.98] transition-transform ease-[var(--ease-fluid)]"
             )}
           >
-            Continuar
+            <span className="flex items-center justify-center gap-2">
+              Continuar
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black/15 transition-transform duration-300 ease-[var(--ease-fluid)] group-hover:translate-x-0.5">
+                <ArrowRight className="h-3 w-3" />
+              </span>
+            </span>
           </Button>
         </div>
       )}

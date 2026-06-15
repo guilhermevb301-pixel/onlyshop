@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, ArrowRight, Loader2, MapPin, Users, Gift, Clock } from "lucide-react";
+import { Plus, ArrowRight, Loader2, MapPin, Users, Gift, Clock, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CampaignPaymentStep } from "./CampaignPaymentStep";
@@ -21,6 +21,9 @@ import type { CreateCampaignInput } from "@/hooks/useBrand";
 interface Props {
   onCreate: (data: CreateCampaignInput) => Promise<Campaign | null>;
   onFunded: (campaignId: string) => Promise<void>;
+  triggerLabel?: string;                 // customiza o texto do botão de abrir
+  triggerVariant?: "default" | "link";   // "link" = botão discreto (ex: "Pagar agora")
+  resumeCampaign?: Campaign | null;      // abre direto no pagamento de uma campanha já criada
 }
 
 type Step = "form" | "payment";
@@ -47,12 +50,13 @@ const empty = {
   deadline_hours: "168",
 };
 
-export function CreateCampaignSheet({ onCreate, onFunded }: Props) {
+export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerVariant = "default", resumeCampaign }: Props) {
+  const isResume = !!resumeCampaign;
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<Step>("form");
+  const [step, setStep] = useState<Step>(isResume ? "payment" : "form");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(empty);
-  const [created, setCreated] = useState<Campaign | null>(null);
+  const [created, setCreated] = useState<Campaign | null>(resumeCampaign ?? null);
 
   const update = (key: keyof typeof empty, value: string | boolean) =>
     setForm((p) => ({ ...p, [key]: value }));
@@ -62,7 +66,11 @@ export function CreateCampaignSheet({ onCreate, onFunded }: Props) {
   const budget = computeBudget(slotsN, rewardN);
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-  const reset = () => { setForm(empty); setStep("form"); setCreated(null); };
+  // No modo "retomar pagamento" não há form pra resetar — volta direto ao pagamento.
+  const reset = () => {
+    if (isResume) { setStep("payment"); setCreated(resumeCampaign ?? null); return; }
+    setForm(empty); setStep("form"); setCreated(null);
+  };
 
   const handleClose = (o: boolean) => {
     setOpen(o);
@@ -107,19 +115,33 @@ export function CreateCampaignSheet({ onCreate, onFunded }: Props) {
   return (
     <Sheet open={open} onOpenChange={handleClose}>
       <SheetTrigger asChild>
-        <Button className="rounded-full bg-gradient-primary border-0 text-primary-foreground gap-1.5">
-          <Plus className="h-4 w-4" /> Nova campanha
-        </Button>
+        {triggerVariant === "link" ? (
+          <Button
+            variant="link"
+            className="h-auto p-0 text-xs font-semibold text-primary gap-1 hover:text-primary/80"
+          >
+            <Wallet className="h-3.5 w-3.5" /> {triggerLabel ?? "Pagar agora"}
+          </Button>
+        ) : (
+          <Button className="group rounded-full bg-gradient-primary border-0 text-primary-foreground gap-2 active:scale-[.98] transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] shadow-[var(--shadow-glow-cta)]">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/15 transition-transform duration-300 ease-[var(--ease-fluid)] group-hover:rotate-90">
+              <Plus className="h-3.5 w-3.5" />
+            </span>
+            {triggerLabel ?? "Nova campanha"}
+          </Button>
+        )}
       </SheetTrigger>
       <SheetContent side="bottom" className="rounded-t-3xl max-h-[92vh] overflow-y-auto border-border/20">
         <SheetHeader className="text-left">
           <SheetTitle className="text-lg">
-            {step === "form" ? "Nova campanha" : "Pagamento"}
+            {step === "form" ? "Nova campanha" : isResume ? "Concluir pagamento" : "Pagamento"}
           </SheetTitle>
           <SheetDescription className="text-[11px]">
             {step === "form"
               ? "Influencers locais gravam vídeos do seu produto. Você só paga por entrega aprovada."
-              : "Confirme o valor e publique sua campanha."}
+              : isResume
+                ? `Finalize o pagamento da campanha "${created?.name}" pra ela entrar no ar.`
+                : "Confirme o valor e publique sua campanha."}
           </SheetDescription>
         </SheetHeader>
 
@@ -261,10 +283,20 @@ export function CreateCampaignSheet({ onCreate, onFunded }: Props) {
 
             <Button
               type="submit"
-              className="w-full rounded-full bg-gradient-primary border-0 text-primary-foreground h-11 gap-1.5"
+              className="group w-full rounded-full bg-gradient-primary border-0 text-primary-foreground h-12 gap-2 active:scale-[.98] transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] shadow-[var(--shadow-glow-cta)] disabled:opacity-70 disabled:active:scale-100"
               disabled={loading}
+              aria-busy={loading}
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Publicar e pagar <ArrowRight className="h-4 w-4" /></>}
+              {loading ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /><span className="sr-only">Publicando campanha</span>Publicando...</>
+              ) : (
+                <>
+                  Publicar e pagar
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 transition-transform duration-300 ease-[var(--ease-fluid)] group-hover:translate-x-0.5">
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </>
+              )}
             </Button>
           </form>
         ) : created ? (
@@ -272,7 +304,7 @@ export function CreateCampaignSheet({ onCreate, onFunded }: Props) {
             <CampaignPaymentStep
               campaign={created}
               onPaid={handlePaid}
-              onBack={() => setStep("form")}
+              onBack={isResume ? () => handleClose(false) : () => setStep("form")}
             />
           </div>
         ) : null}

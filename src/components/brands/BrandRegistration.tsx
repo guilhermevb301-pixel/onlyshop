@@ -63,10 +63,16 @@ export function BrandRegistration({ onRegister, onDone }: Props) {
 
       // Geocoda cidade/estado -> lat/lon e salva no registro da marca (entra no mapa).
       if (brand) {
-        const geo = await forwardGeocode(city.trim(), state.trim() || undefined);
+        let geo = await forwardGeocode(city.trim(), state.trim() || undefined);
+        // Fallback demo: se o Nominatim falhar/rate-limit, usa o centro de Sorocaba/SP
+        // (DEFAULT_CENTER em campaigns.ts) — a loja nunca fica sem coordenadas no mapa.
+        if (!geo?.latitude || !geo?.longitude) {
+          geo = { latitude: -23.5015, longitude: -47.4526 };
+          console.warn("forwardGeocode falhou — usando coordenadas de fallback (Sorocaba/SP).");
+        }
         await persistBrandLocation(brand.id, {
-          latitude: geo?.latitude ?? null,
-          longitude: geo?.longitude ?? null,
+          latitude: geo.latitude,
+          longitude: geo.longitude,
           city: city.trim(),
           state: state.trim() || null,
         });
@@ -111,11 +117,11 @@ export function BrandRegistration({ onRegister, onDone }: Props) {
                 <Label className="text-xs flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-accent" /> Localização da loja *</Label>
                 <Button
                   type="button" variant="outline" size="sm"
-                  className={cn("rounded-full h-7 text-[10px] gap-1", geoOk && "border-success/40 text-success")}
+                  className={cn("rounded-full h-9 px-3 text-[11px] gap-1.5 active:scale-[.97] transition-transform", geoOk && "border-success/40 text-success")}
                   onClick={detectLocation}
                   disabled={geoLoading}
                 >
-                  {geoLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : geoOk ? <CheckCircle2 className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
+                  {geoLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : geoOk ? <CheckCircle2 className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
                   {geoOk ? "Capturada" : "Usar meu GPS"}
                 </Button>
               </div>

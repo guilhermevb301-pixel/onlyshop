@@ -35,7 +35,7 @@ const OPTIONS: {
 export default function RoleSelectCard({ onSelect, selected }: RoleSelectCardProps) {
   return (
     <div className="space-y-3">
-      {OPTIONS.map((opt) => {
+      {OPTIONS.map((opt, i) => {
         const Icon = opt.icon;
         const isSel = selected === opt.role;
         const isAccent = opt.accent === "accent";
@@ -44,43 +44,60 @@ export default function RoleSelectCard({ onSelect, selected }: RoleSelectCardPro
             key={opt.role}
             type="button"
             onClick={() => onSelect(opt.role)}
+            style={{ animationDelay: `${i * 70}ms` }}
             className={cn(
-              "group w-full text-left rounded-3xl p-5 border transition-all",
-              "bg-muted/20 hover:bg-muted/30 active:scale-[0.99]",
+              // double-bezel: casca externa (p-[3px]) + transição fluida + entrada escalonada
+              "group block w-full text-left rounded-[1.5rem] p-[3px] transition-all duration-300 ease-[var(--ease-fluid)]",
+              "animate-[fadeIn_.4s_cubic-bezier(0.32,0.72,0,1)_both]",
+              "active:scale-[0.98]",
               isSel
                 ? isAccent
-                  ? "border-accent/50 ring-2 ring-accent/30 bg-accent/5"
-                  : "border-primary/50 ring-2 ring-primary/30 bg-primary/5"
-                : "border-border/15 hover:border-border/30"
+                  ? "bg-gradient-to-b from-accent/40 to-accent/5 ring-1 ring-accent/40"
+                  : "bg-gradient-to-b from-primary/40 to-primary/5 ring-1 ring-primary/40"
+                : "bg-gradient-to-b from-white/[0.07] to-transparent hover:from-white/[0.12]"
             )}
           >
-            <div className="flex items-center gap-4">
+            {/* núcleo interno */}
+            <div
+              className={cn(
+                "flex items-center gap-4 rounded-[1.35rem] p-5 border transition-colors duration-300",
+                isSel
+                  ? isAccent
+                    ? "bg-accent/[0.06] border-accent/20"
+                    : "bg-primary/[0.06] border-primary/20"
+                  : "bg-background/40 border-white/[0.04] group-hover:border-white/[0.08]"
+              )}
+            >
+              {/* ícone aninhado em círculo */}
               <div
                 className={cn(
-                  "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors",
+                  "h-12 w-12 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300",
                   isAccent
-                    ? "bg-accent/10 text-accent group-hover:bg-accent/15"
-                    : "bg-primary/10 text-primary group-hover:bg-primary/15"
+                    ? "bg-accent/10 text-accent group-hover:bg-accent/20 ring-1 ring-accent/20"
+                    : "bg-primary/10 text-primary group-hover:bg-primary/20 ring-1 ring-primary/20"
                 )}
               >
                 <Icon className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold tracking-tight">{opt.title}</p>
-                <p className="text-[11px] text-muted-foreground/50 mt-0.5 leading-snug">
+                <p className="text-[11px] text-muted-foreground/60 mt-0.5 leading-snug">
                   {opt.desc}
                 </p>
               </div>
-              <ArrowRight
+              {/* seta em círculo, translada no hover/seleção */}
+              <span
                 className={cn(
-                  "h-4 w-4 shrink-0 transition-all",
+                  "flex h-7 w-7 items-center justify-center rounded-full shrink-0 transition-all duration-300 ease-[var(--ease-fluid)]",
                   isSel
                     ? isAccent
-                      ? "text-accent translate-x-0.5"
-                      : "text-primary translate-x-0.5"
-                    : "text-muted-foreground/20 group-hover:translate-x-0.5"
+                      ? "bg-accent/15 text-accent translate-x-0.5"
+                      : "bg-primary/15 text-primary translate-x-0.5"
+                    : "bg-white/[0.06] text-muted-foreground/40 group-hover:translate-x-0.5 group-hover:text-foreground"
                 )}
-              />
+              >
+                <ArrowRight className="h-3.5 w-3.5" />
+              </span>
             </div>
           </button>
         );

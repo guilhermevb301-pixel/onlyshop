@@ -1,119 +1,279 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowRight, Users, TrendingUp, DollarSign, Shield, Star, Check,
-  Sparkles, ChevronRight, Play, BarChart3, Globe, MessageCircle, Heart,
-  Clock, Rocket, Zap, Award, Target, Eye, X, ShieldCheck, Smartphone,
-  Headphones, Lock, CreditCard, RefreshCw, Gift, Crown, Flame, Instagram,
-  Youtube, Twitter
+  ArrowRight, Users, DollarSign, Star, Check, Sparkles, ChevronRight, Play,
+  MapPin, Wallet, ShieldCheck, Video, Banknote, Clock, Store, Compass,
+  Smartphone, Lock, Flame, Crown, X,
 } from "lucide-react";
-import { APP_NAME } from "@/lib/constants";
+import { computeBudget, computeSplit, PLATFORM_FEE_PCT } from "@/lib/campaigns";
 import logoImg from "@/assets/color-palette-ref.png";
 
-/* ─── Data ─── */
-const stats = [
-  { value: "10K+", label: "Criadores ativos", icon: Users },
-  { value: "R$1M+", label: "Comissões pagas", icon: DollarSign },
-  { value: "4.9★", label: "Avaliação", icon: Star },
-  { value: "500+", label: "Marcas parceiras", icon: Target },
-];
+/* Marca canônica (a constante APP_NAME ainda tem espaço; aqui cravamos o nome certo). */
+const BRAND = "OnlyShop";
 
-const features = [
-  { icon: Globe, title: "Comunidade que vende junto", desc: "Feed, stories, comunidades e chat em um só lugar." },
-  { icon: TrendingUp, title: "Sistema de Afiliados", desc: "Links rastreáveis com dashboard em tempo real." },
-  { icon: DollarSign, title: "Monetização Real", desc: "Comissões automáticas depositadas na sua conta." },
-  { icon: Shield, title: "Segurança Total", desc: "Dados criptografados e tracking transparente." },
-  { icon: BarChart3, title: "Analytics Avançado", desc: "CTR, conversões, ROI e métricas completas." },
-  { icon: MessageCircle, title: "Comunidade Ativa", desc: "Networking com os top criadores do Brasil." },
-];
+/* ─── Tokens locais (alinhados ao index.css dark: magenta = ação, cyan = dinheiro) ─── */
+const MAGENTA = "hsl(346,100%,58%)";
+const MAGENTA_SOFT = "hsl(330,81%,60%)";
+const CYAN = "hsl(174,100%,47%)"; // cor do dinheiro
 
-const testimonials = [
-  { name: "Marina Sales", role: "Top Afiliada · 3 meses", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face", text: "Em 3 meses fui de zero a R$12.400/mês em comissões. A plataforma mudou minha vida financeira.", earnings: "R$87.5K" },
-  { name: "Pedro Henrique", role: "Creator · 6 meses", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", text: "O tracking transparente mudou completamente meu jogo. Sei exatamente de onde vem cada centavo.", earnings: "R$45.2K" },
-  { name: "Rafa Digital", role: "Influencer · 1 ano", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face", text: "Meu CTR subiu de 2% pra 8% com a prova social verificada. Resultados reais e mensuráveis.", earnings: "R$120K" },
-  { name: "Beatriz Nova", role: "Iniciante · 1 mês", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face", text: "Primeiro mês e já fiz R$2.100! A comunidade ajuda demais. Recomendo pra qualquer iniciante.", earnings: "R$2.1K" },
-  { name: "Lucas Ferreira", role: "Agência · 8 meses", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face", text: "Gerencio 15 afiliados pela plataforma. O dashboard B2B é incomparável no mercado.", earnings: "R$230K" },
-  { name: "Ana Clara", role: "Creator · 4 meses", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face", text: "Saí do CLT pra viver de conteúdo. Hoje faturo 3x mais e tenho liberdade total.", earnings: "R$56K" },
-];
+/* ─── Reveal on scroll (fade-up com ease custom, sem dependência externa) ─── */
+function useReveal<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // respeita quem pediu menos movimento
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setShown(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setShown(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return { ref, shown };
+}
 
-const plans = [
-  { name: "Free", price: "R$0", period: "para sempre", desc: "Explore a plataforma", features: ["Perfil público", "Feed social completo", "Comunidades ilimitadas", "Ranking de criadores"], highlight: false, cta: "Começar grátis" },
-  { name: "Starter", price: "R$65,90", period: "/mês", desc: "Aprenda a monetizar", features: ["Tudo do Free", "Treinamento gamificado", "Missões com recompensas", "Suporte prioritário"], highlight: false, cta: "Começar agora" },
-  { name: "Partner", price: "R$699", period: "/mês", desc: "Monetize de verdade", features: ["Tudo do Starter", "Links de afiliado ilimitados", "Painel de vendas completo", "Comissão turbinada", "Kit físico exclusivo"], highlight: true, cta: "Quero monetizar" },
-  { name: "Business", price: "R$998", period: "/mês", desc: "Escale seu negócio", features: ["Tudo do Partner", "Criar rede de afiliados", "Relatórios B2B", "API de integração"], highlight: false, cta: "Escalar negócio" },
-];
+/* Wrapper de entrada fade-up escalonado */
+function Reveal({
+  children,
+  delay = 0,
+  className = "",
+  as: As = "div",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+  as?: React.ElementType;
+}) {
+  const { ref, shown } = useReveal<HTMLDivElement>();
+  return (
+    <As
+      ref={ref as React.Ref<HTMLDivElement>}
+      className={`transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
+        shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+      } ${className}`}
+      style={{ transitionDelay: shown ? `${delay}ms` : "0ms" }}
+    >
+      {children}
+    </As>
+  );
+}
 
-const steps = [
-  { n: "01", title: "Crie sua conta", desc: "Cadastro em menos de 1 minuto.", icon: Rocket },
-  { n: "02", title: "Monte seu perfil", desc: "Conecte suas redes sociais.", icon: Users },
-  { n: "03", title: "Poste e engaje", desc: "Crie conteúdo e construa audiência.", icon: Heart },
-  { n: "04", title: "Monetize", desc: "Ative links e gere receita por post.", icon: DollarSign },
-];
+/* ─── Eyebrow tag ─── */
+const Eyebrow = ({ children, color = MAGENTA }: { children: React.ReactNode; color?: string }) => (
+  <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3" style={{ color }}>
+    {children}
+  </p>
+);
 
-const faqs = [
-  { q: "Preciso pagar para começar?", a: "Não! O plano Free é gratuito para sempre. Você pode explorar toda a comunidade sem pagar nada." },
-  { q: "Como funciona o sistema de afiliados?", a: "Faça upgrade para o plano Partner e receba links rastreáveis. Cada venda gera comissão automática depositada na sua conta." },
-  { q: "Quanto tempo leva para ter resultado?", a: "Alguns membros reportam ganhos na primeira semana. A maioria atinge resultados consistentes em 30-60 dias." },
-  { q: "Funciona em qualquer dispositivo?", a: "Sim! Navegador, celular, tablet. Também instala como app nativo (PWA) direto no seu celular." },
-  { q: "Posso cancelar a qualquer momento?", a: "Sim, sem burocracia. Cancele pelo painel em dois cliques. Sem multa, sem pegadinha." },
-  { q: "É seguro colocar meus dados?", a: "Totalmente. Usamos criptografia de ponta e nunca compartilhamos seus dados com terceiros." },
-  { q: "Qual a diferença pro Instagram/TikTok?", a: "Aqui você monetiza diretamente. Cada post tem potencial de gerar comissão via links de afiliado integrados." },
-];
-
-const beforeAfter = [
-  { before: "Postar sem retorno financeiro", after: "Cada post gera comissão rastreável" },
-  { before: "Não saber de onde vem as vendas", after: "Dashboard com analytics em tempo real" },
-  { before: "Depender de publi de marcas", after: "Monetização própria e automática" },
-  { before: "Trabalhar sozinho sem suporte", after: "Comunidade ativa com top creators" },
-  { before: "Links genéricos sem tracking", after: "Links personalizados com CTR otimizado" },
-];
-
-const trustBadges = [
-  { icon: ShieldCheck, label: "Dados criptografados" },
-  { icon: Lock, label: "Pagamentos seguros" },
-  { icon: CreditCard, label: "Checkout protegido" },
-  { icon: Headphones, label: "Suporte 24/7" },
-  { icon: RefreshCw, label: "Garantia 7 dias" },
-  { icon: Smartphone, label: "App nativo (PWA)" },
-];
-
-/* ─── Reusable glass card ─── */
-const Glass = ({ children, className = "", glow = false }: { children: React.ReactNode; className?: string; glow?: boolean }) => (
-  <div className={`relative rounded-3xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl ${glow ? "shadow-[0_0_60px_-15px_hsl(330,81%,60%,0.25)]" : ""} ${className}`}>
-    <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-white/[0.06] to-transparent pointer-events-none" />
-    <div className="relative z-10">{children}</div>
+/* ─── Card double-bezel (casca + núcleo squircle) ─── */
+const Glass = ({
+  children,
+  className = "",
+  glow = false,
+  core = "bg-[#0b0b0d]",
+}: {
+  children: React.ReactNode;
+  className?: string;
+  glow?: boolean;
+  core?: string;
+}) => (
+  <div
+    className={`relative rounded-[1.6rem] bg-gradient-to-b from-white/[0.10] to-white/[0.02] p-px ${
+      glow ? "shadow-[var(--shadow-glow-cta)]" : ""
+    } ${className}`}
+  >
+    <div
+      className={`relative h-full rounded-[1.55rem] ${core} backdrop-blur-2xl overflow-hidden`}
+      style={{ boxShadow: "var(--shadow-bezel-inset)" }}
+    >
+      <div className="pointer-events-none absolute inset-0 rounded-[1.55rem] bg-gradient-to-b from-white/[0.05] to-transparent" />
+      <div className="relative z-10 h-full">{children}</div>
+    </div>
   </div>
 );
 
-export default function Landing() {
+/* CTA com seta num círculo (padrão "ícone aninhado em círculo") */
+const ArrowCircle = ({ light = false }: { light?: boolean }) => (
+  <span
+    aria-hidden="true"
+    className={`ml-2 inline-flex h-6 w-6 items-center justify-center rounded-full transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 ${
+      light ? "bg-black/15" : "bg-white/15"
+    }`}
+  >
+    <ArrowRight className="h-3.5 w-3.5" />
+  </span>
+);
+
+/* Avatar com iniciais (substitui fotos stock — honesto pra um produto novo) */
+function InitialAvatar({
+  name,
+  className = "",
+  ring = false,
+}: {
+  name: string;
+  className?: string;
+  ring?: boolean;
+}) {
+  const initials = name
+    .split(" ")
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+  const hue = (name.charCodeAt(0) * 13 + (name.charCodeAt(1) || 0) * 7) % 360;
   return (
-    <div className="min-h-screen bg-[hsl(240,12%,3%)] text-white overflow-x-hidden">
-      {/* ── Mesh background ── */}
+    <span
+      aria-hidden="true"
+      className={`inline-flex items-center justify-center font-bold text-white ${
+        ring ? "ring-2 ring-[hsl(346,100%,58%)]/30" : ""
+      } ${className}`}
+      style={{
+        background: `linear-gradient(135deg, hsl(${hue} 60% 26%), hsl(${(hue + 40) % 360} 55% 16%))`,
+      }}
+    >
+      {initials}
+    </span>
+  );
+}
+
+/* ─── Data (MVP "Conecta localizado") ─── */
+const stats = [
+  { value: "Sorocaba/SP", label: "Primeira praça", icon: MapPin, money: false },
+  { value: "80%", label: "Você fica com", icon: Wallet, money: true },
+  { value: "PIX", label: "Saque na hora", icon: Banknote, money: true },
+  { value: "Grátis", label: "Pra creator", icon: Sparkles, money: false },
+];
+
+/* 3 pilares reais */
+const pillars = [
+  {
+    icon: Compass,
+    title: "Mapa por geolocalização",
+    desc: "Abra o mapa e veja as marcas e lojas perto de você que estão pagando por vídeo. Raio em km, do seu bairro.",
+    accent: MAGENTA,
+  },
+  {
+    icon: ShieldCheck,
+    title: "Pague só por entrega aprovada",
+    desc: "Lojista trava o valor da vaga; o creator só recebe quando o vídeo é aprovado. Sem caô, sem trabalho de graça.",
+    accent: CYAN,
+  },
+  {
+    icon: Wallet,
+    title: "Split 80/20 com saque PIX",
+    desc: "Você fica com 80% do prêmio, a OnlyShop com 20%. Caiu a aprovação, sacou no PIX.",
+    accent: MAGENTA_SOFT,
+  },
+];
+
+const steps = [
+  { n: "01", title: "Crie sua conta grátis", desc: "Menos de 1 minuto. Sem cartão.", icon: Smartphone },
+  { n: "02", title: "Abra o mapa", desc: "Veja as campanhas pagando perto de você.", icon: MapPin },
+  { n: "03", title: "Pegue uma vaga", desc: "Aceite a campanha e grave um vídeo simples.", icon: Video },
+  { n: "04", title: "Envie e receba", desc: "Manda o link, é aprovado, cai no PIX.", icon: DollarSign },
+];
+
+const faqs = [
+  { q: "Preciso ter muitos seguidores?", a: "Não. As campanhas são por entrega de vídeo, não por número de seguidores. Se você grava um vídeo honesto do produto, você pode pegar a vaga." },
+  { q: "Quanto custa pra usar?", a: "Pro creator é grátis — você só ganha. O lojista paga o prêmio das vagas que abrir + 20% de taxa da plataforma. Sem mensalidade pra ninguém." },
+  { q: "Como recebo o dinheiro?", a: "Quando a marca aprova seu vídeo, o valor cai no seu saldo. Você saca via PIX direto pela carteira do app." },
+  { q: "Qual o split?", a: "Você (creator) fica com 80% do prêmio da vaga; a OnlyShop fica com 20%. Tudo transparente, mostrado antes de você aceitar." },
+  { q: "Funciona na minha cidade?", a: "Estamos começando por Sorocaba/SP e expandindo praça por praça. Crie sua conta e o mapa já mostra o que tem perto de você." },
+  { q: "E se eu sou lojista?", a: "Você abre uma campanha, define o prêmio por vídeo e quantas vagas quer. Só paga pelas entregas aprovadas — quem não entrega, não custa." },
+  { q: "Funciona no celular?", a: "Sim. O app roda no navegador e instala como app nativo (PWA) direto no seu celular." },
+];
+
+const beforeAfter = [
+  { before: "Procurar marca no direct e nunca ter resposta", after: "Abrir o mapa e ver quem está pagando agora" },
+  { before: "Gravar publi de graça torcendo por retorno", after: "Pegar uma vaga com prêmio definido antes" },
+  { before: "Depender de ter milhares de seguidores", after: "Ganhar por entrega, não por audiência" },
+  { before: "Esperar pra ver se vão te pagar", after: "Aprovou o vídeo, sacou no PIX" },
+];
+
+const audience = [
+  { icon: Video, title: "Creators e gente da cidade", desc: "Grava um vídeo simples do produto, entrega e recebe. Sem precisar ser influencer." },
+  { icon: Store, title: "Lojas e marcas locais", desc: "Abre campanha, define o prêmio por vídeo e só paga pelas entregas aprovadas." },
+  { icon: MapPin, title: "Qualquer um perto de uma vaga", desc: "O match é por localização: se tem campanha no seu raio, ela aparece no seu mapa." },
+];
+
+const testimonials = [
+  { name: "Marina Sales", role: "Creator · Moda", text: "Peguei uma campanha de vestido a 2 km de casa, gravei no domingo e o PIX caiu na terça. Surreal de simples." },
+  { name: "Pedro Henrique", role: "Creator · Fitness", text: "Não tenho seguidor nenhum e mesmo assim faturei gravando resenha de whey. Aqui paga por entrega, não por audiência." },
+  { name: "GlowLab", role: "Loja de cosméticos", text: "Abri a campanha do sérum e em dois dias tinha gente da cidade gravando. Só paguei pelos vídeos que aprovei." },
+];
+
+const trustBadges = [
+  { icon: ShieldCheck, label: "Entrega aprovada antes de pagar" },
+  { icon: Lock, label: "Saldo travado pelo lojista" },
+  { icon: Banknote, label: "Saque via PIX" },
+  { icon: Smartphone, label: "App nativo (PWA)" },
+];
+
+export default function Landing() {
+  /* nav sticky com estado de scroll */
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 16);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  /* calculadora do split (dados reais via campaigns.ts) */
+  const [slots, setSlots] = useState(10);
+  const [reward, setReward] = useState(50);
+  const budget = computeBudget(slots, reward);
+  const split = computeSplit(reward);
+  const fmt = (n: number) =>
+    n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+
+  return (
+    <div className="min-h-screen bg-background text-white overflow-x-hidden">
+      {/* ── Ambiente magenta ↔ cyan (a dualidade da marca) ── */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] rounded-full bg-[hsl(330,81%,60%)] opacity-[0.07] blur-[150px]" />
-        <div className="absolute top-[30%] right-[-15%] w-[50vw] h-[50vw] rounded-full bg-[hsl(270,91%,65%)] opacity-[0.05] blur-[150px]" />
-        <div className="absolute bottom-[-10%] left-[20%] w-[40vw] h-[40vw] rounded-full bg-[hsl(25,95%,53%)] opacity-[0.05] blur-[130px]" />
+        <div className="absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] rounded-full opacity-[0.08] blur-[150px]" style={{ background: MAGENTA }} />
+        <div className="absolute top-[35%] right-[-15%] w-[50vw] h-[50vw] rounded-full opacity-[0.05] blur-[160px]" style={{ background: CYAN }} />
+        <div className="absolute bottom-[-10%] left-[20%] w-[40vw] h-[40vw] rounded-full opacity-[0.05] blur-[130px]" style={{ background: MAGENTA_SOFT }} />
         <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")" }} />
       </div>
 
-      {/* ═══ NAV ═══ */}
-      <nav className="relative z-50 w-full">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-5">
-          <Link to="/" className="flex items-center gap-2.5">
-            <img src={logoImg} alt={APP_NAME} className="h-10 w-10 rounded-xl object-cover" />
+      {/* ═══ NAV (sticky) ═══ */}
+      <nav
+        className={`sticky top-0 z-50 w-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          scrolled ? "border-b border-white/[0.06] bg-black/70 backdrop-blur-xl" : "border-b border-transparent"
+        }`}
+      >
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-5 py-3.5">
+          <Link to="/" className="flex items-center gap-2.5" aria-label={`${BRAND} — início`}>
+            <img src={logoImg} alt="" className="h-9 w-9 rounded-xl object-cover" />
+            <span className="font-extrabold text-sm tracking-tight">{BRAND}</span>
           </Link>
-          <div className="hidden sm:flex items-center gap-6 text-xs text-white/40">
-            <button onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-white transition-colors">Como funciona</button>
-            <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-white transition-colors">Recursos</button>
-            <button onClick={() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-white transition-colors">Planos</button>
-            <button onClick={() => document.getElementById("faq")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-white transition-colors">FAQ</button>
+          <div className="hidden sm:flex items-center gap-6 text-xs text-white/45">
+            <button onClick={() => scrollTo("how-it-works")} className="hover:text-white transition-colors" aria-label="Ir para Como funciona">Como funciona</button>
+            <button onClick={() => scrollTo("pillars")} className="hover:text-white transition-colors" aria-label="Ir para Como funciona o dinheiro">O dinheiro</button>
+            <button onClick={() => scrollTo("pricing")} className="hover:text-white transition-colors" aria-label="Ir para Preço">Preço</button>
+            <button onClick={() => scrollTo("faq")} className="hover:text-white transition-colors" aria-label="Ir para Perguntas frequentes">FAQ</button>
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" className="text-white/40 hover:text-white hover:bg-white/5 text-xs h-9 rounded-full px-4">
-              <Link to="/auth">Login</Link>
+            <Button asChild variant="ghost" size="sm" className="text-white/45 hover:text-white hover:bg-white/5 text-xs h-9 rounded-full px-4">
+              <Link to="/auth">Entrar</Link>
             </Button>
-            <Button asChild size="sm" className="bg-white/[0.08] backdrop-blur-xl border border-white/[0.12] hover:bg-white/[0.14] text-white text-xs h-9 px-5 rounded-full font-semibold shadow-[0_0_20px_hsl(330,81%,60%,0.15)]">
+            <Button asChild size="sm" className="bg-gradient-primary text-white text-xs h-9 px-5 rounded-full font-semibold border-0 shadow-[var(--shadow-glow-cta)] active:scale-[.98] transition-transform">
               <Link to="/auth">Criar conta</Link>
             </Button>
           </div>
@@ -121,119 +281,135 @@ export default function Landing() {
       </nav>
 
       {/* ═══ HERO ═══ */}
-      <section className="relative z-10 pt-8 sm:pt-16 pb-20 overflow-hidden">
-        {/* glow atrás do título */}
-        <div className="pointer-events-none absolute top-[-10%] left-[5%] w-[55vw] h-[55vw] max-w-[640px] max-h-[640px] rounded-full bg-[hsl(330,81%,60%)] opacity-[0.10] blur-[140px]" />
-        <div className="pointer-events-none absolute top-[20%] left-[30%] w-[40vw] h-[40vw] max-w-[480px] max-h-[480px] rounded-full bg-[hsl(270,91%,65%)] opacity-[0.08] blur-[150px]" />
+      <section className="relative z-10 pt-10 sm:pt-16 pb-20 overflow-hidden">
+        <div className="pointer-events-none absolute top-[-10%] left-[5%] w-[55vw] h-[55vw] max-w-[640px] max-h-[640px] rounded-full opacity-[0.10] blur-[140px]" style={{ background: MAGENTA }} />
+        <div className="pointer-events-none absolute top-[25%] right-[8%] w-[36vw] h-[36vw] max-w-[440px] max-h-[440px] rounded-full opacity-[0.07] blur-[150px]" style={{ background: CYAN }} />
 
-        <div className="max-w-6xl mx-auto px-5 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 relative">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             {/* ── Coluna texto ── */}
-            <div className="max-w-2xl mx-auto text-center lg:text-left lg:mx-0">
-              <Badge className="mb-6 bg-white/[0.06] backdrop-blur-xl text-white/60 border-white/[0.08] text-[10px] font-semibold px-4 py-1.5 rounded-full uppercase tracking-[0.15em] inline-flex">
-                <Sparkles className="h-3 w-3 mr-1.5 text-[hsl(25,95%,53%)]" />
-                O ecossistema de vendas do Brasil
+            <Reveal className="max-w-2xl mx-auto text-center lg:text-left lg:mx-0">
+              <Badge className="mb-6 bg-white/[0.06] backdrop-blur-xl text-white/65 border-white/[0.08] text-[10px] font-semibold px-4 py-1.5 rounded-full uppercase tracking-[0.18em] inline-flex">
+                <MapPin className="h-3 w-3 mr-1.5" style={{ color: CYAN }} />
+                Conecta localizado · pague por entrega
               </Badge>
 
-              <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold mb-6 leading-[0.95] tracking-tight">
-                Conecta{" "}
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,95%,53%)] via-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">marcas e afiliados</span>
-                <br />
-                em{" "}
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">renda real</span>
+              <h1 className="text-4xl sm:text-5xl md:text-[4.2rem] font-extrabold mb-6 leading-[0.98] tracking-tight">
+                Marcas e lojas{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(346,100%,58%)] to-[hsl(270,91%,65%)]">perto de você</span>{" "}
+                procurando quem grave vídeo —{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(174,100%,47%)] to-[hsl(174,100%,60%)]">ganhe por entrega</span>
               </h1>
 
-              <p className="text-base sm:text-lg text-white/55 mb-8 max-w-md leading-relaxed mx-auto lg:mx-0">
-                Marcas e lojas acham quem vende seus produtos. Afiliados acham renda — no TikTok Shop, Instagram Shop e em lojas físicas perto de você. E a IA cria o vídeo: você nem precisa aparecer.
+              <p className="text-base sm:text-lg text-white/60 mb-8 max-w-md leading-relaxed mx-auto lg:mx-0">
+                Abra o mapa, pegue uma campanha da sua região, grave um vídeo simples e receba via PIX. Sem precisar de seguidor.
               </p>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-10 justify-center lg:justify-start">
-                <Button asChild size="lg" className="bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)] hover:opacity-90 hover:-translate-y-0.5 transition-transform text-white w-full sm:w-auto text-sm h-13 px-8 rounded-full font-bold border-0 shadow-[0_8px_40px_-8px_hsl(330,81%,60%,0.5)]">
+                <Button asChild size="lg" className="group bg-gradient-primary text-white w-full sm:w-auto text-sm h-14 px-7 rounded-full font-bold border-0 shadow-[var(--shadow-glow-cta)] hover:-translate-y-0.5 active:scale-[.98] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]">
                   <Link to="/auth">
-                    Começar grátis
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    Criar conta grátis
+                    <ArrowCircle />
                   </Link>
                 </Button>
                 <Button
                   size="lg"
                   variant="ghost"
-                  className="w-full sm:w-auto text-white/40 hover:text-white hover:bg-white/5 h-13 px-8 rounded-full text-sm"
-                  onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+                  className="w-full sm:w-auto text-white/55 hover:text-white hover:bg-white/5 h-14 px-7 rounded-full text-sm active:scale-[.98] transition-transform"
+                  onClick={() => scrollTo("how-it-works")}
                 >
                   <Play className="mr-2 h-3.5 w-3.5" />
                   Como funciona
                 </Button>
               </div>
 
-              {/* Mini social proof under CTA */}
+              {/* Mini social proof honesto */}
               <div className="flex items-center gap-3 justify-center lg:justify-start">
                 <div className="flex -space-x-2">
-                  {testimonials.slice(0, 4).map((t) => (
-                    <img key={t.name} src={t.avatar} alt="" className="h-7 w-7 rounded-full border-2 border-[hsl(240,12%,3%)] object-cover" />
+                  {testimonials.map((t) => (
+                    <InitialAvatar key={t.name} name={t.name} className="h-7 w-7 rounded-full border-2 border-black text-[9px]" />
                   ))}
                 </div>
-                <div className="text-[11px] text-white/40">
-                  <span className="text-white/70 font-semibold">+10.000</span> criadores ativos
+                <div className="text-[11px] text-white/45">
+                  Primeiras lojas e creators de <span className="text-white/75 font-semibold">Sorocaba</span>
                 </div>
               </div>
-            </div>
+            </Reveal>
 
-            {/* ── Coluna mockup (Estúdio IA) ── */}
-            <div className="flex justify-center mt-2 lg:mt-0">
+            {/* ── Coluna mockup (campanha no mapa) ── */}
+            <Reveal delay={120} className="flex justify-center mt-2 lg:mt-0">
               <div className="relative">
-                {/* halo */}
-                <div className="absolute inset-0 -m-6 rounded-[48px] bg-gradient-to-tr from-[hsl(330,81%,60%)]/20 to-[hsl(270,91%,65%)]/20 blur-2xl" />
+                <div className="absolute inset-0 -m-6 rounded-[48px] opacity-30 blur-2xl" style={{ background: `linear-gradient(135deg, ${MAGENTA}, ${CYAN})` }} />
                 {/* phone frame */}
-                <div className="relative w-[270px] rounded-[40px] border border-white/10 bg-[hsl(240,10%,5%)] p-3 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]">
-                  <div className="rounded-[30px] overflow-hidden bg-[hsl(240,10%,7%)]">
+                <div className="relative w-[272px] rounded-[40px] border border-white/10 bg-[#050506] p-3 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+                  <div className="rounded-[30px] overflow-hidden bg-[#0a0a0c]">
                     {/* header do app */}
-                    <div className="flex items-center gap-2 px-4 pt-4 pb-3">
-                      <div className="h-7 w-7 rounded-xl bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)] flex items-center justify-center text-white text-sm">🪄</div>
-                      <div className="text-white text-xs font-bold">Estúdio IA</div>
+                    <div className="flex items-center justify-between px-4 pt-4 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-xl bg-gradient-primary flex items-center justify-center">
+                          <Compass className="h-3.5 w-3.5 text-white" />
+                        </div>
+                        <div className="text-white text-xs font-bold">Perto de você</div>
+                      </div>
+                      <div className="flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-[9px] text-white/60">
+                        <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: CYAN }} /> ao vivo
+                      </div>
                     </div>
-                    {/* vídeo gerado */}
+                    {/* mini mapa */}
                     <div className="px-4">
-                      <div className="relative aspect-[9/16] rounded-2xl overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=700&fit=crop&crop=faces" alt="" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
-                        <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full">Cena 2/3</div>
-                        <div className="absolute bottom-3 left-3 right-3">
-                          <div className="text-white text-[11px] font-semibold leading-tight mb-1">"Esse sérum mudou minha pele em 2 semanas"</div>
-                          <div className="h-1 rounded-full bg-white/20 overflow-hidden">
-                            <div className="h-full w-2/3 bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]" />
+                      <div className="relative aspect-[9/13] rounded-2xl overflow-hidden bg-[#0e0e12]">
+                        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.06), transparent 60%), repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 28px), repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 28px)" }} />
+                        {/* user pin */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                          <span className="absolute inset-0 m-auto h-10 w-10 rounded-full animate-ping opacity-40" style={{ background: MAGENTA }} />
+                          <span className="relative block h-3 w-3 rounded-full ring-4 ring-black" style={{ background: MAGENTA }} />
+                        </div>
+                        {/* campaign pins (R$) */}
+                        {[
+                          { t: "30%", l: "22%", v: "R$50" },
+                          { t: "62%", l: "70%", v: "R$60" },
+                          { t: "76%", l: "30%", v: "R$45" },
+                        ].map((p) => (
+                          <div key={p.v} className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-[10px] font-bold text-black shadow-lg" style={{ top: p.t, left: p.l, background: CYAN }}>
+                            {p.v}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* campanha selecionada */}
+                    <div className="px-4 py-3">
+                      <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-3">
+                        <div className="flex items-center gap-2">
+                          <InitialAvatar name="Boutique Bella" className="h-9 w-9 rounded-lg text-[10px] shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-white text-[11px] font-semibold truncate">Vestidos da nova coleção</div>
+                            <div className="text-white/40 text-[10px]">Boutique Bella · 1,8 km</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[11px] font-extrabold tabular-nums" style={{ color: CYAN }}>R$ 40</div>
+                            <div className="text-[8px] text-white/30">você recebe</div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                    {/* produto + status */}
-                    <div className="flex items-center gap-2 px-4 py-3">
-                      <div className="h-9 w-9 rounded-lg bg-white/5 overflow-hidden shrink-0">
-                        <img src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=120" alt="" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-white text-[11px] font-medium truncate">Sérum Vitamina C Glow</div>
-                        <div className="text-[hsl(330,81%,65%)] text-[10px]">gerando vídeo de venda…</div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </Reveal>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-16">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-2xl p-[1px] bg-gradient-to-br from-white/10 to-transparent transition-transform hover:-translate-y-1"
-              >
-                <div className="rounded-2xl bg-[hsl(240,10%,6%)] p-4 sm:p-5 text-center h-full">
-                  <stat.icon className="h-4 w-4 mx-auto mb-2 text-[hsl(330,81%,60%)]" />
-                  <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
-                  <div className="text-[10px] text-white/30 mt-0.5">{stat.label}</div>
+            {stats.map((stat, i) => (
+              <Reveal key={stat.label} delay={i * 70}>
+                <div className="rounded-[1.3rem] p-px bg-gradient-to-br from-white/10 to-transparent transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 h-full">
+                  <div className="rounded-[1.25rem] bg-[#0a0a0c] p-4 sm:p-5 text-center h-full" style={{ boxShadow: "var(--shadow-bezel-inset)" }}>
+                    <stat.icon className="h-4 w-4 mx-auto mb-2" style={{ color: stat.money ? CYAN : MAGENTA }} />
+                    <div className="text-lg sm:text-2xl font-bold tabular-nums" style={stat.money ? { color: CYAN } : undefined}>{stat.value}</div>
+                    <div className="text-[10px] text-white/35 mt-0.5">{stat.label}</div>
+                  </div>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -241,458 +417,422 @@ export default function Landing() {
 
       {/* ═══ SOCIAL PROOF BAR ═══ */}
       <section className="py-4 border-y border-white/[0.05]">
-        <div className="max-w-6xl mx-auto px-5">
-          <div className="flex items-center justify-center gap-6 sm:gap-12 flex-wrap text-[11px] text-white/40">
-            <div className="flex items-center gap-1.5"><Star className="h-3 w-3 text-amber-400 fill-amber-400" /><span className="font-bold text-white/70">4.9/5</span> avaliação</div>
-            <div className="flex items-center gap-1.5"><Users className="h-3 w-3 text-[hsl(330,81%,60%)]" /><span className="font-bold text-white/70">10K+</span> criadores</div>
-            <div className="flex items-center gap-1.5"><TrendingUp className="h-3 w-3 text-emerald-400" /><span className="font-bold text-white/70">R$1M+</span> pagos</div>
-            <div className="flex items-center gap-1.5"><Clock className="h-3 w-3 text-white/30" /><span className="font-bold text-white/70">&lt;1min</span> cadastro</div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-5">
+          <div className="flex items-center justify-center gap-6 sm:gap-12 flex-wrap text-[11px] text-white/45">
+            <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3" style={{ color: MAGENTA }} /><span className="font-bold text-white/75">Sorocaba/SP</span> primeira praça</div>
+            <div className="flex items-center gap-1.5"><Wallet className="h-3 w-3" style={{ color: CYAN }} /><span className="font-bold" style={{ color: CYAN }}>80%</span> pro creator</div>
+            <div className="flex items-center gap-1.5"><Banknote className="h-3 w-3" style={{ color: CYAN }} /><span className="font-bold text-white/75">PIX</span> na aprovação</div>
+            <div className="flex items-center gap-1.5"><Clock className="h-3 w-3 text-white/35" /><span className="font-bold text-white/75">&lt;1min</span> cadastro</div>
           </div>
         </div>
       </section>
 
-      {/* ═══ NOVIDADES — features lançadas hoje ═══ */}
-      <section className="py-16 sm:py-20 relative z-10">
-        <div className="max-w-6xl mx-auto px-5">
-          <div className="text-center mb-10">
-            <Badge className="mb-3 bg-[hsl(346,100%,58%)]/10 text-[hsl(346,100%,68%)] border-[hsl(346,100%,58%)]/30 rounded-full px-3 py-1 text-[10px] font-semibold tracking-wider uppercase">
-              <Sparkles className="h-3 w-3 mr-1 inline" /> Novo · Recém-lançado
-            </Badge>
-            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white mt-3">
-              Inteligência que <span className="text-gradient-primary">conecta sozinha</span>
+      {/* ═══ 3 PILARES (o que é único) ═══ */}
+      <section id="pillars" className="py-16 sm:py-24 relative z-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5">
+          <Reveal className="text-center mb-12">
+            <Eyebrow color={CYAN}>Como o dinheiro funciona</Eyebrow>
+            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight">
+              Sem enrolação:{" "}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(346,100%,58%)] to-[hsl(174,100%,47%)]">vaga, vídeo, PIX</span>
             </h2>
-            <p className="mt-3 text-sm text-white/50 max-w-xl mx-auto">
-              Pare de procurar marcas ou afiliados. A Only Shop faz o match automaticamente baseado em nicho, performance e localização.
+            <p className="mt-3 text-sm text-white/55 max-w-xl mx-auto">
+              Um marketplace de campanhas localizadas. A loja paga pela entrega aprovada, você fica com 80% e saca no PIX.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { icon: Sparkles, title: "Smart Match", desc: "IA cruza nicho + geo + performance e devolve top matches.", href: "/discover", color: "from-[hsl(346,100%,58%)] to-[hsl(330,81%,60%)]" },
-              { icon: Flame, title: "Em Alta", desc: "Produtos hypados ranqueados por vendas reais das últimas 24h-30d.", href: "/trending", color: "from-[hsl(25,95%,53%)] to-[hsl(346,100%,58%)]" },
-              { icon: Globe, title: "Geolocalização", desc: "Encontre criadores e marcas próximos para entregas e parcerias locais.", href: "/discover", color: "from-[hsl(174,100%,47%)] to-[hsl(200,100%,55%)]" },
-              { icon: MessageCircle, title: "Convites Diretos", desc: "Marcas convidam afiliados em 1 clique. Inbox dedicada para responder.", href: "/invites", color: "from-[hsl(270,91%,65%)] to-[hsl(346,100%,58%)]" },
-            ].map((f) => (
-              <Link key={f.title} to={f.href} className="group relative overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.02] p-5 hover:bg-white/[0.04] transition-all hover:scale-[1.02]">
-                <div className={`h-10 w-10 rounded-2xl bg-gradient-to-br ${f.color} flex items-center justify-center mb-3 shadow-lg`}>
-                  <f.icon className="h-5 w-5 text-white" />
-                </div>
-                <p className="text-sm font-bold text-white">{f.title}</p>
-                <p className="text-xs text-white/50 mt-1 leading-relaxed">{f.desc}</p>
-                <ChevronRight className="absolute top-5 right-5 h-4 w-4 text-white/20 group-hover:text-white/60 group-hover:translate-x-1 transition-all" />
-              </Link>
+          <div className="grid md:grid-cols-3 gap-4">
+            {pillars.map((p, i) => (
+              <Reveal key={p.title} delay={i * 90} className="h-full">
+                <Glass className="h-full">
+                  <div className="p-6">
+                    <div className="h-12 w-12 rounded-2xl flex items-center justify-center mb-4 border border-white/[0.06]" style={{ background: `linear-gradient(135deg, ${p.accent}26, transparent)` }}>
+                      <p.icon className="h-6 w-6" style={{ color: p.accent }} />
+                    </div>
+                    <h3 className="text-base font-bold text-white mb-1.5">{p.title}</h3>
+                    <p className="text-sm text-white/50 leading-relaxed">{p.desc}</p>
+                  </div>
+                </Glass>
+              </Reveal>
             ))}
           </div>
 
-          <div className="mt-6 text-center">
-            <Button asChild size="sm" className="rounded-full bg-white text-black hover:bg-white/90 text-xs h-9 px-5">
-              <Link to="/discover">Testar Smart Match agora <ArrowRight className="ml-1 h-3 w-3" /></Link>
+          <Reveal delay={120} className="mt-8 text-center">
+            <Button asChild size="sm" className="group rounded-full bg-gradient-primary text-white text-xs h-11 px-6 font-semibold border-0 shadow-[var(--shadow-glow-cta)] active:scale-[.98] transition-transform">
+              <Link to="/mapa">Ver o mapa de campanhas <ArrowCircle /></Link>
             </Button>
-          </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ═══ PARA QUEM ═══ (light) */}
-      <section className="py-20 sm:py-28 relative z-10 bg-white text-[hsl(240,10%,4%)]">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="text-center mb-14">
-            <p className="text-[10px] font-bold text-[hsl(330,81%,60%)] uppercase tracking-[0.2em] mb-3">Para quem é</p>
-            <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-[hsl(240,10%,4%)]">
-              Feito para quem quer <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,95%,53%)] to-[hsl(330,81%,60%)]">crescer</span>
+      {/* ═══ PARA QUEM ═══ */}
+      <section className="py-16 sm:py-24 relative z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-5">
+          <Reveal className="text-center mb-12">
+            <Eyebrow>Para quem é</Eyebrow>
+            <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
+              Os dois lados do{" "}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(346,100%,58%)] to-[hsl(270,91%,65%)]">mesmo mapa</span>
             </h2>
-          </div>
+          </Reveal>
           <div className="grid sm:grid-cols-3 gap-4">
-            {[
-              { icon: Heart, title: "Criadores de Conteúdo", desc: "Monetize seus posts com links de afiliado rastreáveis. Cada conteúdo vira uma fonte de receita." },
-              { icon: Award, title: "Afiliados Profissionais", desc: "Painel completo de vendas, comissões automáticas e ferramentas profissionais de tracking." },
-              { icon: Target, title: "Marcas & Agências", desc: "Acesse os top criadores do Brasil e escale suas vendas com social commerce." },
-            ].map((item) => (
-              <div key={item.title} className="p-6 rounded-3xl border border-[hsl(240,6%,90%)] bg-[hsl(240,5%,97%)] group hover:border-[hsl(330,81%,60%,0.3)] hover:shadow-[0_8px_30px_-10px_hsl(330,81%,60%,0.12)] transition-all duration-500">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[hsl(330,81%,60%,0.12)] to-[hsl(270,91%,65%,0.06)] border border-[hsl(330,81%,60%,0.1)] flex items-center justify-center mb-4">
-                  <item.icon className="h-5 w-5 text-[hsl(330,81%,60%)]" />
-                </div>
-                <h3 className="font-bold text-sm mb-2 text-[hsl(240,10%,4%)]">{item.title}</h3>
-                <p className="text-xs text-[hsl(240,4%,46%)] leading-relaxed">{item.desc}</p>
-              </div>
+            {audience.map((item, i) => (
+              <Reveal key={item.title} delay={i * 80} className="h-full">
+                <Glass className="h-full" core="bg-[#0a0a0c]">
+                  <div className="p-6">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 border border-white/[0.06]" style={{ background: `linear-gradient(135deg, ${MAGENTA}1f, transparent)` }}>
+                      <item.icon className="h-5 w-5" style={{ color: MAGENTA }} />
+                    </div>
+                    <h3 className="font-bold text-sm mb-2 text-white">{item.title}</h3>
+                    <p className="text-xs text-white/50 leading-relaxed">{item.desc}</p>
+                  </div>
+                </Glass>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ HOW IT WORKS ═══ (dark) */}
-      <section id="how-it-works" className="py-20 sm:py-28 relative z-10">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="text-center mb-16">
-            <p className="text-[10px] font-bold text-[hsl(330,81%,60%)] uppercase tracking-[0.2em] mb-3">Como funciona</p>
+      {/* ═══ HOW IT WORKS ═══ */}
+      <section id="how-it-works" className="py-16 sm:py-24 relative z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-5">
+          <Reveal className="text-center mb-14">
+            <Eyebrow>Como funciona</Eyebrow>
             <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
-              Quatro passos para <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">começar a lucrar</span>
+              Quatro passos para{" "}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(346,100%,58%)] to-[hsl(174,100%,47%)]">receber por vídeo</span>
             </h2>
-          </div>
+          </Reveal>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {steps.map((s) => (
-              <div key={s.n} className="relative text-center group">
-                <div className="text-6xl font-black bg-clip-text text-transparent bg-gradient-to-b from-white/[0.06] to-transparent mb-1 select-none">{s.n}</div>
-                <Glass className="p-5 mx-auto group-hover:border-[hsl(330,81%,60%,0.3)] transition-all duration-500">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[hsl(330,81%,60%,0.15)] to-transparent border border-white/[0.06] flex items-center justify-center mx-auto mb-3">
-                    <s.icon className="h-5 w-5 text-[hsl(330,81%,60%)]" />
+            {steps.map((s, i) => (
+              <Reveal key={s.n} delay={i * 80} className="relative text-center">
+                <div className="text-6xl font-black bg-clip-text text-transparent bg-gradient-to-b from-white/[0.08] to-transparent mb-1 select-none" aria-hidden="true">{s.n}</div>
+                <Glass>
+                  <div className="p-5">
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-white/[0.06]" style={{ background: `linear-gradient(135deg, ${i === 3 ? CYAN : MAGENTA}26, transparent)` }}>
+                      <s.icon className="h-5 w-5" style={{ color: i === 3 ? CYAN : MAGENTA }} />
+                    </div>
+                    <h3 className="font-bold text-sm mb-1">{s.title}</h3>
+                    <p className="text-[11px] text-white/40 leading-relaxed">{s.desc}</p>
                   </div>
-                  <h3 className="font-bold text-sm mb-1">{s.title}</h3>
-                  <p className="text-[11px] text-white/30 leading-relaxed">{s.desc}</p>
                 </Glass>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ BEFORE/AFTER ═══ (dark) */}
-      <section className="py-20 sm:py-28 relative z-10">
-        <div className="max-w-4xl mx-auto px-5">
-          <div className="text-center mb-14">
-            <p className="text-[10px] font-bold text-[hsl(330,81%,60%)] uppercase tracking-[0.2em] mb-3">Antes vs Depois</p>
+      {/* ═══ BEFORE / AFTER ═══ */}
+      <section className="py-16 sm:py-24 relative z-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-5">
+          <Reveal className="text-center mb-12">
+            <Eyebrow>Antes vs Depois</Eyebrow>
             <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
-              O que muda com o <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,95%,53%)] to-[hsl(330,81%,60%)]">{APP_NAME}</span>
+              O que muda com a{" "}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(346,100%,58%)] to-[hsl(174,100%,47%)]">{BRAND}</span>
             </h2>
-          </div>
+          </Reveal>
 
           <div className="space-y-3">
             {beforeAfter.map((item, i) => (
-              <div key={i} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-5">
-                <div className="p-4 rounded-2xl bg-red-500/[0.06] border border-red-500/[0.1] text-center">
-                  <X className="h-4 w-4 text-red-400 mx-auto mb-1.5" />
-                  <p className="text-xs text-white/40 leading-relaxed">{item.before}</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-[hsl(330,81%,60%)] shrink-0" />
-                <div className="p-4 rounded-2xl bg-emerald-500/[0.06] border border-emerald-500/[0.1] text-center">
-                  <Check className="h-4 w-4 text-emerald-400 mx-auto mb-1.5" />
-                  <p className="text-xs text-white/70 leading-relaxed font-medium">{item.after}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ FEATURES ═══ (dark) */}
-      <section id="features" className="py-20 sm:py-28 relative z-10">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="text-center mb-14">
-            <p className="text-[10px] font-bold text-[hsl(330,81%,60%)] uppercase tracking-[0.2em] mb-3">Recursos</p>
-            <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
-              Tudo para <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,95%,53%)] via-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">crescer e monetizar</span>
-            </h2>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {features.map((f) => (
-              <Glass key={f.title} className="p-5 group hover:border-[hsl(330,81%,60%,0.3)] transition-all duration-500">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(330,81%,60%,0.15)] to-transparent border border-white/[0.06] flex items-center justify-center mb-4">
-                  <f.icon className="h-5 w-5 text-[hsl(330,81%,60%)] group-hover:text-[hsl(25,95%,53%)] transition-colors" />
-                </div>
-                <h3 className="font-bold text-sm mb-1.5">{f.title}</h3>
-                <p className="text-xs text-white/35 leading-relaxed">{f.desc}</p>
-              </Glass>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ RESULTS BANNER ═══ (dark) */}
-      <section className="py-16 relative z-10">
-        <div className="max-w-4xl mx-auto px-5">
-          <Glass glow className="p-8 sm:p-10 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-[hsl(330,81%,60%,0.08)] via-transparent to-[hsl(270,91%,65%,0.08)] pointer-events-none" />
-            <div className="grid grid-cols-3 gap-4 text-center relative z-10">
-              {[
-                { v: "R$12.400", l: "Maior ganho mensal", icon: DollarSign },
-                { v: "8.2%", l: "CTR médio top creators", icon: Eye },
-                { v: "145K", l: "Views em um único post", icon: Zap },
-              ].map((s) => (
-                <div key={s.l}>
-                  <s.icon className="h-5 w-5 mx-auto mb-2 text-[hsl(330,81%,60%)]" />
-                  <div className="text-xl sm:text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">{s.v}</div>
-                  <p className="text-[10px] sm:text-xs text-white/35 mt-1">{s.l}</p>
-                </div>
-              ))}
-            </div>
-          </Glass>
-        </div>
-      </section>
-
-      {/* ═══ INTEGRATIONS / PLATFORMS ═══ (dark) */}
-      <section className="py-16 sm:py-20 relative z-10">
-        <div className="max-w-4xl mx-auto px-5 text-center">
-          <p className="text-[10px] font-bold text-[hsl(330,81%,60%)] uppercase tracking-[0.2em] mb-3">Integrações</p>
-          <h2 className="text-xl sm:text-3xl font-bold tracking-tight mb-4">
-            Funciona com as redes que você já usa
-          </h2>
-          <p className="text-xs text-white/35 mb-10 max-w-md mx-auto">Conecte suas redes sociais e centralize tudo em um único painel de controle.</p>
-          <div className="flex items-center justify-center gap-6 sm:gap-10 flex-wrap">
-            {[
-              { icon: Instagram, name: "Instagram", color: "from-pink-500 to-purple-500" },
-              { icon: Youtube, name: "YouTube", color: "from-red-500 to-red-600" },
-              { icon: Twitter, name: "X / Twitter", color: "from-gray-700 to-gray-900" },
-              { icon: Globe, name: "TikTok", color: "from-cyan-400 to-pink-500" },
-            ].map((p) => (
-              <div key={p.name} className="flex flex-col items-center gap-2 group">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${p.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                  <p.icon className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-[10px] text-white/40 font-medium">{p.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ TESTIMONIALS ═══ (dark) */}
-      <section className="py-20 sm:py-28 relative z-10">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="text-center mb-14">
-            <p className="text-[10px] font-bold text-[hsl(330,81%,60%)] uppercase tracking-[0.2em] mb-3">Depoimentos</p>
-            <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
-              Resultados <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">reais</span>
-            </h2>
-            <p className="text-xs text-white/30 mt-3 max-w-md mx-auto">Veja o que nossos membros estão dizendo sobre a plataforma.</p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {testimonials.map((t) => (
-              <Glass key={t.name} className="p-5 flex flex-col">
-                <div className="flex items-center gap-0.5 mb-3">
-                  {[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 text-amber-400 fill-amber-400" />)}
-                </div>
-                <p className="text-xs text-white/45 leading-relaxed flex-1 mb-4">"{t.text}"</p>
-                <div className="flex items-center gap-3 pt-3 border-t border-white/[0.06]">
-                  <img src={t.avatar} alt={t.name} className="h-9 w-9 rounded-full object-cover ring-2 ring-[hsl(330,81%,60%,0.3)]" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold">{t.name}</div>
-                    <div className="text-[10px] text-white/30">{t.role}</div>
+              <Reveal key={i} delay={i * 60}>
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-5">
+                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-center">
+                    <X className="h-4 w-4 text-white/30 mx-auto mb-1.5" />
+                    <p className="text-xs text-white/40 leading-relaxed">{item.before}</p>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 backdrop-blur px-2.5 py-1 rounded-full">{t.earnings}</span>
+                  <ArrowRight className="h-4 w-4 shrink-0" style={{ color: MAGENTA }} aria-hidden="true" />
+                  <div className="p-4 rounded-2xl border text-center" style={{ background: `${CYAN}10`, borderColor: `${CYAN}26` }}>
+                    <Check className="h-4 w-4 mx-auto mb-1.5" style={{ color: CYAN }} />
+                    <p className="text-xs text-white/75 leading-relaxed font-medium">{item.after}</p>
+                  </div>
                 </div>
-              </Glass>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ TRUST BADGES ═══ (dark) */}
-      <section className="py-14 sm:py-16 relative z-10 border-y border-white/[0.05]">
-        <div className="max-w-4xl mx-auto px-5">
-          <div className="text-center mb-10">
-            <h3 className="text-lg sm:text-xl font-bold">Sua segurança é prioridade</h3>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
-            {trustBadges.map((b) => (
-              <div key={b.label} className="flex flex-col items-center gap-2 text-center">
-                <div className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
-                  <b.icon className="h-5 w-5 text-[hsl(330,81%,60%)]" />
-                </div>
-                <span className="text-[9px] text-white/30 font-medium leading-tight">{b.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ PRICING ═══ (dark) */}
-      <section id="plans" className="py-20 sm:py-28 relative z-10">
-        <div className="max-w-5xl mx-auto px-5">
-          <div className="text-center mb-14">
-            <p className="text-[10px] font-bold text-[hsl(330,81%,60%)] uppercase tracking-[0.2em] mb-3">Planos</p>
+      {/* ═══ TESTIMONIALS ═══ */}
+      <section className="py-16 sm:py-24 relative z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-5">
+          <Reveal className="text-center mb-12">
+            <Eyebrow>Os primeiros</Eyebrow>
             <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
-              Escolha seu <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,95%,53%)] to-[hsl(330,81%,60%)]">plano</span>
+              Quem já está{" "}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(346,100%,58%)] to-[hsl(270,91%,65%)]">no mapa</span>
             </h2>
-            <p className="text-xs text-white/30 mt-3 max-w-md mx-auto">Comece grátis e faça upgrade quando quiser. Sem compromisso.</p>
-          </div>
+            <p className="text-xs text-white/40 mt-3 max-w-md mx-auto">Histórias das primeiras campanhas em Sorocaba.</p>
+          </Reveal>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {plans.map((plan) => (
-              <Glass key={plan.name} glow={plan.highlight} className={`p-5 flex flex-col transition-all duration-500 ${plan.highlight ? "border-[hsl(330,81%,60%,0.3)] scale-[1.02]" : "hover:border-white/[0.12]"}`}>
-                {plan.highlight && (
-                  <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-20 bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)] text-white border-0 text-[9px] font-bold px-3 rounded-full shadow-[0_4px_20px_hsl(330,81%,60%,0.3)]">
-                    🔥 Popular
-                  </Badge>
-                )}
-                <h3 className="font-bold text-sm">{plan.name}</h3>
-                <p className="text-[10px] text-white/30 mt-0.5">{plan.desc}</p>
-                <div className="my-4">
-                  <span className="text-2xl font-extrabold">{plan.price}</span>
-                  <span className="text-xs ml-1 text-white/25">{plan.period}</span>
-                </div>
-                <ul className="space-y-2 mb-5 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-xs">
-                      <Check className="h-3 w-3 shrink-0 text-[hsl(330,81%,60%)]" />
-                      <span className="text-white/45">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button asChild size="sm" className={`w-full rounded-full h-10 text-xs font-semibold ${
-                  plan.highlight
-                    ? "bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)] text-white hover:opacity-90 border-0 shadow-[0_4px_20px_hsl(330,81%,60%,0.3)]"
-                    : "bg-white/[0.06] backdrop-blur border border-white/[0.08] text-white hover:bg-white/[0.1]"
-                }`}>
-                  <Link to="/auth">{plan.cta}<ChevronRight className="h-3 w-3 ml-1" /></Link>
-                </Button>
-              </Glass>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {testimonials.map((t, i) => (
+              <Reveal key={t.name} delay={i * 80} className="h-full">
+                <Glass className="h-full">
+                  <div className="p-5 flex flex-col h-full">
+                    <div className="flex items-center gap-0.5 mb-3">
+                      {[...Array(5)].map((_, j) => <Star key={j} className="h-3 w-3 text-amber-400 fill-amber-400" aria-hidden="true" />)}
+                    </div>
+                    <p className="text-xs text-white/55 leading-relaxed flex-1 mb-4">"{t.text}"</p>
+                    <div className="flex items-center gap-3 pt-3 border-t border-white/[0.06]">
+                      <InitialAvatar name={t.name} ring className="h-9 w-9 rounded-full text-[11px]" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold">{t.name}</div>
+                        <div className="text-[10px] text-white/35">{t.role}</div>
+                      </div>
+                    </div>
+                  </div>
+                </Glass>
+              </Reveal>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* Enterprise */}
-          <div className="mt-8 max-w-2xl mx-auto">
-            <Glass className="p-6 sm:p-8 text-center">
-              <Badge className="bg-white/[0.06] backdrop-blur text-white/50 border-white/[0.06] text-[9px] mb-3 rounded-full">Enterprise</Badge>
-              <h3 className="text-base font-bold mb-1">Plano PRO para Marcas</h3>
-              <p className="text-xs text-white/30 mb-5">USD $9.999 + 3% · Setup completo e suporte dedicado.</p>
-              <Button asChild size="sm" className="rounded-full text-xs h-10 px-6 bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)] hover:opacity-90 text-white border-0 font-semibold shadow-[0_4px_20px_hsl(330,81%,60%,0.3)]">
-                <Link to="/auth">Falar com time comercial</Link>
-              </Button>
-            </Glass>
+      {/* ═══ TRUST BADGES ═══ */}
+      <section className="py-12 sm:py-16 relative z-10 border-y border-white/[0.05]">
+        <div className="max-w-3xl mx-auto px-4 sm:px-5">
+          <Reveal className="text-center mb-8">
+            <h3 className="text-lg sm:text-xl font-bold">Dinheiro só sai quando o vídeo é aprovado</h3>
+          </Reveal>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {trustBadges.map((b, i) => (
+              <Reveal key={b.label} delay={i * 60}>
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <div className="w-11 h-11 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                    <b.icon className="h-5 w-5" style={{ color: i % 2 === 0 ? MAGENTA : CYAN }} />
+                  </div>
+                  <span className="text-[10px] text-white/40 font-medium leading-tight">{b.label}</span>
+                </div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ GUARANTEE ═══ (light) */}
-      <section className="py-16 sm:py-20 relative z-10 bg-white text-[hsl(240,10%,4%)]">
-        <div className="max-w-3xl mx-auto px-5">
-          <div className="p-8 sm:p-10 rounded-3xl border border-[hsl(160,40%,88%)] bg-[hsl(160,50%,97%)] text-center">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center mx-auto mb-5 shadow-[0_8px_30px_-8px_hsl(160,84%,39%,0.4)]">
-              <ShieldCheck className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-[hsl(240,10%,4%)] mb-3">Garantia de 7 dias</h3>
-            <p className="text-sm text-[hsl(240,4%,46%)] leading-relaxed max-w-lg mx-auto mb-4">
-              Experimente qualquer plano pago por 7 dias. Se não ficar satisfeito, devolvemos 100% do seu investimento. Sem perguntas, sem burocracia.
-            </p>
-            <div className="flex items-center justify-center gap-4 text-[11px] text-[hsl(240,4%,46%)]">
-              <span className="flex items-center gap-1"><Check className="h-3 w-3 text-emerald-500" />Sem multa</span>
-              <span className="flex items-center gap-1"><Check className="h-3 w-3 text-emerald-500" />Sem pegadinha</span>
-              <span className="flex items-center gap-1"><Check className="h-3 w-3 text-emerald-500" />Reembolso total</span>
-            </div>
+      {/* ═══ PREÇO (modelo real, sem planos SaaS) ═══ */}
+      <section id="pricing" className="py-16 sm:py-24 relative z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-5">
+          <Reveal className="text-center mb-12">
+            <Eyebrow color={CYAN}>Preço</Eyebrow>
+            <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
+              Grátis pra creator.{" "}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(174,100%,47%)] to-[hsl(174,100%,62%)]">Lojista paga por entrega.</span>
+            </h2>
+            <p className="text-xs text-white/40 mt-3 max-w-lg mx-auto">Sem mensalidade pra ninguém. O lojista paga o prêmio das vagas + {PLATFORM_FEE_PCT}% da OnlyShop. O creator fica com {100 - PLATFORM_FEE_PCT}%.</p>
+          </Reveal>
+
+          <div className="grid lg:grid-cols-2 gap-4 items-stretch">
+            {/* Creator */}
+            <Reveal className="h-full">
+              <Glass className="h-full">
+                <div className="p-6 sm:p-8 flex flex-col h-full">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Video className="h-4 w-4" style={{ color: MAGENTA }} />
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-white/45 font-bold">Creator</span>
+                  </div>
+                  <div className="flex items-end gap-1 my-3">
+                    <span className="text-4xl font-extrabold">Grátis</span>
+                    <span className="text-xs text-white/35 mb-1.5">pra sempre</span>
+                  </div>
+                  <ul className="space-y-2.5 mb-6 flex-1">
+                    {["Ver o mapa de campanhas perto de você", "Aceitar vagas sem precisar de seguidor", `Ficar com ${100 - PLATFORM_FEE_PCT}% do prêmio de cada vídeo`, "Sacar via PIX quando o vídeo é aprovado"].map((f) => (
+                      <li key={f} className="flex items-start gap-2.5 text-sm">
+                        <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: CYAN }} />
+                        <span className="text-white/60">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button asChild className="group w-full rounded-full h-12 text-sm font-semibold bg-gradient-primary text-white border-0 shadow-[var(--shadow-glow-cta)] active:scale-[.98] transition-transform">
+                    <Link to="/auth">Começar a ganhar <ArrowCircle /></Link>
+                  </Button>
+                </div>
+              </Glass>
+            </Reveal>
+
+            {/* Lojista — com calculadora real */}
+            <Reveal delay={100} className="h-full">
+              <Glass glow className="h-full">
+                <div className="p-6 sm:p-8 flex flex-col h-full">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Store className="h-4 w-4" style={{ color: CYAN }} />
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-white/45 font-bold">Lojista</span>
+                  </div>
+                  <div className="flex items-end gap-1.5 my-3">
+                    <span className="text-4xl font-extrabold">Por entrega</span>
+                  </div>
+                  <p className="text-xs text-white/45 mb-5">Você define o prêmio por vídeo e quantas vagas quer. Só paga pelas entregas aprovadas — quem não entrega, não custa.</p>
+
+                  {/* Calculadora (computeBudget/computeSplit reais) */}
+                  <div className="rounded-2xl bg-black/40 border border-white/[0.06] p-4 mb-5 space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] text-white/50 mb-1.5">
+                        <span>Vagas</span>
+                        <span className="font-bold text-white tabular-nums">{slots}</span>
+                      </div>
+                      <input type="range" min={1} max={50} value={slots} onChange={(e) => setSlots(Number(e.target.value))} aria-label="Número de vagas" className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[hsl(346,100%,58%)] bg-white/10" />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] text-white/50 mb-1.5">
+                        <span>Prêmio por vídeo</span>
+                        <span className="font-bold tabular-nums" style={{ color: CYAN }}>{fmt(reward)}</span>
+                      </div>
+                      <input type="range" min={20} max={300} step={5} value={reward} onChange={(e) => setReward(Number(e.target.value))} aria-label="Prêmio por vídeo" className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[hsl(174,100%,47%)] bg-white/10" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/[0.06] text-center">
+                      <div>
+                        <div className="text-[9px] uppercase tracking-wider text-white/35">Você paga</div>
+                        <div className="text-sm font-extrabold tabular-nums" style={{ color: CYAN }}>{fmt(budget.total)}</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] uppercase tracking-wider text-white/35">Taxa {PLATFORM_FEE_PCT}%</div>
+                        <div className="text-sm font-bold text-white/70 tabular-nums">{fmt(budget.fee)}</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] uppercase tracking-wider text-white/35">Creator/vídeo</div>
+                        <div className="text-sm font-bold text-white/70 tabular-nums">{fmt(split.influencer)}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button asChild className="group w-full rounded-full h-12 text-sm font-semibold bg-white/[0.06] backdrop-blur border border-white/[0.1] text-white hover:bg-white/[0.1] active:scale-[.98] transition-all">
+                    <Link to="/auth">Criar minha campanha <ArrowCircle /></Link>
+                  </Button>
+                </div>
+              </Glass>
+            </Reveal>
           </div>
+
+          <Reveal delay={120} className="mt-6 text-center">
+            <p className="text-[11px] text-white/30">TikTok Shop, Instagram Shop e vídeo gerado por IA estão no roadmap — <Link to="/em-breve" className="underline underline-offset-2 hover:text-white/60 transition-colors">ver o que vem por aí</Link>.</p>
+          </Reveal>
         </div>
       </section>
 
-      {/* ═══ FAQ ═══ (dark) */}
-      <section id="faq" className="py-20 sm:py-28 relative z-10">
-        <div className="max-w-2xl mx-auto px-5">
-          <div className="text-center mb-14">
-            <p className="text-[10px] font-bold text-[hsl(330,81%,60%)] uppercase tracking-[0.2em] mb-3">FAQ</p>
+      {/* ═══ FAQ ═══ */}
+      <section id="faq" className="py-16 sm:py-24 relative z-10">
+        <div className="max-w-2xl mx-auto px-4 sm:px-5">
+          <Reveal className="text-center mb-12">
+            <Eyebrow>FAQ</Eyebrow>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Perguntas frequentes</h2>
-            <p className="text-xs text-white/30 mt-3">Tire suas dúvidas antes de começar.</p>
-          </div>
+            <p className="text-xs text-white/40 mt-3">Tire suas dúvidas antes de começar.</p>
+          </Reveal>
           <div className="space-y-2">
-            {faqs.map((faq) => (
-              <div key={faq.q} className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
-                <details className="group">
-                  <summary className="flex items-center justify-between text-sm font-medium px-5 py-4 list-none text-white/70 hover:text-white transition-colors cursor-pointer">
-                    {faq.q}
-                    <ChevronRight className="h-3.5 w-3.5 text-white/25 transition-transform group-open:rotate-90 shrink-0 ml-3" />
-                  </summary>
-                  <div className="px-5 pb-4">
-                    <p className="text-xs text-white/35 leading-relaxed">{faq.a}</p>
-                  </div>
-                </details>
-              </div>
+            {faqs.map((faq, i) => (
+              <Reveal key={faq.q} delay={i * 40}>
+                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+                  <details className="group">
+                    <summary className="flex items-center justify-between text-sm font-medium px-5 py-4 list-none text-white/70 hover:text-white transition-colors cursor-pointer">
+                      {faq.q}
+                      <ChevronRight className="h-3.5 w-3.5 text-white/25 transition-transform group-open:rotate-90 shrink-0 ml-3" aria-hidden="true" />
+                    </summary>
+                    <div className="px-5 pb-4">
+                      <p className="text-xs text-white/40 leading-relaxed">{faq.a}</p>
+                    </div>
+                  </details>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ URGENCY BANNER ═══ (dark) */}
+      {/* ═══ URGENCY ═══ */}
       <section className="py-10 relative z-10 border-y border-white/[0.05]">
-        <div className="max-w-4xl mx-auto px-5">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(25,95%,53%)] to-[hsl(330,81%,60%)] flex items-center justify-center shrink-0">
-                <Flame className="h-5 w-5 text-white" />
+        <div className="max-w-4xl mx-auto px-4 sm:px-5">
+          <Reveal>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shrink-0">
+                  <Flame className="h-5 w-5 text-white" aria-hidden="true" />
+                </div>
+                <div className="text-center sm:text-left">
+                  <p className="text-sm font-bold">Sorocaba está abrindo as primeiras campanhas</p>
+                  <p className="text-[11px] text-white/40">Crie sua conta e seja um dos primeiros do mapa da sua cidade.</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-bold">Vagas limitadas para o plano Partner</p>
-                <p className="text-[11px] text-white/35">Apenas 50 vagas disponíveis por mês. Garanta a sua.</p>
-              </div>
+              <Button asChild size="sm" className="group bg-gradient-primary text-white rounded-full h-11 px-6 text-xs font-bold border-0 shadow-[var(--shadow-glow-cta)] active:scale-[.98] transition-transform shrink-0">
+                <Link to="/auth">Entrar no mapa <ArrowCircle /></Link>
+              </Button>
             </div>
-            <Button asChild size="sm" className="bg-gradient-to-r from-[hsl(25,95%,53%)] to-[hsl(330,81%,60%)] text-white hover:opacity-90 rounded-full h-10 px-6 text-xs font-bold border-0 shadow-[0_4px_20px_hsl(25,95%,53%,0.3)] shrink-0">
-              <Link to="/auth">
-                Garantir vaga
-                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ═══ FINAL CTA ═══ (dark) */}
-      <section className="py-24 sm:py-32 relative z-10">
-        <div className="max-w-2xl mx-auto px-5 text-center">
-          <Glass glow className="p-10 sm:p-14">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)] flex items-center justify-center mx-auto mb-6 shadow-[0_8px_30px_-8px_hsl(330,81%,60%,0.4)]">
-              <Crown className="h-7 w-7 text-white" />
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">
-              Pronto para{" "}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(25,95%,53%)] via-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)]">começar?</span>
-            </h2>
-            <p className="text-sm text-white/30 mb-8 max-w-md mx-auto">
-              Entra. Aqui ninguém vende sozinho.
-            </p>
-            <Button asChild size="lg" className="bg-gradient-to-r from-[hsl(330,81%,60%)] to-[hsl(270,91%,65%)] hover:opacity-90 text-white rounded-full h-13 px-10 text-sm font-bold border-0 shadow-[0_8px_40px_-8px_hsl(330,81%,60%,0.5)]">
-              <Link to="/auth">Criar conta grátis<ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
-            <p className="text-[10px] text-white/15 mt-5">Sem cartão · Cancele quando quiser · Suporte em português</p>
+      {/* ═══ FINAL CTA ═══ */}
+      <section className="py-20 sm:py-28 relative z-10">
+        <div className="max-w-2xl mx-auto px-4 sm:px-5 text-center">
+          <Reveal>
+            <Glass glow>
+              <div className="p-10 sm:p-14">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-primary flex items-center justify-center mx-auto mb-6 shadow-[var(--shadow-glow-cta)]">
+                  <Crown className="h-7 w-7 text-white" aria-hidden="true" />
+                </div>
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">
+                  Pronto para{" "}
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(346,100%,58%)] to-[hsl(174,100%,47%)]">ganhar por vídeo?</span>
+                </h2>
+                <p className="text-sm text-white/45 mb-8 max-w-md mx-auto">
+                  Entra. Aqui ninguém grava de graça.
+                </p>
+                <Button asChild size="lg" className="group bg-gradient-primary text-white rounded-full h-14 px-9 text-sm font-bold border-0 shadow-[var(--shadow-glow-cta)] hover:-translate-y-0.5 active:scale-[.98] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]">
+                  <Link to="/auth">Criar conta grátis<ArrowCircle /></Link>
+                </Button>
+                <p className="text-[10px] text-white/20 mt-5">Sem cartão · Sem mensalidade · Saque via PIX</p>
 
-            {/* Mini avatars */}
-            <div className="flex items-center justify-center gap-2 mt-6">
-              <div className="flex -space-x-1.5">
-                {testimonials.slice(0, 5).map((t) => (
-                  <img key={t.name} src={t.avatar} alt="" className="h-6 w-6 rounded-full border border-white/10 object-cover" />
-                ))}
+                <div className="flex items-center justify-center gap-2 mt-6">
+                  <div className="flex -space-x-1.5">
+                    {testimonials.map((t) => (
+                      <InitialAvatar key={t.name} name={t.name} className="h-6 w-6 rounded-full border border-white/10 text-[8px]" />
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-white/25">Primeiros creators de Sorocaba</span>
+                </div>
               </div>
-              <span className="text-[10px] text-white/25">+10K criadores ativos</span>
-            </div>
-          </Glass>
+            </Glass>
+          </Reveal>
         </div>
       </section>
 
       {/* ═══ FOOTER ═══ */}
       <footer className="py-10 border-t border-white/[0.05] relative z-10">
-        <div className="max-w-6xl mx-auto px-5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <img src={logoImg} alt={APP_NAME} className="h-7 w-7 rounded-lg object-cover" />
-                <span className="font-bold text-xs">{APP_NAME}</span>
+                <img src={logoImg} alt="" className="h-7 w-7 rounded-lg object-cover" />
+                <span className="font-bold text-xs">{BRAND}</span>
               </div>
-              <p className="text-[10px] text-white/20 leading-relaxed">O ecossistema de vendas #1 do Brasil.</p>
+              <p className="text-[10px] text-white/25 leading-relaxed">Marketplace de campanhas localizadas. Pague por entrega, ganhe por vídeo.</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Produto</p>
+              <p className="text-[10px] font-bold text-white/45 uppercase tracking-widest mb-3">Produto</p>
               <div className="space-y-2">
-                <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="block text-[11px] text-white/25 hover:text-white transition-colors">Recursos</button>
-                <button onClick={() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth" })} className="block text-[11px] text-white/25 hover:text-white transition-colors">Planos</button>
-                <button onClick={() => document.getElementById("faq")?.scrollIntoView({ behavior: "smooth" })} className="block text-[11px] text-white/25 hover:text-white transition-colors">FAQ</button>
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Legal</p>
-              <div className="space-y-2">
-                <Link to="/terms" className="block text-[11px] text-white/25 hover:text-white transition-colors">Termos de Uso</Link>
-                <Link to="/privacy" className="block text-[11px] text-white/25 hover:text-white transition-colors">Privacidade</Link>
+                <button onClick={() => scrollTo("pillars")} className="block text-[11px] text-white/30 hover:text-white transition-colors" aria-label="Ir para Como o dinheiro funciona">Como funciona</button>
+                <button onClick={() => scrollTo("pricing")} className="block text-[11px] text-white/30 hover:text-white transition-colors" aria-label="Ir para Preço">Preço</button>
+                <button onClick={() => scrollTo("faq")} className="block text-[11px] text-white/30 hover:text-white transition-colors" aria-label="Ir para FAQ">FAQ</button>
+                <Link to="/mapa" className="block text-[11px] text-white/30 hover:text-white transition-colors">Ver o mapa</Link>
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Comunidade</p>
+              <p className="text-[10px] font-bold text-white/45 uppercase tracking-widest mb-3">Legal</p>
               <div className="space-y-2">
-                <Link to="/auth" className="block text-[11px] text-white/25 hover:text-white transition-colors">Criar conta</Link>
-                <Link to="/auth" className="block text-[11px] text-white/25 hover:text-white transition-colors">Login</Link>
-                <Link to="/vsl" className="block text-[11px] text-[hsl(330,81%,60%)] font-bold hover:opacity-80 transition-opacity">Apresentação VSL</Link>
+                <Link to="/terms" className="block text-[11px] text-white/30 hover:text-white transition-colors">Termos de Uso</Link>
+                <Link to="/privacy" className="block text-[11px] text-white/30 hover:text-white transition-colors">Privacidade</Link>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-white/45 uppercase tracking-widest mb-3">Comunidade</p>
+              <div className="space-y-2">
+                <Link to="/auth" className="block text-[11px] text-white/30 hover:text-white transition-colors">Criar conta</Link>
+                <Link to="/auth" className="block text-[11px] text-white/30 hover:text-white transition-colors">Entrar</Link>
+                <Link to="/em-breve" className="block text-[11px] font-bold hover:opacity-80 transition-opacity" style={{ color: MAGENTA }}>O que vem por aí</Link>
               </div>
             </div>
           </div>
           <div className="pt-6 border-t border-white/[0.05] flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-[10px] text-white/15">© 2026 {APP_NAME}. Todos os direitos reservados.</p>
+            <p className="text-[10px] text-white/20">© 2026 {BRAND}. Todos os direitos reservados.</p>
             <div className="flex items-center gap-4 text-[11px] text-white/20">
               <span>🇧🇷 Feito no Brasil</span>
             </div>

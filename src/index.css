@@ -112,9 +112,12 @@
     --warning: 45 93% 55%;
     --warning-foreground: 0 0% 6%;
 
-    --border: 0 0% 100% / 0.10;
-    --input: 0 0% 100% / 0.10;
+    /* sólido (sem alpha embutido) pra opacity-modifiers funcionarem: border-border/30 etc */
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
     --ring: 346 100% 58%;
+    /* gradiente da marca no dark (magenta) — antes só existia no light (laranja) */
+    --gradient-primary: linear-gradient(135deg, hsl(346 100% 58%), hsl(330 81% 60%));
 
     --sidebar-background: 0 0% 4%;
     --sidebar-foreground: 0 0% 80%;
@@ -122,7 +125,7 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 10%;
     --sidebar-accent-foreground: 0 0% 92%;
-    --sidebar-border: 0 0% 100% / 0.10;
+    --sidebar-border: 0 0% 14%;
     --sidebar-ring: 346 100% 58%;
   }
 }

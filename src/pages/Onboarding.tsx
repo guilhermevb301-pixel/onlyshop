@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ChevronLeft, Store, Sparkles, X } from "lucide-react";
+import { Loader2, ChevronLeft, Store, Sparkles, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 import type { OnboardingRole } from "@/lib/onboarding";
@@ -88,11 +88,21 @@ export default function Onboarding() {
     setSaving(true);
     try {
       if (pickedRole === "brand") {
-        // Loja: salva nome da loja como display_name do perfil (fallback demo no catch).
+        // Loja: salva nome da loja como display_name do perfil.
+        const name = storeName.trim() || "Minha loja";
         try {
-          await updateProfile({ display_name: storeName.trim() || APP_NAME });
+          await updateProfile({ display_name: name });
         } catch {
           // demo / sem Supabase — segue
+        }
+        // Espelha o perfil demo no localStorage pra o match local enxergar a loja.
+        try {
+          localStorage.setItem(
+            "onlyshop_demo_profile",
+            JSON.stringify({ role: "brand", displayName: name })
+          );
+        } catch {
+          // localStorage indisponível — ignora
         }
         if (loc) {
           try {
@@ -103,10 +113,26 @@ export default function Onboarding() {
         }
       } else {
         // Influencer: nome de exibição + nichos (+ gênero/seguidores opcionais).
+        const name = displayName.trim() || "Creator";
         try {
-          await updateProfile({ display_name: displayName.trim() || APP_NAME });
+          await updateProfile({ display_name: name });
         } catch {
           // demo — segue
+        }
+        // Persiste o perfil completo do influencer pra o match local filtrar por nicho.
+        try {
+          localStorage.setItem(
+            "onlyshop_demo_profile",
+            JSON.stringify({
+              role: "affiliate",
+              displayName: name,
+              niches,
+              gender,
+              followers: Number(followers) || 0,
+            })
+          );
+        } catch {
+          // localStorage indisponível — ignora
         }
         if (loc) {
           try {
@@ -131,35 +157,43 @@ export default function Onboarding() {
 
   const totalSteps = 3;
 
+  // Eyebrow + ícone por passo (DNA magenta/cyan do produto).
+  const eyebrow = step === 0 ? "Papel" : step === 1 ? "Localização" : "Perfil";
+
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-foreground">
-        <Loader2 className="h-5 w-5 animate-spin text-white/30" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-foreground relative">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background relative">
+      {/* Ambiente magenta ↔ cyan (DNA da marca) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full blur-[160px] opacity-[0.06] bg-primary" />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full blur-[160px] opacity-[0.10] bg-primary" />
+        <div className="absolute -bottom-44 right-1/4 w-[420px] h-[420px] rounded-full blur-[170px] opacity-[0.06] bg-accent" />
       </div>
 
       <div className="relative z-10 w-full max-w-sm">
-        {/* Logo + tagline do passo */}
-        <div className="text-center mb-7">
+        {/* Logo + eyebrow + tagline do passo */}
+        <div className="text-center mb-7 animate-fade-in">
           <img
             src={logoImg}
             alt={APP_NAME}
-            className="h-14 w-14 mx-auto rounded-2xl object-cover mb-4"
+            className="h-14 w-14 mx-auto rounded-2xl object-cover mb-4 ring-1 ring-white/10"
           />
+          <span className="inline-block text-[10px] uppercase tracking-[0.22em] font-semibold text-primary/80 mb-2">
+            {eyebrow}
+          </span>
           <h1 className="text-xl font-bold text-white tracking-tight">
-            {step === 0 && "Como você vai usar o Only Shop?"}
+            {step === 0 && `Como você vai usar o ${APP_NAME}?`}
             {step === 1 && "De onde você fala?"}
             {step === 2 &&
               (pickedRole === "brand" ? "Sobre a sua loja" : "Sobre você")}
           </h1>
-          <p className="text-white/25 mt-1.5 text-xs leading-snug px-2">
+          <p className="text-white/50 mt-1.5 text-xs leading-snug px-2">
             {step === 0 && "Escolha seu lado do balcão. Dá pra mudar depois."}
             {step === 1 &&
               "A gente conecta você com quem está perto — match local de verdade."}
@@ -170,32 +204,43 @@ export default function Onboarding() {
           </p>
         </div>
 
-        <div className="bg-background rounded-3xl p-6 shadow-2xl border border-border/10">
-          {/* Progresso dos passos */}
+        {/* Card — double-bezel (casca + núcleo) sobre OLED */}
+        <div className="rounded-[1.75rem] bg-gradient-to-b from-white/[0.08] to-transparent p-px shadow-[0_24px_80px_-20px_hsl(346_100%_58%/0.25)] animate-slide-up [animation-delay:80ms]">
+        <div className="rounded-[1.65rem] bg-card/80 backdrop-blur-xl p-6 border border-white/[0.04]">
+          {/* Progresso dos passos — trilhos preenchem com movimento (não só cor) */}
           <div className="flex items-center gap-1.5 mb-6">
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div
                 key={i}
-                className={cn(
-                  "h-1 flex-1 rounded-full transition-colors",
-                  i <= step ? "bg-primary" : "bg-muted/40"
-                )}
-              />
+                className="h-1 flex-1 rounded-full bg-white/[0.08] overflow-hidden"
+              >
+                <div
+                  className={cn(
+                    "h-full rounded-full bg-gradient-primary origin-left transition-transform duration-500 ease-[var(--ease-fluid)]",
+                    i <= step ? "scale-x-100" : "scale-x-0"
+                  )}
+                />
+              </div>
             ))}
           </div>
 
-          {/* Voltar */}
+          {/* Voltar — alvo de toque ≥44px, contraste legível */}
           {step > 0 && (
             <button
               type="button"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
-              className="flex items-center gap-1 text-[11px] text-muted-foreground/40 hover:text-muted-foreground/70 mb-4 transition-colors"
+              className="flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground mb-4 -ml-1 py-2 px-1 min-h-[44px] transition-colors"
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <ChevronLeft className="h-4 w-4" />
               Voltar
             </button>
           )}
 
+          {/* Cada passo reanima na troca (key={step}) com fade-up + ease fluido */}
+          <div
+            key={step}
+            className="animate-[fadeIn_.35s_cubic-bezier(0.32,0.72,0,1)]"
+          >
           {/* PASSO 1 — Papel */}
           {step === 0 && (
             <RoleSelectCard onSelect={handleRole} selected={pickedRole} />
@@ -311,20 +356,31 @@ export default function Onboarding() {
                 type="button"
                 onClick={handleFinish}
                 disabled={!canFinish || saving}
-                className="w-full rounded-xl h-12 bg-foreground text-background hover:bg-foreground/90 text-sm font-semibold mt-2"
+                aria-busy={saving}
+                className="group w-full rounded-xl h-12 bg-gradient-primary text-white border-0 shadow-lg shadow-primary/25 text-sm font-semibold mt-2 active:scale-[.98] transition-transform ease-[var(--ease-fluid)] disabled:opacity-50 disabled:active:scale-100"
               >
                 {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="sr-only">Salvando…</span>
+                  </>
                 ) : (
-                  "Começar a usar"
+                  <span className="flex items-center justify-center gap-2">
+                    Começar a usar
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/15 transition-transform duration-300 ease-[var(--ease-fluid)] group-hover:translate-x-0.5">
+                      <Check className="h-3 w-3" />
+                    </span>
+                  </span>
                 )}
               </Button>
             </div>
           )}
+          </div>
+        </div>
         </div>
 
         {/* Passo atual textual */}
-        <p className="text-center text-[10px] text-white/20 mt-4 uppercase tracking-widest font-semibold">
+        <p className="text-center text-[10px] text-white/40 mt-4 uppercase tracking-widest font-semibold">
           Passo {step + 1} de {totalSteps}
         </p>
       </div>

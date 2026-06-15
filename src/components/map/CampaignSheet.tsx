@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,6 +15,9 @@ interface CampaignSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const brl = (n: number) =>
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 // Bottom-sheet de detalhe da campanha + ação de aceitar (candidatar).
 export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetProps) {
@@ -48,40 +51,56 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
     onOpenChange(v);
   };
 
+  // stagger fade-up: cada bloco entra com leve atraso (ease fluido já no .animate-slide-up).
+  const step = (i: number) => ({ animationDelay: `${60 + i * 55}ms` });
+
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl border-border/40 bg-card/95 backdrop-blur-xl max-h-[88dvh] overflow-y-auto"
+        className="rounded-t-[1.75rem] border-border/40 bg-card/95 backdrop-blur-xl max-h-[88dvh] overflow-y-auto"
       >
         {/* puxador */}
         <div className="mx-auto h-1.5 w-10 rounded-full bg-white/15 mb-4" />
 
-        <SheetHeader className="text-left">
+        <SheetHeader className="text-left animate-slide-up opacity-0" style={step(0)}>
           <div className="flex items-start gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/10 flex items-center justify-center shrink-0">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/10 ring-1 ring-white/[0.06] flex items-center justify-center shrink-0">
               <span className="text-base font-bold">{campaign.brand_name?.[0] ?? "?"}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <SheetTitle className="text-base leading-tight">{campaign.title}</SheetTitle>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 font-semibold">
+                Campanha perto de você
+              </span>
+              <SheetTitle className="text-base leading-tight mt-0.5">{campaign.title}</SheetTitle>
               <p className="text-xs text-muted-foreground/70 mt-0.5">{campaign.brand_name}</p>
             </div>
-            <Badge className="gap-1 bg-accent text-accent-foreground border-0 text-xs shrink-0">
-              <BadgeDollarSign className="h-3.5 w-3.5" />R$ {campaign.reward_amount}
+            <Badge className="gap-1 bg-accent text-accent-foreground border-0 text-xs shrink-0 tabular-nums">
+              <BadgeDollarSign className="h-3.5 w-3.5" />{brl(campaign.reward_amount)}
             </Badge>
           </div>
+          <SheetDescription className="sr-only">
+            Detalhes da campanha {campaign.title} de {campaign.brand_name}: {brl(campaign.reward_amount)} por
+            vídeo, a {campaign.distance_km} km de você, com {left} vaga{left !== 1 ? "s" : ""} restante
+            {left !== 1 ? "s" : ""}.
+          </SheetDescription>
         </SheetHeader>
 
         {/* destaques */}
-        <div className="grid grid-cols-3 gap-2 mt-5">
-          <Info icon={<BadgeDollarSign className="h-4 w-4 text-accent" />} value={`R$ ${campaign.reward_amount}`} label="por vídeo" />
+        <div className="grid grid-cols-3 gap-2 mt-5 animate-slide-up opacity-0" style={step(1)}>
+          <Info icon={<BadgeDollarSign className="h-4 w-4 text-accent" />} value={brl(campaign.reward_amount)} label="por vídeo" />
           <Info icon={<Users className="h-4 w-4" />} value={`${left}`} label={`vaga${left !== 1 ? "s" : ""} restante${left !== 1 ? "s" : ""}`} />
           <Info icon={<MapPin className="h-4 w-4 text-accent" />} value={`${campaign.distance_km} km`} label="de você" />
         </div>
 
         {campaign.physical_item && (
-          <div className="mt-4 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-3 flex items-center gap-2.5">
-            <Gift className="h-4 w-4 text-primary shrink-0" />
+          <div
+            className="mt-4 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-3 flex items-center gap-2.5 animate-slide-up opacity-0"
+            style={step(2)}
+          >
+            <div className="h-9 w-9 rounded-full bg-primary/15 ring-1 ring-primary/20 flex items-center justify-center shrink-0">
+              <Gift className="h-4 w-4 text-primary" />
+            </div>
             <div className="min-w-0">
               <p className="text-[10px] text-muted-foreground/60 leading-none">Você recebe da marca</p>
               <p className="text-sm font-semibold truncate mt-0.5">{campaign.physical_item}</p>
@@ -89,38 +108,50 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
           </div>
         )}
 
-        {/* quanto entra no bolso (split 80/20) */}
-        <div className="mt-3 rounded-2xl bg-accent/5 ring-1 ring-accent/20 p-3 text-center">
-          <p className="text-[10px] text-muted-foreground/60">Você recebe por vídeo aprovado</p>
-          <p className="text-lg font-extrabold text-accent tabular-nums mt-0.5">R$ {influencer.toFixed(0)}</p>
-          <p className="text-[10px] text-muted-foreground/50">já com a taxa da plataforma descontada</p>
+        {/* quanto entra no bolso (split 80/20) — herói cyan = dinheiro */}
+        <div
+          className="mt-3 rounded-[1.25rem] bg-accent/[0.07] ring-1 ring-accent/25 p-4 text-center shadow-[inset_0_1px_0_0_hsl(174_100%_47%/0.12)] animate-slide-up opacity-0"
+          style={step(3)}
+        >
+          <p className="text-[10px] uppercase tracking-[0.18em] text-accent/70 font-semibold">No seu bolso</p>
+          <p className="text-3xl font-black text-accent tabular-nums mt-1 leading-none">{brl(influencer)}</p>
+          <p className="text-[10px] text-muted-foreground/55 mt-1.5">
+            por vídeo aprovado · taxa da plataforma já descontada
+          </p>
         </div>
 
         {/* CTA */}
-        {accepted ? (
-          <div className="mt-5 rounded-full bg-accent/10 ring-1 ring-accent/30 py-3 flex items-center justify-center gap-2 text-sm font-semibold text-accent">
-            <CheckCircle2 className="h-4 w-4" /> Você topou esta campanha
-          </div>
-        ) : (
-          <Button
-            size="lg"
-            className="w-full mt-5 rounded-full gap-1.5 bg-gradient-primary border-0 font-semibold"
-            disabled={loading || left === 0}
-            onClick={handleAccept}
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : left === 0 ? (
-              "Vagas esgotadas"
-            ) : (
-              <>Aceitar campanha <ArrowRight className="h-4 w-4" /></>
-            )}
-          </Button>
-        )}
+        <div className="animate-slide-up opacity-0" style={step(4)}>
+          {accepted ? (
+            <div className="mt-5 rounded-full bg-accent/10 ring-1 ring-accent/30 py-3 flex items-center justify-center gap-2 text-sm font-semibold text-accent">
+              <CheckCircle2 className="h-4 w-4" /> Você topou esta campanha
+            </div>
+          ) : (
+            <Button
+              size="lg"
+              className="group w-full mt-5 h-12 rounded-full gap-2 bg-gradient-primary border-0 font-semibold shadow-[var(--shadow-glow-cta)] transition-all duration-300 ease-[var(--ease-fluid)] active:scale-[.98]"
+              disabled={loading || left === 0}
+              onClick={handleAccept}
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : left === 0 ? (
+                "Vagas esgotadas"
+              ) : (
+                <>
+                  Aceitar campanha
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 transition-transform duration-300 ease-[var(--ease-fluid)] group-hover:translate-x-0.5">
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </>
+              )}
+            </Button>
+          )}
 
-        <p className="text-center text-[10px] text-muted-foreground/40 mt-3 pb-1">
-          Sem compromisso de pagamento — você só grava se topar.
-        </p>
+          <p className="text-center text-[10px] text-muted-foreground/40 mt-3 pb-1">
+            Sem compromisso de pagamento — você só grava se topar.
+          </p>
+        </div>
       </SheetContent>
     </Sheet>
   );

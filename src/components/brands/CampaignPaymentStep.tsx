@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { QrCode, CreditCard, Loader2, ShieldCheck, Lock } from "lucide-react";
+import { QrCode, CreditCard, Loader2, ShieldCheck, Lock, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 import {
   demo, demoId, computeBudget, PLATFORM_FEE_PCT,
   type Campaign,
@@ -18,6 +20,7 @@ type Method = "pix" | "card";
 
 // Passo 2 do "Publicar e pagar": resumo do custo + método + botão Pagar.
 export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
+  const { user } = useAuth();
   const [method, setMethod] = useState<Method>("pix");
   const [paying, setPaying] = useState(false);
 
@@ -25,14 +28,18 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   const handlePay = async () => {
+    if (paying) return; // trava dupla submissão
     setPaying(true);
     try {
       if (demo.isOn()) {
         const now = new Date().toISOString();
+        // Saldo da carteira lê por user.id (auth) — o ledger do lojista TEM que usar user.id,
+        // nunca brand_id, senão o dinheiro fica órfão e a Carteira não bate.
+        const ownerId = user?.id ?? campaign.brand_id;
         // Demo: entra o dinheiro (topup) e sai o valor reservado pra campanha (hold).
         demo.addCredit({
           id: demoId("cr"),
-          user_id: campaign.brand_id,
+          user_id: ownerId,
           kind: "topup",
           amount: total,
           campaign_id: campaign.id,
@@ -43,7 +50,7 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
         });
         demo.addCredit({
           id: demoId("cr"),
-          user_id: campaign.brand_id,
+          user_id: ownerId,
           kind: "campaign_hold",
           amount: -total, // reservado: sai do saldo
           campaign_id: campaign.id,
@@ -59,10 +66,10 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
         });
         return;
       }
-      // TODO Mercado Pago: edge function fund-campaign — cria preferência (PIX/cartão),
-      // ao confirmar webhook grava platform_credits (topup + campaign_hold) e funded=true.
-      onPaid();
-      toast.success("Pagamento iniciado", { description: "Confirme no provedor de pagamento." });
+      // Sem provedor de pagamento real ainda: NÃO marcar como paga (evita funded sem cobrança).
+      toast.error("Pagamento indisponível nesta versão", {
+        description: "Entre pelo modo demonstração para simular o pagamento.",
+      });
     } catch (e: any) {
       toast.error("Erro no pagamento", { description: e?.message });
     } finally {
@@ -71,23 +78,25 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
   };
 
   return (
-    <div className="space-y-5">
-      {/* Resumo do custo */}
-      <div className="p-5 rounded-3xl bg-gradient-to-br from-primary/15 via-accent/5 to-background border border-primary/20">
-        <p className="text-[9px] text-muted-foreground/40 uppercase tracking-widest font-semibold">Total a pagar</p>
-        <p className="text-3xl font-black mt-1">{fmt(total)}</p>
-        <div className="mt-4 space-y-2 text-xs">
-          <Row label={`${campaign.slots} influencers × ${fmt(campaign.reward_amount)}`} value={fmt(base)} />
-          <Row label={`Taxa da plataforma (${PLATFORM_FEE_PCT}%)`} value={fmt(fee)} muted />
-          <div className="h-px bg-border/30 my-1" />
-          <Row label="Total" value={fmt(total)} bold />
+    <div className="space-y-5 animate-fade-in">
+      {/* Resumo do custo — card herói com double-bezel */}
+      <div className="rounded-[1.75rem] bg-gradient-to-b from-accent/25 to-transparent p-px shadow-[0_24px_80px_-28px_hsl(174_100%_47%/0.35)]">
+        <div className="rounded-[calc(1.75rem-1px)] bg-gradient-to-br from-primary/15 via-accent/[0.06] to-card/90 backdrop-blur-xl p-5 ring-1 ring-white/[0.05]">
+          <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.2em] font-semibold">Total a pagar</p>
+          <p className="text-4xl font-black mt-1 text-accent tabular-nums tracking-tight">{fmt(total)}</p>
+          <div className="mt-4 space-y-2 text-xs">
+            <Row label={`${campaign.slots} influencers × ${fmt(campaign.reward_amount)}`} value={fmt(base)} />
+            <Row label={`Taxa da plataforma (${PLATFORM_FEE_PCT}%)`} value={fmt(fee)} muted />
+            <div className="h-px bg-border/40 my-1" />
+            <Row label="Total" value={fmt(total)} bold />
+          </div>
         </div>
       </div>
 
       {/* Método de pagamento */}
-      <div className="space-y-2">
-        <p className="text-xs font-bold text-muted-foreground/70">Como você quer pagar</p>
-        <div className="grid grid-cols-2 gap-2">
+      <div className="space-y-2.5">
+        <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-muted-foreground/50">Como você quer pagar</p>
+        <div className="grid grid-cols-2 gap-2.5">
           <MethodCard
             active={method === "pix"}
             onClick={() => setMethod("pix")}
@@ -107,7 +116,7 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
 
       {/* Visual do método escolhido */}
       {method === "pix" ? (
-        <div className="flex items-center gap-3 p-4 rounded-2xl border border-border/20 bg-muted/10">
+        <div className="flex items-center gap-3 p-4 rounded-2xl border border-border/20 bg-muted/10 animate-fade-in">
           <div className="h-16 w-16 rounded-xl bg-foreground/[0.04] border border-border/20 flex items-center justify-center shrink-0">
             <QrCode className="h-8 w-8 text-muted-foreground/40" />
           </div>
@@ -117,14 +126,16 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
           </div>
         </div>
       ) : (
-        <div className="p-4 rounded-2xl border border-border/20 bg-muted/10 space-y-2.5">
-          <div className="h-9 rounded-lg bg-foreground/[0.04] border border-border/20 flex items-center px-3 text-[11px] text-muted-foreground/40">
-            Número do cartão
+        <div className="p-4 rounded-2xl border border-border/20 bg-muted/10 space-y-2.5 animate-fade-in">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-warning/90">
+            <ShieldCheck className="h-3 w-3" /> Modo demonstração · pagamento simulado
           </div>
+          <Input disabled placeholder="0000 0000 0000 0000" className="rounded-lg border-border/20 bg-foreground/[0.03] h-10 text-xs" />
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="h-9 rounded-lg bg-foreground/[0.04] border border-border/20 flex items-center px-3 text-[11px] text-muted-foreground/40">MM/AA</div>
-            <div className="h-9 rounded-lg bg-foreground/[0.04] border border-border/20 flex items-center px-3 text-[11px] text-muted-foreground/40">CVV</div>
+            <Input disabled placeholder="MM/AA" className="rounded-lg border-border/20 bg-foreground/[0.03] h-10 text-xs" />
+            <Input disabled placeholder="CVV" className="rounded-lg border-border/20 bg-foreground/[0.03] h-10 text-xs" />
           </div>
+          <p className="text-[10px] text-muted-foreground/40">Nenhum dado real é necessário na demonstração.</p>
         </div>
       )}
 
@@ -136,17 +147,30 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
       {/* Ações */}
       <div className="flex gap-2">
         {onBack && (
-          <Button variant="ghost" className="rounded-full" onClick={onBack} disabled={paying}>
-            Voltar
+          <Button variant="ghost" className="rounded-full h-12 gap-1.5 px-4" onClick={onBack} disabled={paying}>
+            <ArrowLeft className="h-4 w-4" /> Voltar
           </Button>
         )}
         <Button
-          className="flex-1 rounded-full bg-gradient-primary border-0 text-primary-foreground h-11 gap-1.5"
+          className="group flex-1 rounded-full bg-gradient-primary border-0 text-primary-foreground h-12 gap-2 active:scale-[.98] transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] shadow-[var(--shadow-glow-cta)] disabled:opacity-70 disabled:active:scale-100"
           onClick={handlePay}
           disabled={paying}
+          aria-busy={paying}
         >
-          {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-          {paying ? "Processando..." : `Pagar ${fmt(total)}`}
+          {paying ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="sr-only">Processando pagamento</span>
+              Processando...
+            </>
+          ) : (
+            <>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 transition-transform duration-300 ease-[var(--ease-fluid)] group-hover:scale-110">
+                <ShieldCheck className="h-3.5 w-3.5" />
+              </span>
+              Pagar {fmt(total)}
+            </>
+          )}
         </Button>
       </div>
     </div>
@@ -155,9 +179,9 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
 
 function Row({ label, value, muted, bold }: { label: string; value: string; muted?: boolean; bold?: boolean }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className={cn(muted ? "text-muted-foreground/50" : "text-muted-foreground/70", bold && "font-bold text-foreground")}>{label}</span>
-      <span className={cn("font-semibold", bold ? "text-foreground" : "text-muted-foreground/80", muted && "text-muted-foreground/50")}>{value}</span>
+    <div className="flex items-center justify-between gap-2">
+      <span className={cn("min-w-0 truncate", muted ? "text-muted-foreground/50" : "text-muted-foreground/70", bold && "font-bold text-foreground")}>{label}</span>
+      <span className={cn("font-semibold tabular-nums shrink-0", bold ? "text-foreground" : "text-muted-foreground/80", muted && "text-muted-foreground/50")}>{value}</span>
     </div>
   );
 }
@@ -170,10 +194,10 @@ function MethodCard({ active, onClick, icon, title, sub }: {
       type="button"
       onClick={onClick}
       className={cn(
-        "p-3 rounded-2xl border text-left transition-all flex flex-col gap-1",
+        "p-3.5 rounded-2xl border text-left transition-all duration-300 ease-[var(--ease-fluid)] flex flex-col gap-1 active:scale-[.98] min-h-[44px]",
         active
-          ? "border-primary/60 bg-primary/10 ring-1 ring-primary/30"
-          : "border-border/20 bg-muted/10 hover:border-border/40"
+          ? "border-primary/60 bg-primary/10 ring-1 ring-primary/30 shadow-[var(--shadow-glow-cta)]"
+          : "border-border/20 bg-muted/10 hover:border-border/40 hover:-translate-y-0.5"
       )}
     >
       <span className={cn("transition-colors", active ? "text-primary" : "text-muted-foreground/50")}>{icon}</span>

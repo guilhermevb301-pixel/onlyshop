@@ -5,18 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+  SheetTrigger, SheetFooter, SheetClose,
 } from "@/components/ui/sheet";
 import {
   DollarSign, ArrowDownLeft, ArrowUpRight, Gift, RefreshCw,
   Wallet as WalletIcon, Loader2, CheckCircle, Clock, XCircle, ChevronLeft,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { formatDistanceToNow, format } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { demo, demoId, type CreditKind } from "@/lib/campaigns";
@@ -31,6 +32,11 @@ const CREDIT_LABEL: Record<CreditKind, string> = {
   withdrawal: "Saque PIX",
 };
 
+const WITHDRAW_MIN = 10;
+// Arredondamento monetário defensivo: o split 80/20 pode chegar aqui com
+// floats sujos (ex.: 35.99999). Tratamos tudo a 2 casas antes de exibir/somar.
+const round2 = (v: number) => Math.round((Number(v) || 0) * 100) / 100;
+
 interface WalletTransaction {
   id: string;
   type: "commission" | "withdrawal" | "bonus" | "refund";
@@ -43,15 +49,17 @@ interface WalletTransaction {
   completed_at: string | null;
 }
 
+// Dinheiro ENTRANDO = cyan (accent, "cor do dinheiro"); SAINDO = vermelho.
 const typeConfig = {
-  commission: { icon: ArrowDownLeft, label: "Comissão", color: "text-primary" },
-  withdrawal: { icon: ArrowUpRight, label: "Saque", color: "text-destructive" },
-  bonus: { icon: Gift, label: "Bônus", color: "text-accent" },
-  refund: { icon: RefreshCw, label: "Estorno", color: "text-warning" },
+  commission: { icon: ArrowDownLeft, label: "Comissão", color: "text-accent", bg: "bg-accent/10" },
+  bonus: { icon: Gift, label: "Bônus", color: "text-accent", bg: "bg-accent/10" },
+  withdrawal: { icon: ArrowUpRight, label: "Saque", color: "text-destructive", bg: "bg-destructive/10" },
+  refund: { icon: RefreshCw, label: "Estorno", color: "text-warning", bg: "bg-warning/10" },
 };
 
+// Badge só aparece quando NÃO está concluído (reduz ruído; concluído é o default).
 const statusConfig = {
-  completed: { icon: CheckCircle, label: "Concluído", class: "bg-primary/10 text-primary" },
+  completed: { icon: CheckCircle, label: "Concluído", class: "bg-accent/10 text-accent" },
   pending: { icon: Clock, label: "Pendente", class: "bg-warning/10 text-warning" },
   processing: { icon: Loader2, label: "Processando", class: "bg-accent/10 text-accent" },
   failed: { icon: XCircle, label: "Falhou", class: "bg-destructive/10 text-destructive" },
@@ -64,6 +72,9 @@ const pixKeyTypes = [
   { value: "random", label: "Chave aleatória" },
 ];
 
+// Chave do "kit demo" (bônus de boas-vindas) — semeado uma vez por usuário.
+const DEMO_SEED_KEY = "onlyshop_demo_wallet_seeded";
+
 export default function Wallet() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -74,29 +85,64 @@ export default function Wallet() {
   const [pixKey, setPixKey] = useState("");
   const [pixKeyType, setPixKeyType] = useState("cpf");
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+  const fmt = (v: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(round2(v));
+
+  const demoMode = demo.isOn();
 
   useEffect(() => {
     if (user) fetchTransactions();
     else setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const demoMode = demo.isOn();
+  // Semeia uma vez o ciclo completo da carteira no demo (bônus + 1 a receber),
+  // pra a tela nunca nascer vazia/zerada na primeira impressão.
+  const seedDemoWalletOnce = () => {
+    if (!user) return;
+    if (localStorage.getItem(DEMO_SEED_KEY)) return;
+    const hasLedger = demo.credits(user.id).length > 0;
+    localStorage.setItem(DEMO_SEED_KEY, "1");
+    if (hasLedger) return; // não polui um ledger que já tem histórico real
+    const now = Date.now();
+    demo.addCredit({
+      id: demoId("bonus"), user_id: user.id, kind: "refund", amount: 10,
+      status: "completed", created_at: new Date(now - 1000 * 60 * 60 * 24 * 2).toISOString(),
+    });
+    demo.addCredit({
+      id: demoId("payout"), user_id: user.id, kind: "payout", amount: 40,
+      status: "completed", created_at: new Date(now - 1000 * 60 * 60 * 6).toISOString(),
+    });
+  };
 
   const fetchTransactions = async () => {
     if (!user) return;
-    // Demo: a carteira reflete o MESMO ledger de "Meus Ganhos" (platform_credits).
+    // Demo: a carteira reflete o MESMO ledger de "Meus Ganhos" (platform_credits),
+    // lido sempre por user.id pra bater com Affiliate/Mapa.
     if (demoMode) {
-      const mapped: WalletTransaction[] = demo.credits(user.id).map((c) => ({
-        id: c.id,
-        type: c.kind === "withdrawal" ? "withdrawal" : c.kind === "platform_fee" ? "refund" : c.amount >= 0 ? "commission" : "withdrawal",
-        amount: c.amount,
-        status: "completed",
-        description: CREDIT_LABEL[c.kind] ?? "Lançamento",
-        pix_key: null, pix_key_type: null,
-        created_at: c.created_at, completed_at: c.created_at,
-      }));
+      seedDemoWalletOnce();
+      const mapped: WalletTransaction[] = demo
+        .credits(user.id)
+        // A taxa da plataforma (20%) não pertence ao usuário — fora da carteira dele.
+        .filter((c) => c.user_id === user.id && c.kind !== "platform_fee")
+        .map((c) => ({
+          id: c.id,
+          type:
+            c.kind === "withdrawal"
+              ? "withdrawal"
+              : c.kind === "refund"
+              ? "bonus"
+              : c.amount >= 0
+              ? "commission"
+              : "withdrawal",
+          amount: round2(c.amount),
+          status: "completed",
+          description: CREDIT_LABEL[c.kind] ?? "Lançamento",
+          pix_key: null, pix_key_type: null,
+          created_at: c.created_at, completed_at: c.created_at,
+        }));
       setTransactions(mapped);
       setLoading(false);
       return;
@@ -111,48 +157,69 @@ export default function Wallet() {
     setLoading(false);
   };
 
-  // Saldo: no demo usa o ledger de split; no real, soma das transações concluídas.
-  const balance = demoMode
-    ? demo.balance(user?.id)
-    : transactions.filter(t => t.status === "completed").reduce((sum, t) => sum + Number(t.amount), 0);
+  // Saldo: no demo usa o ledger de split (por user.id); no real, soma das concluídas.
+  const balance = round2(
+    demoMode
+      ? demo.balance(user?.id)
+      : transactions.filter((t) => t.status === "completed").reduce((sum, t) => sum + Number(t.amount), 0)
+  );
 
-  const pendingBalance = transactions
-    .filter(t => t.status === "pending" && t.type !== "withdrawal")
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+  // Totais legíveis (válidos no demo e no real, lidos do mesmo ledger).
+  const totalReceived = round2(
+    transactions
+      .filter((t) => (t.type === "commission" || t.type === "bonus") && Number(t.amount) > 0)
+      .reduce((s, t) => s + Number(t.amount), 0)
+  );
+  const totalWithdrawn = round2(
+    transactions
+      .filter((t) => t.type === "withdrawal" && t.status === "completed")
+      .reduce((s, t) => s + Math.abs(Number(t.amount)), 0)
+  );
+  const pendingWithdrawals = round2(
+    transactions
+      .filter((t) => t.status === "pending" && t.type === "withdrawal")
+      .reduce((s, t) => s + Math.abs(Number(t.amount)), 0)
+  );
 
-  const pendingWithdrawals = transactions
-    .filter(t => t.status === "pending" && t.type === "withdrawal")
-    .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
-
-  const totalWithdrawn = transactions
-    .filter(t => t.type === "withdrawal" && t.status === "completed")
-    .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+  const belowMin = balance > 0 && balance < WITHDRAW_MIN;
 
   const handleWithdraw = async () => {
     if (!user || !withdrawAmount || !pixKey) return;
-    const amount = parseFloat(withdrawAmount);
+    const amount = round2(parseFloat(withdrawAmount));
     if (isNaN(amount) || amount <= 0) {
       toast({ variant: "destructive", title: "Valor inválido" });
       return;
     }
-    if (amount > balance) {
-      toast({ variant: "destructive", title: "Saldo insuficiente", description: `Seu saldo disponível é ${fmt(balance)}` });
-      return;
-    }
-    if (amount < 10) {
-      toast({ variant: "destructive", title: "Valor mínimo", description: "O saque mínimo é R$ 10,00" });
+    if (amount < WITHDRAW_MIN) {
+      toast({ variant: "destructive", title: "Valor mínimo", description: `O saque mínimo é ${fmt(WITHDRAW_MIN)}` });
       return;
     }
 
     // Demo: registra o saque no ledger local (sem Mercado Pago).
     if (demoMode) {
+      setIsWithdrawing(true);
+      // Re-lê o saldo IMEDIATAMENTE antes do débito (evita corrida/duplo-saque).
+      const fresh = round2(demo.balance(user.id));
+      if (amount > fresh) {
+        setIsWithdrawing(false);
+        toast({ variant: "destructive", title: "Saldo insuficiente", description: `Seu saldo disponível é ${fmt(fresh)}` });
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 600)); // micro-delay de processamento
       demo.addCredit({
         id: demoId("wd"), user_id: user.id, kind: "withdrawal", amount: -amount,
         status: "completed", created_at: new Date().toISOString(),
       });
-      toast({ title: "Saque solicitado! 💸", description: `${fmt(amount)} via PIX a caminho.` });
+      toast({ title: "Saque solicitado!", description: `${fmt(amount)} via PIX a caminho.` });
       setWithdrawAmount(""); setPixKey("");
+      setIsWithdrawing(false);
+      setSheetOpen(false);
       fetchTransactions();
+      return;
+    }
+
+    if (amount > balance) {
+      toast({ variant: "destructive", title: "Saldo insuficiente", description: `Seu saldo disponível é ${fmt(balance)}` });
       return;
     }
 
@@ -163,16 +230,17 @@ export default function Wallet() {
         type: "withdrawal",
         amount: -amount,
         status: "pending",
-        description: `Saque PIX — ${pixKeyTypes.find(p => p.value === pixKeyType)?.label}`,
+        description: `Saque PIX — ${pixKeyTypes.find((p) => p.value === pixKeyType)?.label}`,
         pix_key: pixKey,
         pix_key_type: pixKeyType,
       });
 
       if (error) throw error;
 
-      toast({ title: "Saque solicitado! 💰", description: `${fmt(amount)} será enviado via PIX em até 48h.` });
+      toast({ title: "Saque solicitado!", description: `${fmt(amount)} será enviado via PIX em até 48h.` });
       setWithdrawAmount("");
       setPixKey("");
+      setSheetOpen(false);
       fetchTransactions();
     } catch (err: any) {
       toast({ variant: "destructive", title: "Erro ao solicitar saque", description: err.message });
@@ -181,133 +249,214 @@ export default function Wallet() {
     }
   };
 
-  const filtered = filter === "all" ? transactions : transactions.filter(t => t.type === filter);
+  const filtered = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
+
+  const filterLabel: Record<string, string> = {
+    commission: "comissão", withdrawal: "saque", bonus: "bônus",
+  };
 
   if (!user) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 p-6 text-center">
-      <WalletIcon className="h-10 w-10 text-muted-foreground/20" />
-      <p className="text-sm font-medium">Faça login para acessar sua wallet</p>
-      <Button asChild size="sm" className="rounded-full"><Link to="/auth">Entrar</Link></Button>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-6 text-center animate-fade-in">
+      <div className="grid h-16 w-16 place-items-center rounded-2xl bg-accent/10 ring-1 ring-accent/20">
+        <WalletIcon className="h-7 w-7 text-accent" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-base font-bold">Sua carteira te espera</p>
+        <p className="text-xs text-muted-foreground/60 max-w-[16rem]">
+          Entre pra ver saldo, extrato e sacar seus ganhos via PIX.
+        </p>
+      </div>
+      <Button asChild className="rounded-full bg-gradient-primary text-white border-0 h-11 px-6 gap-2 active:scale-[.98]">
+        <Link to="/auth">
+          Entrar
+          <span className="grid h-5 w-5 place-items-center rounded-full bg-white/15">
+            <ArrowUpRight className="h-3 w-3 rotate-45" />
+          </span>
+        </Link>
+      </Button>
     </div>
   );
 
   if (loading) return (
-    <div className="max-w-5xl mx-auto py-2 space-y-4">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="h-16 rounded-2xl bg-muted/20 animate-pulse" />
-      ))}
+    <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+      <div className="h-10 w-40 rounded-xl bg-muted/20 animate-pulse" />
+      <div className="h-44 rounded-[1.75rem] bg-muted/20 animate-pulse" />
+      <div className="grid grid-cols-3 gap-2.5">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-[4.5rem] rounded-[1.5rem] bg-muted/20 animate-pulse" />
+        ))}
+      </div>
+      <div className="space-y-2.5">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-[4.25rem] rounded-[1.5rem] bg-muted/20 animate-pulse" />
+        ))}
+      </div>
     </div>
   );
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-          <Link to="/affiliate"><ChevronLeft className="h-4 w-4" /></Link>
+      <div className="flex items-center gap-3 animate-fade-in">
+        <Button
+          asChild variant="ghost" size="icon" aria-label="Voltar"
+          className="h-10 w-10 rounded-full shrink-0"
+        >
+          <Link to="/affiliate"><ChevronLeft className="h-5 w-5" /></Link>
         </Button>
         <div>
-          <h1 className="text-lg font-bold tracking-tight">Wallet</h1>
-          <p className="text-[11px] text-muted-foreground/40">Saldo, transações e saques</p>
+          <h1 className="text-xl font-bold tracking-tight">Carteira</h1>
+          <p className="text-xs text-muted-foreground/60">Saldo, extrato e saques via PIX</p>
         </div>
       </div>
 
-      {/* Balance Card */}
-      <div className="p-6 rounded-3xl bg-gradient-to-br from-primary/15 via-accent/5 to-background border border-primary/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <p className="text-[9px] text-muted-foreground/40 uppercase tracking-widest font-semibold">Saldo disponível</p>
-        <p className="text-3xl font-black mt-1">{fmt(balance)}</p>
-        <div className="flex gap-5 mt-3 text-[10px]">
-          <span className="text-muted-foreground/50">Pendente: <strong className="text-warning">{fmt(pendingBalance)}</strong></span>
-          <span className="text-muted-foreground/50">Sacado: <strong className="text-primary">{fmt(totalWithdrawn)}</strong></span>
-        </div>
+      {/* Balance Card — double-bezel + glow de marca */}
+      <div
+        className="rounded-[1.75rem] bg-gradient-to-b from-white/[0.08] to-transparent p-px animate-slide-up"
+        style={{ animationDelay: "40ms" }}
+      >
+        <div className="relative overflow-hidden rounded-[1.7rem] bg-gradient-to-br from-primary/15 via-accent/[0.06] to-card p-6 shadow-[var(--shadow-bezel-inset)]">
+          {/* orbs ambiente magenta↔cyan */}
+          <div className="pointer-events-none absolute -top-10 -right-8 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-10 h-44 w-44 rounded-full bg-accent/10 blur-3xl" />
 
-        {/* Withdraw button */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button size="sm" className="mt-4 rounded-full text-[10px] h-9 gap-1.5 w-full" disabled={balance <= 0}>
-              <DollarSign className="h-3 w-3" />
-              Sacar via PIX
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-3xl border-border/20">
-            <SheetHeader>
-              <SheetTitle className="text-base">Solicitar Saque PIX</SheetTitle>
-            </SheetHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label className="text-[11px] text-muted-foreground/50">Valor (mín. R$ 10,00)</Label>
-                <div className="relative mt-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/30">R$</span>
+          <p className="relative text-[11px] uppercase tracking-[0.2em] font-semibold text-muted-foreground/50">
+            Saldo disponível
+          </p>
+          <p className="relative mt-1.5 text-4xl font-black tabular-nums text-accent">{fmt(balance)}</p>
+
+          <div className="relative mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11px]">
+            <span className="text-muted-foreground/60">
+              Recebido <strong className="ml-0.5 text-accent tabular-nums">{fmt(totalReceived)}</strong>
+            </span>
+            <span className="text-muted-foreground/60">
+              Sacado <strong className="ml-0.5 text-foreground tabular-nums">{fmt(totalWithdrawn)}</strong>
+            </span>
+          </div>
+
+          {/* Microcopy quando saldo > 0 mas abaixo do mínimo de saque */}
+          {belowMin && (
+            <p className="relative mt-3 text-[11px] text-warning/90">
+              Faltam {fmt(WITHDRAW_MIN - balance)} pra atingir o saque mínimo de {fmt(WITHDRAW_MIN)}.
+            </p>
+          )}
+
+          {/* Withdraw CTA */}
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                className="group relative mt-4 h-11 w-full gap-2 rounded-full bg-gradient-primary text-white border-0 text-sm font-semibold shadow-[var(--shadow-glow-cta)] transition-transform active:scale-[.98] [transition-timing-function:cubic-bezier(.34,1.56,.64,1)] disabled:shadow-none disabled:opacity-50"
+                disabled={balance < WITHDRAW_MIN}
+              >
+                <span className="grid h-5 w-5 place-items-center rounded-full bg-white/15">
+                  <DollarSign className="h-3 w-3" />
+                </span>
+                Sacar via PIX
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="rounded-t-3xl border-border/20">
+              <SheetHeader>
+                <SheetTitle className="text-base">Solicitar saque PIX</SheetTitle>
+                <SheetDescription className="sr-only">
+                  Informe o valor e a chave PIX para sacar seu saldo disponível.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label className="text-[11px] text-muted-foreground/60">Valor (mín. {fmt(WITHDRAW_MIN)})</Label>
+                  <div className="relative mt-1.5">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/40">R$</span>
+                    <Input
+                      type="number" step="0.01" min={WITHDRAW_MIN} max={balance}
+                      placeholder="0,00"
+                      className="h-12 pl-10 text-lg font-bold tabular-nums rounded-xl border-border/20"
+                      value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawAmount(String(balance))}
+                    className="mt-1.5 text-[11px] text-accent/80 hover:text-accent active:scale-[.98] transition"
+                  >
+                    Disponível: <span className="font-semibold tabular-nums">{fmt(balance)}</span> · sacar tudo
+                  </button>
+                </div>
+
+                <div>
+                  <Label className="text-[11px] text-muted-foreground/60">Tipo de chave PIX</Label>
+                  <Select value={pixKeyType} onValueChange={setPixKeyType}>
+                    <SelectTrigger aria-label="Tipo de chave PIX" className="mt-1.5 h-11 rounded-xl border-border/20 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pixKeyTypes.map((p) => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-[11px] text-muted-foreground/60">Chave PIX</Label>
                   <Input
-                    type="number" step="0.01" min="10" max={balance}
-                    placeholder="0,00" className="pl-10 h-11 text-lg font-bold rounded-xl border-border/20"
-                    value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)}
+                    placeholder={pixKeyType === "cpf" ? "000.000.000-00" : pixKeyType === "email" ? "seu@email.com" : pixKeyType === "phone" ? "(00) 00000-0000" : "Chave aleatória"}
+                    className="mt-1.5 h-11 rounded-xl border-border/20 text-sm"
+                    value={pixKey} onChange={(e) => setPixKey(e.target.value)}
                   />
                 </div>
-                <p className="text-[9px] text-muted-foreground/30 mt-1">Disponível: {fmt(balance)}</p>
               </div>
-
-              <div>
-                <Label className="text-[11px] text-muted-foreground/50">Tipo de chave PIX</Label>
-                <Select value={pixKeyType} onValueChange={setPixKeyType}>
-                  <SelectTrigger className="h-10 rounded-xl border-border/20 mt-1 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {pixKeyTypes.map(p => (
-                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-[11px] text-muted-foreground/50">Chave PIX</Label>
-                <Input
-                  placeholder={pixKeyType === "cpf" ? "000.000.000-00" : pixKeyType === "email" ? "seu@email.com" : pixKeyType === "phone" ? "(00) 00000-0000" : "Chave aleatória"}
-                  className="h-10 rounded-xl border-border/20 mt-1 text-sm"
-                  value={pixKey} onChange={(e) => setPixKey(e.target.value)}
-                />
-              </div>
-            </div>
-            <SheetFooter className="gap-2">
-              <SheetClose asChild><Button variant="ghost" size="sm" className="rounded-full">Cancelar</Button></SheetClose>
-              <Button size="sm" onClick={handleWithdraw}
-                disabled={!withdrawAmount || !pixKey || isWithdrawing}
-                className="rounded-full bg-foreground text-background">
-                {isWithdrawing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : `Sacar ${withdrawAmount ? fmt(parseFloat(withdrawAmount) || 0) : ""}`}
-              </Button>
-            </SheetFooter>
-          </SheetContent>
-        </Sheet>
+              <SheetFooter className="gap-2">
+                <SheetClose asChild>
+                  <Button variant="ghost" className="h-11 rounded-full">Cancelar</Button>
+                </SheetClose>
+                <Button
+                  onClick={handleWithdraw}
+                  disabled={!withdrawAmount || !pixKey || isWithdrawing}
+                  aria-busy={isWithdrawing}
+                  className="h-11 gap-2 rounded-full bg-accent text-accent-foreground font-semibold active:scale-[.98] transition-transform disabled:opacity-50"
+                >
+                  {isWithdrawing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="sr-only">Processando saque…</span>
+                    </>
+                  ) : (
+                    <>Sacar {withdrawAmount ? fmt(parseFloat(withdrawAmount) || 0) : ""}</>
+                  )}
+                </Button>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* Summary cards — métricas reais do ledger (nada de R$0 morto) */}
+      <div className="grid grid-cols-3 gap-2.5 animate-slide-up" style={{ animationDelay: "80ms" }}>
         {[
-          { label: "Comissões", value: fmt(transactions.filter(t => t.type === "commission" && t.status === "completed").reduce((s, t) => s + Number(t.amount), 0)), color: "text-primary" },
-          { label: "Bônus", value: fmt(transactions.filter(t => t.type === "bonus" && t.status === "completed").reduce((s, t) => s + Number(t.amount), 0)), color: "text-accent" },
-          { label: "Em saque", value: fmt(pendingWithdrawals), color: "text-warning" },
-        ].map(s => (
-          <div key={s.label} className="p-3 rounded-2xl bg-muted/20 border border-border/15 text-center">
-            <p className={cn("text-sm font-bold", s.color)}>{s.value}</p>
-            <span className="text-[8px] text-muted-foreground/30 uppercase tracking-wider font-semibold">{s.label}</span>
+          { label: "Recebido", value: fmt(totalReceived), color: "text-accent" },
+          { label: "Sacado", value: fmt(totalWithdrawn), color: "text-foreground" },
+          { label: "Saldo", value: fmt(balance), color: "text-accent" },
+        ].map((s) => (
+          <div key={s.label} className="rounded-[1.5rem] bg-gradient-to-b from-white/[0.05] to-transparent p-px">
+            <div className="rounded-[1.45rem] bg-card/60 backdrop-blur px-2.5 py-3 text-center shadow-[var(--shadow-bezel-inset)]">
+              <p className={cn("text-base font-black tabular-nums leading-tight", s.color)}>{s.value}</p>
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/50">{s.label}</span>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Transaction History */}
-      <div>
+      {/* Extrato */}
+      <div className="animate-slide-up" style={{ animationDelay: "120ms" }}>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold">Histórico</h2>
+          <h2 className="text-sm font-bold">Extrato</h2>
           <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-            <SelectTrigger className="w-auto h-7 text-[10px] border-border/15 rounded-full px-3">
+            <SelectTrigger aria-label="Filtrar transações" className="h-9 w-auto rounded-full border-border/15 px-3.5 text-[11px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="commission">Comissões</SelectItem>
+              <SelectItem value="commission">Ganhos</SelectItem>
               <SelectItem value="withdrawal">Saques</SelectItem>
               <SelectItem value="bonus">Bônus</SelectItem>
             </SelectContent>
@@ -315,13 +464,42 @@ export default function Wallet() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="py-12 text-center space-y-2">
-            <WalletIcon className="h-8 w-8 mx-auto text-muted-foreground/10" />
-            <p className="text-xs text-muted-foreground/30">Nenhuma transação encontrada</p>
-          </div>
+          filter === "all" ? (
+            // (a) carteira vazia — copy convidativa + CTA pro mapa
+            <div className="flex flex-col items-center gap-4 py-12 text-center">
+              <div className="grid h-16 w-16 place-items-center rounded-2xl bg-accent/10 ring-1 ring-accent/20">
+                <Sparkles className="h-6 w-6 text-accent" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-base font-bold">Sua carteira está vazia</p>
+                <p className="text-xs text-muted-foreground/60 max-w-[17rem]">
+                  Aceite uma campanha perto de você e seu primeiro pagamento aparece aqui.
+                </p>
+              </div>
+              <Button asChild className="group h-11 gap-2 rounded-full bg-gradient-primary text-white border-0 px-5 active:scale-[.98]">
+                <Link to="/mapa">
+                  Ver campanhas no mapa
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-white/15 transition-transform group-hover:translate-x-0.5">
+                    <ArrowUpRight className="h-3 w-3 rotate-45" />
+                  </span>
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            // (b) filtro sem resultado — ação pra limpar o filtro
+            <div className="flex flex-col items-center gap-3 py-12 text-center">
+              <WalletIcon className="h-8 w-8 text-muted-foreground/20" />
+              <p className="text-xs text-muted-foreground/60">
+                Nenhum lançamento de {filterLabel[filter] ?? "filtro"} ainda
+              </p>
+              <Button variant="ghost" size="sm" className="rounded-full text-accent" onClick={() => setFilter("all")}>
+                Ver todas
+              </Button>
+            </div>
+          )
         ) : (
-          <div className="space-y-2">
-            {filtered.map((t) => {
+          <div className="space-y-2.5">
+            {filtered.map((t, i) => {
               const cfg = typeConfig[t.type];
               const sCfg = statusConfig[t.status];
               const Icon = cfg.icon;
@@ -329,25 +507,37 @@ export default function Wallet() {
               const isNegative = Number(t.amount) < 0;
 
               return (
-                <div key={t.id} className="p-4 rounded-2xl border border-border/15 bg-background flex items-center gap-3">
-                  <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0", isNegative ? "bg-destructive/10" : "bg-primary/10")}>
-                    <Icon className={cn("h-4 w-4", cfg.color)} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold truncate">{t.description || cfg.label}</p>
-                    <p className="text-[9px] text-muted-foreground/30 mt-0.5">
-                      {format(new Date(t.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}
-                      {t.pix_key && ` · PIX: ${t.pix_key}`}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className={cn("text-sm font-bold", isNegative ? "text-destructive" : "text-primary")}>
-                      {isNegative ? "-" : "+"}{fmt(Math.abs(Number(t.amount)))}
-                    </p>
-                    <Badge variant="secondary" className={cn("text-[8px] rounded-full border-0 gap-0.5 px-1.5 py-0", sCfg.class)}>
-                      <StatusIcon className={cn("h-2 w-2", t.status === "processing" && "animate-spin")} />
-                      {sCfg.label}
-                    </Badge>
+                <div
+                  key={t.id}
+                  className="rounded-[1.5rem] bg-gradient-to-b from-white/[0.04] to-transparent p-px animate-fade-in"
+                  style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
+                >
+                  <div className="flex items-center gap-3 rounded-[1.45rem] bg-card/60 backdrop-blur px-4 py-3.5 shadow-[var(--shadow-bezel-inset)]">
+                    <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl", cfg.bg)}>
+                      <Icon className={cn("h-4 w-4", cfg.color)} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-semibold">{t.description || cfg.label}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground/50">
+                        {format(new Date(t.created_at), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}
+                        {t.pix_key && ` · PIX: ${t.pix_key}`}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className={cn("text-[15px] font-black tabular-nums", isNegative ? "text-destructive" : "text-accent")}>
+                        {isNegative ? "−" : "+"}{fmt(Math.abs(Number(t.amount)))}
+                      </p>
+                      {/* Badge só quando NÃO concluído (concluído é o default, sem ruído) */}
+                      {t.status !== "completed" && (
+                        <Badge
+                          variant="secondary"
+                          className={cn("mt-0.5 gap-1 rounded-full border-0 px-2 py-0 text-[10px]", sCfg.class)}
+                        >
+                          <StatusIcon className={cn("h-2.5 w-2.5", t.status === "processing" && "animate-spin")} />
+                          {sCfg.label}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
