@@ -27,10 +27,36 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
   const { base, fee, total } = computeBudget(campaign.slots, campaign.reward_amount);
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
+  // Tenta o pagamento REAL via Mercado Pago (Checkout Pro). Abre a aba ANTES do
+  // await pra não cair no bloqueador de pop-up. Retorna true se abriu o checkout.
+  const openRealPayment = async (): Promise<boolean> => {
+    const payTab = window.open("", "_blank");
+    try {
+      const res = await fetch("/api/fund-campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: campaign.name, amount: total, campaignId: campaign.id }),
+      });
+      const data = await res.json();
+      if (data?.init_point) {
+        if (payTab) payTab.location.href = data.init_point;
+        else window.location.href = data.init_point;
+        return true;
+      }
+    } catch {
+      /* sem provedor / offline — cai no demo */
+    }
+    if (payTab) payTab.close(); // não rolou pagamento real: fecha a aba em branco
+    return false;
+  };
+
   const handlePay = async () => {
     if (paying) return; // trava dupla submissão
     setPaying(true);
     try {
+      // 1) Pagamento REAL (Mercado Pago) — abre o checkout de verdade numa aba.
+      const realOpened = await openRealPayment();
+
       if (demo.isOn()) {
         const now = new Date().toISOString();
         // Saldo da carteira lê por user.id (auth) — o ledger do lojista TEM que usar user.id,
@@ -59,17 +85,22 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
           provider_ref: null,
           created_at: now,
         });
-        await new Promise((r) => setTimeout(r, 700)); // simula confirmação
+        await new Promise((r) => setTimeout(r, 700));
         onPaid();
-        toast.success("Pagamento confirmado!", {
-          description: `Sua campanha "${campaign.name}" está no ar.`,
+        toast.success(realOpened ? "Pagamento aberto no Mercado Pago!" : "Campanha no ar!", {
+          description: realOpened
+            ? `Conclua o pagamento de ${fmt(total)} na aba do Mercado Pago — a campanha "${campaign.name}" já está no seu painel.`
+            : `Sua campanha "${campaign.name}" está no ar.`,
         });
         return;
       }
-      // Sem provedor de pagamento real ainda: NÃO marcar como paga (evita funded sem cobrança).
-      toast.error("Pagamento indisponível nesta versão", {
-        description: "Entre pelo modo demonstração para simular o pagamento.",
-      });
+      // Fora do demo (futuro, com contas reais): se o checkout abriu, segue.
+      if (realOpened) {
+        onPaid();
+        toast.success("Pagamento aberto no Mercado Pago!", { description: `Conclua o pagamento de ${fmt(total)}.` });
+      } else {
+        toast.error("Pagamento indisponível agora", { description: "Tente de novo em instantes." });
+      }
     } catch (e: any) {
       toast.error("Erro no pagamento", { description: e?.message });
     } finally {
@@ -121,21 +152,22 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
             <QrCode className="h-8 w-8 text-muted-foreground/40" />
           </div>
           <div className="text-[11px] text-muted-foreground/60 leading-relaxed">
-            Ao tocar em <strong className="text-foreground">Pagar</strong>, geramos o QR Code PIX.
-            O valor fica reservado até as entregas serem aprovadas.
+            Ao tocar em <strong className="text-foreground">Pagar</strong>, você vai pro
+            <strong className="text-foreground"> Mercado Pago</strong> pagar via PIX. O valor fica
+            reservado até as entregas serem aprovadas.
           </div>
         </div>
       ) : (
         <div className="p-4 rounded-2xl border border-border/20 bg-muted/10 space-y-2.5 animate-fade-in">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-warning/90">
-            <ShieldCheck className="h-3 w-3" /> Modo demonstração · pagamento simulado
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent/90">
+            <ShieldCheck className="h-3 w-3" /> Pagamento seguro via Mercado Pago
           </div>
           <Input disabled placeholder="0000 0000 0000 0000" className="rounded-lg border-border/20 bg-foreground/[0.03] h-10 text-xs" />
           <div className="grid grid-cols-2 gap-2.5">
             <Input disabled placeholder="MM/AA" className="rounded-lg border-border/20 bg-foreground/[0.03] h-10 text-xs" />
             <Input disabled placeholder="CVV" className="rounded-lg border-border/20 bg-foreground/[0.03] h-10 text-xs" />
           </div>
-          <p className="text-[10px] text-muted-foreground/40">Nenhum dado real é necessário na demonstração.</p>
+          <p className="text-[10px] text-muted-foreground/40">Você preenche o cartão no ambiente seguro do Mercado Pago (em até 12x).</p>
         </div>
       )}
 

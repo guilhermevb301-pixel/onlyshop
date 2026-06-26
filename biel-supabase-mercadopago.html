@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnlyShop — Passo a passo: Supabase + Mercado Pago (Biel)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#eef0f3;color:#16181d;padding:30px 14px;line-height:1.55;}
+  .page{max-width:720px;margin:0 auto 26px;background:#fff;border-radius:20px;padding:42px;box-shadow:0 6px 30px rgba(0,0,0,.08);}
+  .logo{font-size:23px;font-weight:900;letter-spacing:-.5px;}
+  .logo span{color:#e8446a;}
+  .kicker{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.6px;color:#e8446a;margin-bottom:8px;}
+  h1{font-size:27px;font-weight:900;letter-spacing:-1px;line-height:1.15;margin-bottom:12px;}
+  h2{font-size:20px;font-weight:800;letter-spacing:-.4px;display:flex;align-items:center;gap:10px;}
+  p.lead{font-size:15.5px;color:#3a3d44;}
+  .muted{color:#6b6f78;font-size:13.5px;}
+  .why{border-radius:14px;padding:16px 18px;margin:14px 0;display:flex;gap:14px;align-items:flex-start;}
+  .why.a{background:#fffbeb;border:1.5px solid #fde68a;}
+  .why .em{font-size:24px;flex-shrink:0;}
+  .why h3{font-size:15px;}
+  .why p{font-size:13.5px;color:#555;margin-top:2px;}
+  .sectlabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#9aa0aa;margin:34px 0 6px;}
+  .part{border-radius:16px;border:1px solid #e7e9ee;overflow:hidden;margin:10px 0 4px;}
+  .part .head{display:flex;align-items:center;gap:12px;padding:16px 20px;background:#f7f8fa;border-bottom:1px solid #e7e9ee;}
+  .part .head .badge{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .b-supa{background:#e7f6ee;}
+  .b-mp{background:#e7f0ff;}
+  .part .head h2{font-size:18px;}
+  .part .head .sub{font-size:11.5px;color:#888;}
+  ol{margin:0;padding:14px 20px;counter-reset:s;list-style:none;}
+  ol li{position:relative;padding:11px 0 11px 38px;font-size:14px;color:#26282e;border-bottom:1px solid #f1f2f5;}
+  ol li:last-child{border-bottom:none;}
+  ol li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:10px;width:24px;height:24px;background:#16181d;color:#fff;border-radius:50%;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  ol li b{color:#000;}
+  .tag{font-family:monospace;font-size:12.5px;background:#eef0f3;padding:1.5px 7px;border-radius:5px;color:#16181d;}
+  .tagp{font-family:monospace;font-size:12.5px;background:#16181d;color:#7CFFB2;padding:1.5px 7px;border-radius:5px;}
+  .final{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:14px;padding:18px 20px;margin-top:20px;display:flex;gap:14px;align-items:flex-start;}
+  .final .em{font-size:24px;}
+  .final h3{font-size:15px;}
+  .final p{font-size:13.5px;color:#555;margin-top:3px;}
+  .footer{margin-top:30px;padding-top:16px;border-top:1.5px solid #f0f0f0;display:flex;justify-content:space-between;font-size:12px;color:#aaa;}
+  .footer strong{color:#666;}
+  @media print{body{background:#fff;padding:0;}.page{box-shadow:none;border-radius:0;margin:0;max-width:100%;padding:30px 38px;page-break-after:always;}}
+</style>
+</head>
+<body>
+
+<!-- PÁGINA 1 -->
+<div class="page">
+  <div class="logo">Only<span>Shop</span></div>
+  <div style="margin-top:34px;">
+    <div class="kicker">Pra você, Biel · 2 contas, 10 minutos</div>
+    <h1>Criar o Supabase e o Mercado Pago<br>e me passar o acesso</h1>
+    <p class="lead">São as 2 únicas coisas que faltam pra sair do modo demonstração e o app movimentar dinheiro de verdade. Crie as contas seguindo o passo a passo, me manda o acesso no grupo, e eu conecto tudo. Aí a gente lança.</p>
+  </div>
+
+  <div class="sectlabel">Por que essas 2?</div>
+  <div class="why a">
+    <div class="em">🗄️</div>
+    <div><h3>Supabase = onde os dados ficam guardados</h3><p>As marcas, os influencers, as campanhas e os saldos. Sem isso o app não salva nada de verdade.</p></div>
+  </div>
+  <div class="why a">
+    <div class="em">💳</div>
+    <div><h3>Mercado Pago = o dinheiro entrar, ficar seguro e ser pago</h3><p>A marca paga adiantado, <b>o dinheiro fica retido com a plataforma</b>, e só é liberado pro influencer <b>quando ele entrega e a marca aprova</b> — já descontando os 20% da OnlyShop, automático. (É o "via split" que a gente falou na call — sem a gente segurar dinheiro de forma arriscada.)</p></div>
+  </div>
+
+  <div class="why" style="background:#f8f9fb;border:1px solid #e8eaee;">
+    <div class="em">✅</div>
+    <div><h3>O resto já está pronto e funcionando</h3><p>O app inteiro (mapa, marca cria campanha, influencer aceita e entrega, aprovação, split 80/20) já está construído e rodando em demonstração. Só falta plugar essas 2 contas pra virar real.</p></div>
+  </div>
+
+  <div class="footer"><div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div><div>Página 1 de 2</div></div>
+</div>
+
+<!-- PÁGINA 2 -->
+<div class="page">
+  <div class="part">
+    <div class="head"><div class="badge b-supa">🗄️</div><div><h2>1. Supabase</h2><div class="sub">o banco de dados · grátis pra começar</div></div></div>
+    <ol>
+      <li>Acesse <span class="tag">supabase.com</span> e clique em <b>"Start your project"</b>. Faça login (pode usar sua conta Google ou GitHub).</li>
+      <li>Clique em <b>"New project"</b>. Escolha (ou crie) uma organização.</li>
+      <li>Dê o nome <span class="tag">OnlyShop</span>, crie uma <b>senha do banco</b> (anote num lugar seguro), e em região escolha <b>South America (São Paulo)</b>. Clique <b>"Create new project"</b> e espere ~2 minutos.</li>
+      <li>Pra me dar acesso: no canto superior esquerdo, clique no <b>nome da organização</b> → <b>"Members"</b> (ou Settings → Team) → <b>"Invite"</b>.</li>
+      <li>Coloque o email <span class="tag">guilhermevb301@gmail.com</span>, escolha o papel <b>"Owner"</b> ou <b>"Administrator"</b> e envie o convite.</li>
+      <li><b>Pronto.</b> Me avisa no grupo que aceitei/configuro o resto.</li>
+    </ol>
+  </div>
+
+  <div class="part">
+    <div class="head"><div class="badge b-mp">💳</div><div><h2>2. Mercado Pago</h2><div class="sub">o pagamento · use a conta da empresa (CNPJ) se tiver</div></div></div>
+    <ol>
+      <li>Acesse <span class="tag">mercadopago.com.br</span> e crie/entre na conta (de preferência a conta da <b>empresa/CNPJ</b>).</li>
+      <li>Vá em <span class="tag">mercadopago.com.br/developers</span> e entre em <b>"Suas integrações"</b>.</li>
+      <li>Clique em <b>"Criar aplicação"</b>. Nome: <span class="tag">OnlyShop</span>. Em produto/uso, escolha <b>"Pagamentos online"</b> (se perguntar a plataforma, marque "Não estou usando uma plataforma"). Crie.</li>
+      <li>Dentro da aplicação, no menu lateral, abra <b>"Credenciais de produção"</b>. (Pode pedir pra preencher uns dados da empresa pra liberar — preencha.)</li>
+      <li>Copie o <b>Access Token</b> — começa com <span class="tagp">APP_USR-...</span></li>
+      <li>Me manda esse Access Token <b>em mensagem privada</b> (não no grupo aberto). A parte de segurança/split do dinheiro eu configuro.</li>
+    </ol>
+  </div>
+
+  <div class="final">
+    <div class="em">🚀</div>
+    <div>
+      <h3>Resumo do que me mandar</h3>
+      <p>(1) <b>Convite do Supabase</b> pro email <span class="tag">guilhermevb301@gmail.com</span> · (2) <b>Access Token do Mercado Pago</b> (privado). Com isso eu ligo tudo e a gente testa com as marcas reais (Level Up, sgold) essa semana.</p>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top:18px;text-align:center;">Dúvida em qualquer passo? Me chama no grupo que eu te guio na hora. É rápido. 🤝</p>
+
+  <div class="footer"><div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div><div>Página 2 de 2</div></div>
+</div>
+
+</body>
+</html>
