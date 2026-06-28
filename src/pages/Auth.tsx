@@ -13,7 +13,6 @@ import {
   User,
   Eye,
   EyeOff,
-  Zap,
   ArrowRight,
   AlertCircle,
 } from "lucide-react";
@@ -72,18 +71,6 @@ export default function Auth() {
       await signUp(signupEmail, signupPassword, signupUsername);
     } catch {
       setError("Não rolou criar a conta. Verifique os dados e tente de novo.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDemo = async () => {
-    setError(null);
-    setIsLoading(true);
-    try {
-      await signIn("teste@onlyshop.com", "teste123");
-    } catch {
-      setError("Falha ao entrar no modo demo. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -216,29 +203,6 @@ export default function Auth() {
                   </Button>
                 </form>
 
-                {/* Acesso de teste — HERÓI da demo (sem backend) */}
-                <div className="mt-7 pt-6 border-t border-border/40">
-                  <div className="flex items-center justify-center gap-1.5 mb-3">
-                    <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-accent">
-                      Demo instantânea
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    aria-busy={isLoading}
-                    className="group w-full rounded-xl h-12 border border-primary/30 bg-primary/[0.06] hover:bg-primary/[0.12] hover:text-foreground text-sm font-semibold text-foreground active:scale-[.98] transition-all ease-[cubic-bezier(.32,.72,0,1)]"
-                    disabled={isLoading}
-                    onClick={handleDemo}
-                  >
-                    <span className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary/15">
-                      <Zap className="h-3.5 w-3.5 text-primary" />
-                    </span>
-                    Entrar com conta de teste
-                  </Button>
-                  <p className="text-[10px] text-center text-muted-foreground/40 mt-2.5">
-                    teste@onlyshop.com · teste123
-                  </p>
-                </div>
               </TabsContent>
 
               {/* ---------------- SIGNUP ---------------- */}

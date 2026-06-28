@@ -15,9 +15,9 @@ export function useCampaignApplications() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      if (demo.isOn() || !user) {
-        setApplications(demo.apps());
-        setBalance(demo.balance(user?.id));
+      if (!user) {
+        setApplications([]);
+        setBalance(0);
         return;
       }
       const { data } = await supabase
@@ -32,8 +32,8 @@ export function useCampaignApplications() {
         .eq("user_id", user.id);
       setBalance(((credits as any[]) || []).reduce((s, c) => s + Number(c.amount || 0), 0));
     } catch {
-      setApplications(demo.apps());
-      setBalance(demo.balance(user?.id));
+      setApplications([]);
+      setBalance(0);
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export function useCampaignApplications() {
       await refresh();
       return true;
     } catch {
-      demo.addApp(app); await refresh(); return true;
+      return false; // erro real → não finge que aceitou
     }
   }, [user, refresh]);
 
@@ -75,8 +75,9 @@ export function useCampaignApplications() {
         .update({ status: "delivered", delivery_url: url, updated_at: new Date().toISOString() } as any)
         .eq("id", appId);
       await refresh();
-    } catch {
-      demo.updateApp(appId, { status: "delivered", delivery_url: url }); await refresh();
+    } catch (e) {
+      console.error("submitDelivery:", e);
+      throw e; // erro real → o caller mostra a falha (não finge entrega)
     }
   }, [user, refresh]);
 

@@ -1,28 +1,25 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { demoCampaigns, type CampaignNear } from "@/lib/campaigns";
+import { type CampaignNear } from "@/lib/campaigns";
 
-// Campanhas perto do usuário (o coração do MVP). Tenta a RPC campaigns_near;
-// se o backend não estiver deployado / vazio, cai nos exemplos demo (distância real).
+// Campanhas perto do usuário (o coração do MVP). Lê a RPC campaigns_near do
+// Supabase — APENAS dados reais. Sem localização ou sem campanhas reais → lista
+// vazia (a tela mostra o empty state). Nunca exibe exemplos fictícios.
 export function useCampaignsNear(lat?: number | null, lon?: number | null, radiusKm = 100) {
   const [campaigns, setCampaigns] = useState<CampaignNear[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
 
   const fetchNear = useCallback(async () => {
     setLoading(true);
     try {
-      if (lat == null || lon == null) throw new Error("sem localização");
+      if (lat == null || lon == null) { setCampaigns([]); return; }
       const { data, error } = await supabase.rpc("campaigns_near" as any, {
         _lat: lat, _lon: lon, _radius_km: radiusKm, _limit: 50,
       } as any);
       if (error) throw error;
-      const rows = (data as CampaignNear[]) || [];
-      if (rows.length) { setCampaigns(rows); setIsDemo(false); }
-      else { setCampaigns(demoCampaigns(lat, lon)); setIsDemo(true); }
+      setCampaigns((data as CampaignNear[]) || []);
     } catch {
-      setCampaigns(demoCampaigns(lat, lon));
-      setIsDemo(true);
+      setCampaigns([]); // erro → lista vazia, NUNCA dados fictícios
     } finally {
       setLoading(false);
     }
@@ -30,5 +27,5 @@ export function useCampaignsNear(lat?: number | null, lon?: number | null, radiu
 
   useEffect(() => { fetchNear(); }, [fetchNear]);
 
-  return { campaigns, loading, isDemo, refetch: fetchNear };
+  return { campaigns, loading, refetch: fetchNear };
 }

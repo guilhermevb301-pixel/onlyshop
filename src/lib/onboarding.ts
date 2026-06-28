@@ -8,8 +8,11 @@ const ONBOARDED_KEY = "onlyshop_onboarded";
 
 export type OnboardingRole = "affiliate" | "brand"; // affiliate = influencer, brand = loja
 
+// LANÇAMENTO: modo demo DESATIVADO. O app mostra apenas dados reais (Supabase).
+// Mantida como função (pra não quebrar imports), mas sempre retorna false —
+// assim nenhum dado fictício aparece pra usuário nenhum.
 export function isDemoSession(): boolean {
-  return typeof window !== "undefined" && localStorage.getItem(DEMO_FLAG) === "1";
+  return false;
 }
 
 export function getDemoRole(): OnboardingRole | null {

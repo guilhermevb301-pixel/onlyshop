@@ -144,11 +144,10 @@ export default function Admin() {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        // Sem dados reais ainda — mostra o exemplo do feed pra não ficar vazio.
-        const rows = demoRows();
-        setIsDemo(true);
-        setCampaigns(rows);
-        setStats(buildStats(rows));
+        // Sem campanhas reais ainda → marketplace vazio (nada de exemplos fictícios).
+        setIsDemo(false);
+        setCampaigns([]);
+        setStats(buildStats([]));
         return;
       }
 
@@ -166,12 +165,10 @@ export default function Admin() {
       setCampaigns(rows);
       setStats(buildStats(rows));
     } catch (error) {
-      // Demo-fallback: qualquer erro cai pro exemplo.
       console.error("Error fetching marketplace stats:", error);
-      const rows = demoRows();
-      setIsDemo(true);
-      setCampaigns(rows);
-      setStats(buildStats(rows));
+      setIsDemo(false);
+      setCampaigns([]);
+      setStats(buildStats([]));
     } finally {
       setStatsLoading(false);
     }

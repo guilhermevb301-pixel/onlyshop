@@ -95,7 +95,7 @@ export function useBrand() {
         .order("created_at", { ascending: false });
       setCampaigns(((data as unknown as Campaign[]) || []));
     } catch {
-      setCampaigns(demo.myCampaigns().filter((c) => c.brand_id === brandId));
+      setCampaigns([]);
     }
   }, []);
 
@@ -114,7 +114,7 @@ export function useBrand() {
         .order("created_at", { ascending: false });
       setApplications(((data as unknown as CampaignApplication[]) || []));
     } catch {
-      setApplications(demo.apps().filter((a) => campaignIds.includes(a.campaign_id)));
+      setApplications([]);
     }
   }, []);
 
@@ -143,9 +143,7 @@ export function useBrand() {
       }
     } catch (e) {
       console.error("Error fetching brand:", e);
-      // Fallback demo.
-      const b = readDemoBrand();
-      setBrand(b);
+      setBrand(null);
     } finally {
       setLoading(false);
     }
@@ -256,10 +254,8 @@ export function useBrand() {
       setCampaigns((prev) => [created, ...prev]);
       return created;
     } catch (e) {
-      console.error("createCampaign (fallback demo):", e);
-      demo.addCampaign(base);
-      setCampaigns((prev) => [base, ...prev]);
-      return base;
+      console.error("createCampaign:", e);
+      return null; // erro real → o caller trata (não cria campanha fantasma local)
     }
   };
 

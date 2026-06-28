@@ -49,7 +49,7 @@ export default function Inicio() {
     return () => { alive = false; };
   }, [requestBrowserLocation]);
 
-  // Hooks já têm fallback demo — a home nunca fica vazia.
+  // Só dados reais — a home pode ficar vazia (mostra empty state) até existir campanha real.
   const { campaigns, loading } = useCampaignsNear(coords?.lat, coords?.lon);
   const { balance } = useCampaignApplications();
 
@@ -151,6 +151,13 @@ export default function Inicio() {
                 </div>
               </div>
             ))
+          ) : campaigns.length === 0 ? (
+            <div className="w-full rounded-[1.25rem] bg-white/[0.03] ring-1 ring-white/[0.06] px-5 py-6 text-center">
+              <p className="text-xs text-muted-foreground/70 leading-relaxed">
+                Ainda não há marcas com campanha na sua região.<br />
+                Assim que uma loja publicar perto de você, ela aparece aqui.
+              </p>
+            </div>
           ) : (
             <>
               {campaigns.slice(0, 8).map((c: CampaignNear) => {
