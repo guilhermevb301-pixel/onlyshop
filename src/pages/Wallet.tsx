@@ -117,51 +117,49 @@ export default function Wallet() {
     });
   };
 
+  // Mapeia uma linha do ledger (platform_credits) pro formato da carteira.
+  // A taxa da plataforma (20%) não pertence ao usuário — filtrada antes.
+  const toTx = (c: any): WalletTransaction => ({
+    id: c.id,
+    type:
+      c.kind === "withdrawal" ? "withdrawal"
+      : c.kind === "refund" ? "bonus"
+      : Number(c.amount) >= 0 ? "commission"
+      : "withdrawal",
+    amount: round2(c.amount),
+    status: c.status === "pending" ? "pending" : c.status === "failed" ? "failed" : "completed",
+    description: CREDIT_LABEL[c.kind as CreditKind] ?? "Lançamento",
+    pix_key: null, pix_key_type: null,
+    created_at: c.created_at, completed_at: c.created_at,
+  });
+
   const fetchTransactions = async () => {
     if (!user) return;
-    // Demo: a carteira reflete o MESMO ledger de "Meus Ganhos" (platform_credits),
-    // lido sempre por user.id pra bater com Affiliate/Mapa.
+    // A carteira reflete o MESMO ledger de "Meus Ganhos" (platform_credits) —
+    // é onde o payout do split 80/20 entra. Demo: localStorage; real: Supabase.
     if (demoMode) {
       seedDemoWalletOnce();
-      const mapped: WalletTransaction[] = demo
-        .credits(user.id)
-        // A taxa da plataforma (20%) não pertence ao usuário — fora da carteira dele.
-        .filter((c) => c.user_id === user.id && c.kind !== "platform_fee")
-        .map((c) => ({
-          id: c.id,
-          type:
-            c.kind === "withdrawal"
-              ? "withdrawal"
-              : c.kind === "refund"
-              ? "bonus"
-              : c.amount >= 0
-              ? "commission"
-              : "withdrawal",
-          amount: round2(c.amount),
-          status: "completed",
-          description: CREDIT_LABEL[c.kind] ?? "Lançamento",
-          pix_key: null, pix_key_type: null,
-          created_at: c.created_at, completed_at: c.created_at,
-        }));
-      setTransactions(mapped);
+      setTransactions(
+        demo.credits(user.id).filter((c) => c.user_id === user.id && c.kind !== "platform_fee").map(toTx)
+      );
       setLoading(false);
       return;
     }
-    const { data, error } = await supabase
-      .from("wallet_transactions")
+    const { data } = await supabase
+      .from("platform_credits" as any)
       .select("*")
       .eq("user_id", user.id)
+      .neq("kind", "platform_fee")
       .order("created_at", { ascending: false });
-
-    if (!error && data) setTransactions(data as WalletTransaction[]);
+    setTransactions(((data as any[]) || []).map(toTx));
     setLoading(false);
   };
 
   // Saldo: no demo usa o ledger de split (por user.id); no real, soma das concluídas.
+  // Saldo = soma do ledger do usuário (payout entra +, saque sai −). Saque pendente
+  // já reduz o disponível; só não conta o que falhou.
   const balance = round2(
-    demoMode
-      ? demo.balance(user?.id)
-      : transactions.filter((t) => t.status === "completed").reduce((sum, t) => sum + Number(t.amount), 0)
+    transactions.filter((t) => t.status !== "failed").reduce((sum, t) => sum + Number(t.amount), 0)
   );
 
   // Totais legíveis (válidos no demo e no real, lidos do mesmo ledger).
@@ -225,18 +223,18 @@ export default function Wallet() {
 
     setIsWithdrawing(true);
     try {
-      const { error } = await supabase.from("wallet_transactions").insert({
-        user_id: user.id,
-        type: "withdrawal",
-        amount: -amount,
-        status: "pending",
-        description: `Saque PIX — ${pixKeyTypes.find((p) => p.value === pixKeyType)?.label}`,
-        pix_key: pixKey,
-        pix_key_type: pixKeyType,
+      // Saque server-side: valida saldo no banco + registra o pedido (pendente)
+      // no ledger. O repasse PIX é processado pela plataforma.
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
+        body: JSON.stringify({ amount, pixKey, pixKeyType }),
       });
-
-      if (error) throw error;
-
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || "falha ao solicitar saque");
+      }
       toast({ title: "Saque solicitado!", description: `${fmt(amount)} será enviado via PIX em até 48h.` });
       setWithdrawAmount("");
       setPixKey("");
