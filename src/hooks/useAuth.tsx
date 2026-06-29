@@ -28,6 +28,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
   setRole: (role: "affiliate" | "brand") => Promise<void>;
+  refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -267,6 +268,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Recarrega papel + perfil do banco pro contexto (ex.: ao finalizar o onboarding,
+  // pra needsOnboarding enxergar a cidade/papel recém-salvos e não voltar pro início).
+  const refreshUserData = async () => {
+    if (user) await fetchUserData(user.id);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -280,6 +287,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         updateProfile,
         setRole,
+        refreshUserData,
       }}
     >
       {children}

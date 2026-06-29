@@ -31,7 +31,7 @@ const GENDERS = [
 ];
 
 export default function Onboarding() {
-  const { user, loading: authLoading, updateProfile } = useAuth();
+  const { user, loading: authLoading, updateProfile, refreshUserData } = useAuth();
   const { role, needsOnboarding, chooseRole, complete } = useOnboarding();
   const { saveLocation } = useGeolocation();
   const navigate = useNavigate();
@@ -143,6 +143,9 @@ export default function Onboarding() {
         }
       }
     } finally {
+      // Recarrega papel+cidade pro contexto ANTES de navegar — senão needsOnboarding
+      // ainda enxerga "sem cidade" e devolve o usuário pro onboarding (loop).
+      try { await refreshUserData(); } catch { /* ignora */ }
       complete();
       setSaving(false);
       navigate(dest, { replace: true });
