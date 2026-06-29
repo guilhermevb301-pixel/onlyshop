@@ -25,6 +25,7 @@ export default async function handler(req: any, res: any) {
     const title = String(body.title || "Campanha OnlyShop").slice(0, 120);
     const amount = Math.round(Number(body.amount) * 100) / 100;
     const campaignId = String(body.campaignId || "novo");
+    const brandUserId = String(body.brandUserId || ""); // dono da loja (pra creditar o hold no webhook)
     if (!amount || amount <= 0) return res.status(400).json({ error: "amount inválido" });
 
     const r = await fetch("https://api.mercadopago.com/checkout/preferences", {
@@ -34,6 +35,10 @@ export default async function handler(req: any, res: any) {
         items: [{ title, quantity: 1, unit_price: amount, currency_id: "BRL" }],
         external_reference: campaignId,
         statement_descriptor: "ONLYSHOP",
+        // Webhook do Mercado Pago: confirma o pagamento server-side e marca a campanha
+        // como paga/no ar (mesmo se o lojista fechar a aba).
+        notification_url: `${APP_URL}/api/mp-webhook`,
+        metadata: { campaign_id: campaignId, brand_user_id: brandUserId, amount },
         back_urls: {
           success: `${APP_URL}/brands?paid=${encodeURIComponent(campaignId)}`,
           pending: `${APP_URL}/brands?paid=${encodeURIComponent(campaignId)}`,

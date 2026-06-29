@@ -35,7 +35,7 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
       const res = await fetch("/api/fund-campaign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: campaign.name, amount: total, campaignId: campaign.id }),
+        body: JSON.stringify({ title: campaign.name, amount: total, campaignId: campaign.id, brandUserId: user?.id }),
       });
       const data = await res.json();
       if (data?.init_point) {

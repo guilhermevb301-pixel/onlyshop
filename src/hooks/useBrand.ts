@@ -312,14 +312,24 @@ export function useBrand() {
       return;
     }
     try {
-      await supabase
-        .from("campaign_applications" as any)
-        .update({ status: "approved", updated_at: new Date().toISOString() } as any)
-        .eq("id", app.id);
-      // TODO Mercado Pago: edge function release-payout (split 80/20 via platform_credits).
+      // Aprova + split 80/20 (server-side, service_role). Envia o JWT pra autorizar.
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/approve-delivery", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ applicationId: app.id }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || "falha ao aprovar");
+      }
       setApplications((prev) => prev.map((a) => (a.id === app.id ? { ...a, status: "approved" } : a)));
     } catch (e) {
       console.error("approveApplication:", e);
+      throw e;
     }
   }, [user]);
 
