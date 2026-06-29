@@ -89,40 +89,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .forEach((k) => localStorage.removeItem(k));
     } catch { /* ignora */ }
 
-    // Set up auth state listener FIRST
+    // Carga inicial: resolve a sessão E os dados do usuário (papel/perfil) ANTES de
+    // liberar a tela. Senão o app decide "precisa de onboarding" com o papel ainda
+    // não carregado e pisca a tela de onboarding pra quem já está cadastrado.
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) await fetchUserData(session.user.id);
+      setLoading(false);
+    })();
+
+    // Mudanças de auth depois da carga (login/logout). O INITIAL_SESSION é tratado acima.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session: Session | null) => {
+      (event: AuthChangeEvent, session: Session | null) => {
+        if (event === "INITIAL_SESSION") return;
         setSession(session);
         setUser(session?.user ?? null);
-
         if (session?.user) {
-          // Use setTimeout to avoid blocking
-          setTimeout(() => fetchUserData(session.user.id), 0);
+          setLoading(true);
+          // setTimeout evita o deadlock de chamar o supabase dentro do callback.
+          setTimeout(async () => {
+            await fetchUserData(session.user.id);
+            setLoading(false);
+          }, 0);
         } else {
           setProfile(null);
           setUserRole(null);
+          setLoading(false);
         }
-
-        if (event === "SIGNED_OUT") {
-          setProfile(null);
-          setUserRole(null);
-        }
-
-        setLoading(false);
       }
     );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        fetchUserData(session.user.id);
-      }
-
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -182,15 +179,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Bem-vindo!",
         description: "Login realizado com sucesso.",
       });
+      // loading é liberado pelo onAuthStateChange (após carregar papel/perfil) —
+      // evita redirecionar pro onboarding antes do papel chegar.
     } catch (error: any) {
+      setLoading(false);
       toast({
         variant: "destructive",
         title: "Erro ao fazer login",
         description: error.message,
       });
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
