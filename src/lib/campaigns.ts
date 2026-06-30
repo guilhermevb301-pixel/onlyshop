@@ -91,10 +91,12 @@ export function computeBudget(slots: number, reward: number, feePct = PLATFORM_F
   return { base, fee, total: base + fee };
 }
 
-// Split de uma entrega aprovada: influencer recebe (100-fee)%, plataforma fica com fee%.
+// Split de uma entrega aprovada. MODELO: o influencer recebe o valor CHEIO da
+// campanha (100% dele) — a taxa da plataforma é cobrada EM CIMA, do lado da marca
+// (ver computeBudget). O influencer nunca "perde" %; ele só vê o que ganha (Uber-style).
 export function computeSplit(reward: number, feePct = PLATFORM_FEE_PCT) {
-  const platform = reward * (feePct / 100);
-  const influencer = reward - platform;
+  const influencer = reward;                  // 100% pro influencer
+  const platform = reward * (feePct / 100);   // taxa que a MARCA pagou em cima
   return { influencer, platform };
 }
 

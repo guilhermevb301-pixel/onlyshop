@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnlyShop — Como o dinheiro funciona (Biel)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#eef0f3;color:#16181d;padding:30px 14px;line-height:1.55;}
+  .page{max-width:740px;margin:0 auto 26px;background:#fff;border-radius:20px;padding:42px;box-shadow:0 6px 30px rgba(0,0,0,.08);}
+  .logo{font-size:23px;font-weight:900;letter-spacing:-.5px;}
+  .logo span{color:#e8446a;}
+  .kicker{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.6px;color:#e8446a;margin-bottom:8px;}
+  h1{font-size:27px;font-weight:900;letter-spacing:-1px;line-height:1.15;margin-bottom:12px;}
+  p.lead{font-size:15.5px;color:#3a3d44;}
+  .muted{color:#6b6f78;font-size:13.5px;}
+  .sectlabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#9aa0aa;margin:32px 0 10px;}
+  .flow{counter-reset:f;list-style:none;}
+  .flow li{position:relative;padding:14px 16px 14px 56px;margin-bottom:10px;border-radius:14px;background:#f7f8fa;border:1px solid #eceef2;}
+  .flow li::before{counter-increment:f;content:counter(f);position:absolute;left:14px;top:14px;width:28px;height:28px;background:#16181d;color:#fff;border-radius:50%;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  .flow li.auto{background:#f0fdf4;border-color:#bbf7d0;}
+  .flow li.auto::before{background:#16a34a;}
+  .flow li.manual{background:#fffbeb;border-color:#fde68a;}
+  .flow li.manual::before{background:#d97706;}
+  .flow h3{font-size:15px;font-weight:800;}
+  .flow p{font-size:13px;color:#555;margin-top:2px;}
+  .tagauto{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#16a34a;background:#dcfce7;padding:1px 7px;border-radius:20px;margin-left:6px;vertical-align:middle;}
+  .tagman{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#b45309;background:#fef3c7;padding:1px 7px;border-radius:20px;margin-left:6px;vertical-align:middle;}
+  .ex{margin-top:16px;border-radius:16px;padding:20px;background:linear-gradient(135deg,#16181d,#26282e);color:#fff;}
+  .ex .t{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#9aa0aa;font-weight:700;}
+  .ex .big{font-size:30px;font-weight:900;margin:6px 0 12px;letter-spacing:-1px;}
+  .ex .row{display:flex;gap:10px;}
+  .ex .cell{flex:1;background:rgba(255,255,255,.06);border-radius:11px;padding:11px 13px;}
+  .ex .cell .v{font-size:20px;font-weight:900;}
+  .ex .cell.green .v{color:#7CFFB2;}
+  .ex .cell.pink .v{color:#ff7a9c;}
+  .ex .cell .l{font-size:11px;color:#aab;}
+  .safe{background:#eef6ff;border:1.5px solid #bfdbfe;border-radius:14px;padding:16px 18px;margin-top:16px;display:flex;gap:13px;align-items:flex-start;}
+  .safe .em{font-size:22px;}
+  .safe h3{font-size:14.5px;}
+  .safe p{font-size:13px;color:#475569;margin-top:2px;}
+  .step{border-radius:16px;border:1px solid #e7e9ee;overflow:hidden;margin:12px 0;}
+  .step .head{display:flex;align-items:center;gap:12px;padding:15px 18px;background:#f7f8fa;border-bottom:1px solid #e7e9ee;}
+  .step .head .badge{width:34px;height:34px;border-radius:9px;background:#fde7ee;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+  .step .head h2{font-size:16.5px;font-weight:800;}
+  .step .body{padding:15px 18px;font-size:13.5px;color:#3a3d44;}
+  .step .body b{color:#000;}
+  .tag{font-family:monospace;font-size:12.5px;background:#eef0f3;padding:1.5px 7px;border-radius:5px;}
+  .status{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+  .status div{font-size:12.5px;padding:8px 11px;border-radius:9px;}
+  .status .ok{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
+  .status .next{background:#fffbeb;color:#b45309;border:1px solid #fde68a;}
+  .footer{margin-top:28px;padding-top:16px;border-top:1.5px solid #f0f0f0;display:flex;justify-content:space-between;font-size:12px;color:#aaa;}
+  .footer strong{color:#666;}
+  @media print{body{background:#fff;padding:0;}.page{box-shadow:none;border-radius:0;margin:0;max-width:100%;padding:30px 40px;page-break-after:always;}}
+</style>
+</head>
+<body>
+
+<!-- PÁGINA 1 -->
+<div class="page">
+  <div class="logo">Only<span>Shop</span></div>
+  <div style="margin-top:30px;">
+    <div class="kicker">Pra você, Biel · como o dinheiro funciona</div>
+    <h1>O dinheiro entra, é seguro, e o influencer<br>recebe sozinho quando entrega</h1>
+    <p class="lead">Montei o fluxo do dinheiro de ponta a ponta. A marca paga adiantado, o dinheiro fica seguro com a plataforma, e o repasse pro influencer acontece <b>automático</b> quando a entrega é aprovada. Resumido aqui em 1 minuto.</p>
+  </div>
+
+  <div class="sectlabel">O caminho do dinheiro</div>
+  <ul class="flow">
+    <li><h3>A marca cria a campanha e PAGA adiantado</h3><p>Via PIX ou cartão (Mercado Pago). O dinheiro fica <b>reservado/seguro com a plataforma</b> — não vai direto pra ninguém.</p></li>
+    <li class="auto"><h3>Pagamento confirmado → campanha entra no ar <span class="tagauto">automático</span></h3><p>O sistema confirma o pagamento sozinho e libera a campanha no mapa pros influencers perto.</p></li>
+    <li><h3>O influencer aceita, grava e entrega o vídeo</h3><p>Ele posta no canal dele e manda o link da entrega.</p></li>
+    <li><h3>A marca aprova a entrega</h3><p>Confere que o vídeo foi feito e aprova no painel.</p></li>
+    <li class="auto"><h3>80% cai no saldo do influencer <span class="tagauto">automático</span></h3><p>Na hora que a marca aprova, o split roda sozinho: <b>80% pro influencer, 20% pra OnlyShop</b>.</p></li>
+    <li class="manual"><h3>O influencer pede saque → vocês pagam o PIX <span class="tagman">manual (por enquanto)</span></h3><p>O saldo dele é real; ele solicita o saque e a plataforma faz o PIX. <b>No futuro isso vira automático</b> (quando cada influencer conectar a conta Mercado Pago dele).</p></li>
+  </ul>
+
+  <div class="ex">
+    <div class="t">Exemplo — campanha de R$ 100 por vídeo</div>
+    <div class="big">R$ 100 pagos pela marca</div>
+    <div class="row">
+      <div class="cell green"><div class="v">R$ 80</div><div class="l">vão pro influencer</div></div>
+      <div class="cell pink"><div class="v">R$ 20</div><div class="l">ficam com a OnlyShop</div></div>
+    </div>
+  </div>
+
+  <div class="safe">
+    <div class="em">🔒</div>
+    <div><h3>A segurança (igual Uber)</h3><p>O dinheiro <b>só sai pro influencer quando ele entrega e a marca aprova</b>. Se não entregar, volta pra marca. Ninguém é pago "no escuro".</p></div>
+  </div>
+
+  <div class="footer"><div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div><div>Página 1 de 2</div></div>
+</div>
+
+<!-- PÁGINA 2 -->
+<div class="page">
+  <div class="sectlabel">O que falta de você (2 coisas rápidas)</div>
+
+  <div class="step">
+    <div class="head"><div class="badge">💳</div><h2>1. Confirmar a conta que recebe o dinheiro</h2></div>
+    <div class="body">
+      Hoje o dinheiro das campanhas cai na <b>conta Mercado Pago que você me passou</b>
+      (<span class="tag">gabrielteixeirareal7</span>). Confirma se é <b>essa mesma</b> que deve segurar o dinheiro
+      da plataforma — ou se prefere usar uma <b>conta da empresa (CNPJ)</b> ou a do Gui. É só me avisar qual.
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="head"><div class="badge">🔐</div><h2>2. Gerar uma chave nova (segurança)</h2></div>
+    <div class="body">
+      A chave do Mercado Pago foi compartilhada no chat pra eu ligar. Por segurança, vale
+      <b>gerar uma nova</b>: Mercado Pago → Developers → sua aplicação → <b>Credenciais de produção</b> →
+      <b>"Renovar/Gerar"</b> o Access Token → me manda a nova (privado). Eu troco em 1 minuto.
+      <br><span class="muted">(As chaves do banco de dados ficam comigo/Gui — já cuido disso.)</span>
+    </div>
+  </div>
+
+  <div class="sectlabel">Status pro lançamento</div>
+  <div class="status">
+    <div class="ok">✅ Marca paga de verdade (PIX/cartão)</div>
+    <div class="ok">✅ Confirmação do pagamento automática</div>
+    <div class="ok">✅ Split 80/20 automático na aprovação</div>
+    <div class="ok">✅ Influencer vê o saldo e pede saque</div>
+    <div class="next">⏳ Saque PIX 100% automático (fase 2)</div>
+    <div class="next">⏳ App na App Store (fase 2)</div>
+  </div>
+
+  <div class="safe" style="margin-top:18px;background:#f0fdf4;border-color:#bbf7d0;">
+    <div class="em">🚀</div>
+    <div><h3>Pode lançar controlado já</h3><p>Dá pra começar com as nossas 2 marcas (Level Up, sgold) + os afiliados — o fluxo funciona ponta a ponta. No começo o saque você processa na mão (são poucos); quando crescer, a gente liga o automático.</p></div>
+  </div>
+
+  <p class="muted" style="margin-top:18px;text-align:center;">Testa você mesmo (crie uma conta): <strong>onlyshoptok.vercel.app</strong> · Dúvida em qualquer parte, me chama. 🤝</p>
+
+  <div class="footer"><div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div><div>Página 2 de 2</div></div>
+</div>
+
+</body>
+</html>

@@ -108,15 +108,15 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
           </div>
         )}
 
-        {/* quanto entra no bolso (split 80/20) — herói cyan = dinheiro */}
+        {/* o que o influencer recebe — valor CHEIO, sem desconto (herói cyan = dinheiro) */}
         <div
           className="mt-3 rounded-[1.25rem] bg-accent/[0.07] ring-1 ring-accent/25 p-4 text-center shadow-[inset_0_1px_0_0_hsl(174_100%_47%/0.12)] animate-slide-up opacity-0"
           style={step(3)}
         >
-          <p className="text-[10px] uppercase tracking-[0.18em] text-accent/70 font-semibold">No seu bolso</p>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-accent/70 font-semibold">Você recebe</p>
           <p className="text-3xl font-black text-accent tabular-nums mt-1 leading-none">{brl(influencer)}</p>
           <p className="text-[10px] text-muted-foreground/55 mt-1.5">
-            por vídeo aprovado · taxa da plataforma já descontada
+            por vídeo aprovado · o valor é todo seu
           </p>
         </div>
 

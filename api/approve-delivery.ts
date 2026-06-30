@@ -11,7 +11,6 @@ export const config = { maxDuration: 30 };
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const PLATFORM_FEE_PCT = 20;
 
 function sb(path: string, opts: any = {}) {
   return fetch(`${SB_URL}/rest/v1/${path}`, {
@@ -64,7 +63,9 @@ export default async function handler(req: any, res: any) {
     if (Array.isArray(dup) && dup.length) return res.status(200).json({ ok: true, already: true });
 
     const reward = Number(app.campaigns?.reward_amount || 0);
-    const influencerShare = Math.round((reward - reward * (PLATFORM_FEE_PCT / 100)) * 100) / 100;
+    // Influencer recebe o valor CHEIO da campanha — a taxa da plataforma foi cobrada
+    // da marca, em cima (computeBudget). Não desconta nada do influencer.
+    const influencerShare = Math.round(reward * 100) / 100;
 
     // 4) Aprova a entrega.
     await sb(`campaign_applications?id=eq.${encodeURIComponent(applicationId)}`, {
