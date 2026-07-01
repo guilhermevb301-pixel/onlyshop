@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnlyShop — Estado do App e Por Que Pode Lançar</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#e9ebef;color:#16181d;padding:28px 12px;line-height:1.5;}
+  .page{max-width:760px;margin:0 auto 24px;background:#fff;border-radius:18px;padding:44px 46px;box-shadow:0 6px 28px rgba(0,0,0,.08);}
+  .logo{font-size:22px;font-weight:900;letter-spacing:-.5px;}
+  .logo span{color:#e8446a;}
+  .kicker{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.6px;color:#e8446a;}
+  h1{font-size:30px;font-weight:900;letter-spacing:-1.2px;line-height:1.1;margin:10px 0 14px;}
+  h2{font-size:21px;font-weight:900;letter-spacing:-.6px;margin-bottom:4px;}
+  .h2sub{font-size:13px;color:#8a8f99;margin-bottom:18px;}
+  p.lead{font-size:15px;color:#3a3d44;}
+  .muted{color:#6b6f78;font-size:13px;}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 11px;border-radius:30px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;margin:3px 4px 3px 0;}
+  .why{background:linear-gradient(135deg,#1a1c22,#2a2d35);color:#fff;border-radius:16px;padding:22px 24px;margin-top:20px;}
+  .why .t{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#ff7a9c;font-weight:800;}
+  .why p{font-size:14px;color:#d8dae0;margin-top:8px;}
+  .why b{color:#fff;}
+  .sectlabel{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#9aa0aa;margin:8px 0 12px;}
+  .flow{counter-reset:f;list-style:none;}
+  .flow li{position:relative;padding:13px 16px 13px 54px;margin-bottom:9px;border-radius:13px;background:#f7f8fa;border:1px solid #eceef2;}
+  .flow li::before{counter-increment:f;content:counter(f);position:absolute;left:13px;top:13px;width:27px;height:27px;background:#16181d;color:#fff;border-radius:50%;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  .flow li.auto{background:#f0fdf4;border-color:#bbf7d0;}
+  .flow li.auto::before{background:#16a34a;}
+  .flow h3{font-size:14.5px;font-weight:800;}
+  .flow p{font-size:12.5px;color:#555;margin-top:2px;}
+  .tagauto{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#16a34a;background:#dcfce7;padding:1px 6px;border-radius:20px;margin-left:5px;vertical-align:middle;}
+  .role{border-radius:16px;border:1px solid #e7e9ee;overflow:hidden;}
+  .role .head{display:flex;align-items:center;gap:13px;padding:16px 20px;}
+  .role.brand .head{background:linear-gradient(135deg,#fdeef3,#fff5f8);}
+  .role.aff .head{background:linear-gradient(135deg,#eafaf6,#f3fbff);}
+  .role .head .ic{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .role.brand .head .ic{background:#fbcfe0;}
+  .role.aff .head .ic{background:#bff0e0;}
+  .role .head h2{font-size:18px;}
+  .role .head .sub{font-size:12px;color:#7a7f89;}
+  .role .body{padding:6px 20px 16px;}
+  .who{font-size:12.5px;color:#555;padding:11px 0;border-bottom:1px dashed #eceef2;}
+  .who b{color:#000;}
+  .can{list-style:none;padding:12px 0 2px;}
+  .can li{position:relative;padding:6px 0 6px 26px;font-size:13px;color:#26282e;}
+  .can li::before{content:"✓";position:absolute;left:0;top:6px;color:#16a34a;font-weight:900;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .intg{border:1px solid #e7e9ee;border-radius:13px;padding:14px 16px;}
+  .intg .n{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;}
+  .intg .d{font-size:12px;color:#666;margin-top:4px;}
+  .intg .s{font-size:10px;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:.5px;margin-top:7px;}
+  .ex{margin-top:14px;border-radius:14px;padding:18px 20px;background:linear-gradient(135deg,#16181d,#26282e);color:#fff;}
+  .ex .t{font-size:10.5px;text-transform:uppercase;letter-spacing:1.4px;color:#9aa0aa;font-weight:700;}
+  .ex .big{font-size:26px;font-weight:900;margin:5px 0 11px;letter-spacing:-1px;}
+  .ex .row{display:flex;gap:9px;}
+  .ex .cell{flex:1;background:rgba(255,255,255,.06);border-radius:10px;padding:10px 12px;}
+  .ex .cell .v{font-size:19px;font-weight:900;}
+  .ex .cell.green .v{color:#7CFFB2;}.ex .cell.pink .v{color:#ff7a9c;}
+  .ex .cell .l{font-size:10.5px;color:#aab;}
+  .chk{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .chk div{font-size:12.5px;padding:9px 12px;border-radius:9px;}
+  .chk .ok{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
+  .chk .next{background:#fffbeb;color:#b45309;border:1px solid #fde68a;}
+  .footer{margin-top:26px;padding-top:14px;border-top:1.5px solid #f0f0f0;display:flex;justify-content:space-between;font-size:11.5px;color:#aaa;}
+  .footer strong{color:#666;}
+  @media print{body{background:#fff;padding:0;}.page{box-shadow:none;border-radius:0;margin:0;max-width:100%;padding:30px 42px;page-break-after:always;}}
+</style>
+</head>
+<body>
+
+<!-- PÁGINA 1 — CAPA + VISÃO GERAL -->
+<div class="page">
+  <div class="logo">Only<span>Shop</span></div>
+  <div style="margin-top:42px;">
+    <div class="kicker">Estado do aplicativo · pré-lançamento · jun/2026</div>
+    <h1>Como o app está hoje<br>e por que dá pra lançar</h1>
+    <p class="lead">Este documento mostra <b>tudo que o OnlyShop faz hoje</b>: como funciona, as integrações, como marcas e afiliados entram e o que cada um pode fazer — e por que já dá pra lançar (controlado) com segurança.</p>
+  </div>
+
+  <div class="sectlabel" style="margin-top:30px;">O que é o OnlyShop</div>
+  <p class="lead">Um <b>marketplace localizado</b> que conecta <b>marcas/lojas</b> a <b>influenciadores perto delas</b>. A marca cria uma campanha paga; o influencer da região vê no <b>mapa</b>, aceita, grava e posta no <b>canal dele</b>, entrega o link; a marca aprova e o influencer recebe. A OnlyShop fica com <b>20%</b> (cobrado da marca). Não precisa ter seguidor pra começar.</p>
+
+  <div style="margin-top:18px;">
+    <span class="pill">✅ Cadastro e login reais</span>
+    <span class="pill">✅ Mapa por localização</span>
+    <span class="pill">✅ Pagamento Mercado Pago</span>
+    <span class="pill">✅ Split 80/20 automático</span>
+    <span class="pill">✅ Carteira e saque</span>
+    <span class="pill">✅ Zero dado fictício</span>
+  </div>
+
+  <div class="why">
+    <div class="t">Por que pode lançar</div>
+    <p>O ciclo completo <b>funciona ponta a ponta e foi testado</b>: a marca cria campanha, paga de verdade (PIX/cartão), o influencer aceita e entrega, a marca aprova e o dinheiro é dividido automaticamente. O dinheiro é <b>real e seguro</b> (só sai quando a entrega é aprovada) e <b>não existe nada fictício</b> no app. Dá pra começar controlado — com as primeiras marcas e afiliados — e ir evoluindo.</p>
+  </div>
+
+  <div class="footer"><div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div><div>Página 1 de 5</div></div>
+</div>
+
+<!-- PÁGINA 2 — COMO FUNCIONA (FLUXO) -->
+<div class="page">
+  <h2>Como funciona — o ciclo completo</h2>
+  <div class="h2sub">Do cadastro até o influencer receber. Em verde = acontece automático.</div>
+
+  <ul class="flow">
+    <li><h3>A pessoa se cadastra e escolhe o lado</h3><p>"Sou loja/marca" ou "Sou influencer" → informa a localização → completa um perfil rápido.</p></li>
+    <li><h3>A marca cria uma campanha e paga adiantado</h3><p>Define valor por vídeo, nº de vagas, filtros (cidade, gênero, seguidores, prazo) e o que oferece. Paga via PIX ou cartão (Mercado Pago).</p></li>
+    <li class="auto"><h3>Pagamento confirmado → campanha entra no mapa <span class="tagauto">automático</span></h3><p>O sistema confirma o pagamento e a campanha aparece pros influencers perto.</p></li>
+    <li><h3>O influencer vê no mapa e aceita</h3><p>Abre as campanhas perto dele, vê o valor (tudo dele) e aceita a que quiser — sem compromisso.</p></li>
+    <li><h3>Grava, posta no canal dele e entrega o link</h3><p>Faz o vídeo, publica no perfil dele e manda o link da entrega no app.</p></li>
+    <li><h3>A marca confere e aprova a entrega</h3><p>Vê o link, valida que o vídeo foi feito e aprova no painel.</p></li>
+    <li class="auto"><h3>O dinheiro cai pro influencer <span class="tagauto">automático</span></h3><p>Na aprovação, o valor da campanha vira saldo do influencer na hora. A taxa de 20% já ficou com a plataforma (cobrada da marca).</p></li>
+    <li><h3>O influencer saca via PIX</h3><p>Vê o saldo real na carteira e pede o saque pra chave PIX dele.</p></li>
+  </ul>
+
+  <div class="footer"><div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div><div>Página 2 de 5</div></div>
+</div>
+
+<!-- PÁGINA 3 — MARCA -->
+<div class="page">
+  <h2>Para a MARCA / LOJA</h2>
+  <div class="h2sub">Quem quer influenciadores da região divulgando seus produtos.</div>
+
+  <div class="role brand">
+    <div class="head"><div class="ic">🏪</div><div><h2>Como a marca entra</h2><div class="sub">~2 minutos, tudo pelo app</div></div></div>
+    <div class="body">
+      <div class="who">1. Cria conta → escolhe <b>"Sou loja / marca"</b></div>
+      <div class="who">2. Informa a <b>localização</b> (pra achar creators perto)</div>
+      <div class="who">3. Cadastra a <b>loja</b> (nome, etc.) — pronto, cai no painel</div>
+    </div>
+  </div>
+
+  <div class="sectlabel" style="margin-top:24px;">O que a marca pode fazer hoje</div>
+  <ul class="can">
+    <li><b>Criar campanha</b> com valor por vídeo, número de vagas e o que oferece (ex.: produto físico de brinde)</li>
+    <li><b>Filtrar quem vê</b>: cidade, gênero, mínimo de seguidores e prazo de entrega</li>
+    <li><b>Pagar a campanha</b> na hora via PIX ou cartão (Mercado Pago) — o dinheiro fica reservado/seguro</li>
+    <li><b>Ver quem aceitou</b> a campanha e acompanhar as entregas (os links dos vídeos)</li>
+    <li><b>Aprovar a entrega</b> → libera o pagamento do influencer automaticamente</li>
+    <li><b>Acompanhar</b> vagas restantes e status de cada campanha no painel</li>
+  </ul>
+
+  <div class="why" style="background:linear-gradient(135deg,#0f2e22,#163a2c);">
+    <div class="t" style="color:#7CFFB2;">A segurança pra marca</div>
+    <p>O dinheiro <b>só é liberado quando o influencer entrega e a marca aprova</b>. Se não entregar, o valor volta. A marca nunca paga "no escuro" — igual ao modelo do Uber.</p>
+  </div>
+
+  <div class="footer"><div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div><div>Página 3 de 5</div></div>
+</div>
+
+<!-- PÁGINA 4 — AFILIADO -->
+<div class="page">
+  <h2>Para o AFILIADO / INFLUENCER</h2>
+  <div class="h2sub">Quem quer ganhar gravando vídeos pra marcas — sem precisar de seguidor.</div>
+
+  <div class="role aff">
+    <div class="head"><div class="ic">🎬</div><div><h2>Como o influencer entra</h2><div class="sub">de graça, ~2 minutos</div></div></div>
+    <div class="body">
+      <div class="who">1. Cria conta → escolhe <b>"Sou influencer"</b></div>
+      <div class="who">2. Informa a <b>localização</b> (pra ver campanhas perto)</div>
+      <div class="who">3. Completa o <b>perfil</b> (nome + nichos que combinam com ele)</div>
+    </div>
+  </div>
+
+  <div class="sectlabel" style="margin-top:24px;">O que o influencer pode fazer hoje</div>
+  <ul class="can">
+    <li><b>Ver campanhas perto dele</b> no mapa, com o valor e a distância de cada uma</li>
+    <li><b>Aceitar</b> a campanha que quiser — sem compromisso, só grava se topar</li>
+    <li><b>Gravar e postar no canal dele</b> e mandar o link da entrega pelo app</li>
+    <li><b>Acompanhar</b> as campanhas aceitas e entregas em "Meus Ganhos"</li>
+    <li><b>Ver o saldo real</b> na Carteira (o que já ganhou)</li>
+    <li><b>Pedir saque</b> via PIX pra chave dele</li>
+  </ul>
+
+  <div class="why" style="background:linear-gradient(135deg,#0f2e22,#163a2c);">
+    <div class="t" style="color:#7CFFB2;">O influencer vê o valor cheio</div>
+    <p>Ele enxerga só <b>o que ganha</b> (ex.: "R$ 80, tudo seu") — sem ver desconto de taxa, igual o motorista do Uber só vê o que recebe. A taxa de 20% é cobrada da marca, em cima.</p>
+  </div>
+
+  <div class="footer"><div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div><div>Página 4 de 5</div></div>
+</div>
+
+<!-- PÁGINA 5 — DINHEIRO + INTEGRAÇÕES + STATUS -->
+<div class="page">
+  <h2>O dinheiro, as integrações e o status</h2>
+  <div class="h2sub">Como o dinheiro flui, o que está conectado e o que já funciona.</div>
+
+  <div class="ex">
+    <div class="t">Exemplo — campanha de R$ 80 por vídeo</div>
+    <div class="big">A marca paga R$ 96 (R$ 80 + 20%)</div>
+    <div class="row">
+      <div class="cell green"><div class="v">R$ 80</div><div class="l">vão pro influencer (cheio)</div></div>
+      <div class="cell pink"><div class="v">R$ 16</div><div class="l">ficam com a OnlyShop</div></div>
+    </div>
+  </div>
+
+  <div class="sectlabel" style="margin-top:24px;">Integrações (o que está conectado)</div>
+  <div class="grid2">
+    <div class="intg"><div class="n">🗄️ Supabase</div><div class="d">Banco de dados + login. Guarda marcas, influencers, campanhas e saldos.</div><div class="s">✅ Ligado e funcionando</div></div>
+    <div class="intg"><div class="n">💳 Mercado Pago</div><div class="d">Pagamento (PIX/cartão) + divisão automática do dinheiro (split).</div><div class="s">✅ Ligado e testado</div></div>
+    <div class="intg"><div class="n">🗺️ Mapa + localização</div><div class="d">Campanhas perto de você (OpenStreetMap, sem custo de API).</div><div class="s">✅ Funcionando</div></div>
+    <div class="intg"><div class="n">☁️ Hospedagem (Vercel)</div><div class="d">App no ar 24h em onlyshoptok.vercel.app.</div><div class="s">✅ No ar</div></div>
+  </div>
+
+  <div class="sectlabel" style="margin-top:24px;">O que já funciona (testado)</div>
+  <div class="chk">
+    <div class="ok">✅ Cadastro, login e onboarding</div>
+    <div class="ok">✅ Marca cria e paga campanha</div>
+    <div class="ok">✅ Campanha aparece no mapa do influencer</div>
+    <div class="ok">✅ Influencer aceita e entrega</div>
+    <div class="ok">✅ Marca aprova → split automático</div>
+    <div class="ok">✅ Carteira com saldo real + saque</div>
+    <div class="ok">✅ Confirmação de pagamento (webhook)</div>
+    <div class="ok">✅ Sem nenhum dado fictício</div>
+  </div>
+
+  <div class="sectlabel" style="margin-top:22px;">Fase 2 — em breve (não trava o lançamento)</div>
+  <div class="chk">
+    <div class="next">⏳ Saque PIX 100% automático</div>
+    <div class="next">⏳ App na App Store / Play Store</div>
+    <div class="next">⏳ Comunidade, ranking e lives</div>
+    <div class="next">⏳ Gerador de vídeo com IA</div>
+  </div>
+
+  <div class="why" style="margin-top:22px;background:linear-gradient(135deg,#1a1c22,#2a2d35);">
+    <div class="t">Conclusão</div>
+    <p><b>Dá pra lançar controlado já.</b> O essencial (achar, contratar, entregar, pagar) funciona e é seguro. O único passo ainda manual é a plataforma processar o saque do influencer — tranquilo no começo, e vira automático na fase 2. Lança com as primeiras marcas, valida com gente real e vai evoluindo.</p>
+  </div>
+
+  <div class="footer"><div>OnlyShop · <strong>onlyshoptok.vercel.app</strong></div><div>Página 5 de 5</div></div>
+</div>
+
+</body>
+</html>

@@ -2,13 +2,12 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Rocket, Video, Send, Users2, GraduationCap, Radio, Trophy, Sparkles } from "lucide-react";
+import { Rocket, Video, Send, GraduationCap, Radio, Trophy, Sparkles } from "lucide-react";
 
 // Recursos da fase 2+ (cortados do MVP enxuto, mostrados como "em breve").
 const SOON = [
   { icon: Video, title: "Gerador de vídeo com IA", desc: "Crie o vídeo de venda com um influencer de IA — sem precisar gravar nem aparecer." },
   { icon: Send, title: "Postar direto no TikTok e Instagram", desc: "Publique a campanha direto do app, sem sair pra outro lugar." },
-  { icon: Users2, title: "Comunidade de criadores", desc: "Troque ideias, veja quem tá faturando e cresça junto com a tribo." },
   { icon: GraduationCap, title: "Formação e cursos", desc: "Aprenda a gravar e vender melhor pra ganhar mais em cada campanha." },
   { icon: Radio, title: "Lives de venda", desc: "Venda ao vivo, igual as maiores lojas do TikTok Shop." },
   { icon: Trophy, title: "Ranking e conquistas", desc: "Suba de nível conforme fatura e desbloqueie campanhas melhores." },

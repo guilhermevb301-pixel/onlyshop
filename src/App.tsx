@@ -28,6 +28,9 @@ import Wallet from "./pages/Wallet";
 import Inicio from "./pages/Inicio";
 import Mapa from "./pages/Mapa";
 import EmBreve from "./pages/EmBreve";
+import Feed from "./pages/Feed";
+import PostDetail from "./pages/PostDetail";
+import PublicProfile from "./pages/PublicProfile";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +63,9 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/em-breve" element={<EmBreve />} />
+              <Route path="/comunidade" element={<Feed />} />
+              <Route path="/post/:id" element={<PostDetail />} />
+              <Route path="/u/:username" element={<PublicProfile />} />
             </Route>
 
             {/* Catch-all */}

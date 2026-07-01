@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, MapPin, BadgeDollarSign, Wallet, User, Megaphone } from "lucide-react";
+import { LayoutGrid, MapPin, BadgeDollarSign, Wallet, User, Megaphone, Users2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -9,12 +9,14 @@ const INFLUENCER: NavItem[] = [
   { href: "/inicio", icon: LayoutGrid, label: "Início" },
   { href: "/affiliate", icon: BadgeDollarSign, label: "Ganhos" },
   { href: "/mapa", icon: MapPin, label: "", isAction: true },
+  { href: "/comunidade", icon: Users2, label: "Comunidade" },
   { href: "/wallet", icon: Wallet, label: "Carteira" },
   { href: "/profile", icon: User, label: "Perfil" },
 ];
 const BRAND: NavItem[] = [
   { href: "/brands", icon: Megaphone, label: "Campanhas" },
   { href: "/checkout", icon: MapPin, label: "", isAction: true },
+  { href: "/comunidade", icon: Users2, label: "Comunidade" },
   { href: "/wallet", icon: Wallet, label: "Carteira" },
   { href: "/profile", icon: User, label: "Perfil" },
 ];
