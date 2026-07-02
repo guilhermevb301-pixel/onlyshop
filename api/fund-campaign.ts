@@ -13,7 +13,7 @@
 // =============================================================================
 export const config = { maxDuration: 30 };
 
-const APP_URL = "https://onlyshoptok.vercel.app";
+const APP_URL = "https://onlyshopbrasil.com.br";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "use POST" });
