@@ -1,4 +1,4 @@
-import { Building2, Users, ArrowRight } from "lucide-react";
+import { Building2, Users, Rocket, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { OnboardingRole } from "@/lib/onboarding";
 
@@ -7,8 +7,8 @@ interface RoleSelectCardProps {
   selected?: OnboardingRole | null;
 }
 
-// Passo 1 do onboarding: dois cards grandes pra escolher o papel.
-// brand = loja/marca · affiliate = influencer/creator.
+// Passo 1 do onboarding: 3 perfis do MVP 2.0.
+// affiliate = influencer · ambassador = embaixador (rede) · brand = loja/empresa.
 const OPTIONS: {
   role: OnboardingRole;
   icon: typeof Building2;
@@ -17,18 +17,25 @@ const OPTIONS: {
   accent: "primary" | "accent";
 }[] = [
   {
+    role: "affiliate",
+    icon: Users,
+    title: "Sou influencer",
+    desc: "Divulgo marcas da minha região e ganho por vídeo — pago ou permuta.",
+    accent: "accent",
+  },
+  {
+    role: "ambassador",
+    icon: Rocket,
+    title: "Sou embaixador",
+    desc: "Trago empresas e creators pra plataforma e ganho por cada um da minha rede.",
+    accent: "primary",
+  },
+  {
     role: "brand",
     icon: Building2,
     title: "Sou loja / marca",
     desc: "Quero influencers da minha região divulgando meus produtos.",
     accent: "primary",
-  },
-  {
-    role: "affiliate",
-    icon: Users,
-    title: "Sou influencer",
-    desc: "Quero vender produtos de marcas e faturar comissão sem criar tudo do zero.",
-    accent: "accent",
   },
 ];
 

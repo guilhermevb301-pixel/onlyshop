@@ -156,6 +156,8 @@ export default function Onboarding() {
   const canFinish =
     pickedRole === "brand"
       ? storeName.trim().length >= 2
+      : pickedRole === "ambassador"
+      ? displayName.trim().length >= 2 // embaixador: só o nome (nicho é opcional)
       : displayName.trim().length >= 2 && niches.length > 0;
 
   const totalSteps = 3;

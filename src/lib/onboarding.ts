@@ -6,7 +6,8 @@ const DEMO_FLAG = "onlyshop_demo_session";
 const DEMO_ROLE_KEY = "onlyshop_demo_role";
 const ONBOARDED_KEY = "onlyshop_onboarded";
 
-export type OnboardingRole = "affiliate" | "brand"; // affiliate = influencer, brand = loja
+// affiliate = influencer · brand = loja/empresa · ambassador = embaixador (traz empresas + rede)
+export type OnboardingRole = "affiliate" | "brand" | "ambassador";
 
 // LANÇAMENTO: modo demo DESATIVADO. O app mostra apenas dados reais (Supabase).
 // Mantida como função (pra não quebrar imports), mas sempre retorna false —

@@ -12,7 +12,10 @@ export function useOnboarding() {
   const role: OnboardingRole | null = useMemo(() => {
     if (isDemoSession()) return getDemoRole();
     const r = userRole?.role;
-    return r === "brand" ? "brand" : r === "affiliate" || r === "agency" ? "affiliate" : null;
+    return r === "brand" ? "brand"
+      : r === "ambassador" ? "ambassador"
+      : r === "affiliate" || r === "agency" ? "affiliate"
+      : null;
   }, [userRole]);
 
   // Precisa de onboarding se: ainda não escolheu papel, ou (real) sem cidade no perfil.

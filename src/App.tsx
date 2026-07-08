@@ -31,6 +31,8 @@ import EmBreve from "./pages/EmBreve";
 import Feed from "./pages/Feed";
 import PostDetail from "./pages/PostDetail";
 import PublicProfile from "./pages/PublicProfile";
+import MediaKit from "./pages/MediaKit";
+import Rede from "./pages/Rede";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +52,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/r/:code" element={<RedirectLink />} />
+            <Route path="/i/:code" element={<MediaKit />} />
 
             {/* App routes with layout */}
             <Route element={<AppLayout />}>
@@ -64,6 +67,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/em-breve" element={<EmBreve />} />
               <Route path="/comunidade" element={<Feed />} />
+              <Route path="/rede" element={<Rede />} />
               <Route path="/post/:id" element={<PostDetail />} />
               <Route path="/u/:username" element={<PublicProfile />} />
             </Route>

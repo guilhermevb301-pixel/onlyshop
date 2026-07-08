@@ -3,6 +3,7 @@ import { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { setDemoRole } from "@/lib/onboarding";
+import { getStoredRef, clearStoredRef, resolveReferrer } from "@/lib/referral";
 
 interface Profile {
   id: string;
@@ -11,6 +12,8 @@ interface Profile {
   display_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  referral_code?: string | null;
+  referred_by?: string | null;
 }
 
 interface UserRole {
@@ -27,7 +30,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
-  setRole: (role: "affiliate" | "brand") => Promise<void>;
+  setRole: (role: "affiliate" | "brand" | "ambassador") => Promise<void>;
   refreshUserData: () => Promise<void>;
 }
 
@@ -150,6 +153,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      // Rede de indicação: se a pessoa veio por um link /i/CODIGO, marca quem a trouxe.
+      try {
+        const ref = getStoredRef();
+        if (ref && data.user) {
+          const referrerId = await resolveReferrer(ref);
+          if (referrerId && referrerId !== data.user.id) {
+            await supabase
+              .from("profiles")
+              .update({ referred_by: referrerId } as any)
+              .eq("user_id", data.user.id);
+          }
+          clearStoredRef();
+        }
+      } catch { /* ignora — não bloqueia o cadastro */ }
+
       toast({
         title: "Conta criada!",
         description: "Verifique seu email para confirmar o cadastro.",
@@ -223,7 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Define o papel do usuário (loja/influencer) — usado no onboarding.
-  const setRole = async (role: "affiliate" | "brand") => {
+  const setRole = async (role: "affiliate" | "brand" | "ambassador") => {
     if (localStorage.getItem(DEMO_FLAG) === "1") {
       setDemoRole(role);
       setUserRole({ role });
