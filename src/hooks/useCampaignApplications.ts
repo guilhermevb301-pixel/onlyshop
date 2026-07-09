@@ -20,12 +20,24 @@ export function useCampaignApplications() {
         setBalance(0);
         return;
       }
+      // Traz também os dados da campanha (nome, valor, marca) — senão "Meus ganhos"
+      // mostra "Campanha" genérica e R$ 0,00.
       const { data } = await supabase
         .from("campaign_applications" as any)
-        .select("*")
+        .select("*, campaigns(name, reward_amount, physical_item, brand_id, brands(name))")
         .eq("influencer_user_id", user.id)
         .order("created_at", { ascending: false });
-      setApplications((data as unknown as CampaignApplication[]) || []);
+      const mapped = ((data as any[]) || []).map((a) => ({
+        ...a,
+        campaign: {
+          title: a.campaigns?.name ?? null,
+          reward_amount: Number(a.campaigns?.reward_amount ?? 0),
+          physical_item: a.campaigns?.physical_item ?? null,
+          brand_name: a.campaigns?.brands?.name ?? null,
+          distance_km: a.distance_km ?? null,
+        },
+      }));
+      setApplications(mapped as unknown as CampaignApplication[]);
       const { data: credits } = await supabase
         .from("platform_credits" as any)
         .select("amount")
