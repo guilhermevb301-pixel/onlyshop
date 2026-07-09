@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CampaignPaymentStep } from "./CampaignPaymentStep";
 import {
-  computeBudget, PLATFORM_FEE_PCT,
+  computeBudget, computePermutaBudget, PLATFORM_FEE_PCT, PERMUTA_FEE, MIN_REWARD,
   type Campaign, type TargetGender,
 } from "@/lib/campaigns";
 import type { CreateCampaignInput } from "@/hooks/useBrand";
@@ -42,6 +42,7 @@ const GENDERS: { value: TargetGender; label: string }[] = [
 
 const empty = {
   name: "", description: "",
+  reward_type: "per_video" as "per_video" | "permuta",
   hasItem: false, physical_item: "",
   slots: "5", reward_amount: "50",
   target_city: "", target_state: "",
@@ -63,7 +64,8 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
 
   const slotsN = parseInt(form.slots) || 0;
   const rewardN = parseFloat(form.reward_amount) || 0;
-  const budget = computeBudget(slotsN, rewardN);
+  const isPermuta = form.reward_type === "permuta";
+  const budget = isPermuta ? computePermutaBudget(slotsN) : computeBudget(slotsN, rewardN);
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   // No modo "retomar pagamento" não há form pra resetar — volta direto ao pagamento.
@@ -82,20 +84,27 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
     e.preventDefault();
     if (!form.name.trim()) { toast.error("Dê um título pra campanha."); return; }
     if (slotsN < 1) { toast.error("Defina pelo menos 1 vaga."); return; }
-    if (rewardN <= 0) { toast.error("Defina o valor por influencer."); return; }
+    if (isPermuta) {
+      if (!form.physical_item.trim()) { toast.error("Na permuta, descreva o produto que o influencer recebe."); return; }
+    } else if (rewardN < MIN_REWARD) {
+      toast.error(`O valor mínimo é R$ ${MIN_REWARD} por influencer.`); return;
+    }
     setLoading(true);
     try {
       const camp = await onCreate({
         name: form.name.trim(),
         description: form.description.trim() || null,
-        reward_amount: rewardN,
+        reward_type: form.reward_type,
+        reward_amount: isPermuta ? 0 : rewardN,
         slots: slotsN,
         target_city: form.target_city.trim() || null,
         target_state: form.target_state.trim() || null,
         target_gender: form.target_gender,
         min_followers: parseInt(form.min_followers) || 0,
         deadline_hours: parseInt(form.deadline_hours) || 168,
-        physical_item: form.hasItem ? (form.physical_item.trim() || null) : null,
+        physical_item: isPermuta
+          ? (form.physical_item.trim() || null)
+          : (form.hasItem ? (form.physical_item.trim() || null) : null),
       });
       if (!camp) throw new Error("Não foi possível criar a campanha.");
       setCreated(camp);
@@ -172,23 +181,60 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
               />
             </div>
 
-            {/* Item físico opcional */}
-            <div className="rounded-2xl border border-border/20 bg-muted/10 p-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs flex items-center gap-1.5"><Gift className="h-3.5 w-3.5 text-accent" /> Vou enviar um produto físico</Label>
-                <Switch checked={form.hasItem} onCheckedChange={(v) => update("hasItem", v)} />
-              </div>
-              {form.hasItem && (
+            {/* Tipo: campanha paga vs permuta */}
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { t: "per_video" as const, title: "Campanha paga", desc: "R$ por vídeo" },
+                { t: "permuta" as const, title: "Permuta", desc: "Produto por vídeo" },
+              ]).map((o) => {
+                const active = form.reward_type === o.t;
+                return (
+                  <button
+                    key={o.t}
+                    type="button"
+                    onClick={() => update("reward_type", o.t)}
+                    className={cn(
+                      "rounded-2xl border p-3 text-left transition-all active:scale-[.98]",
+                      active ? "border-primary/50 bg-primary/[0.08] ring-1 ring-primary/30" : "border-border/20 bg-muted/10 hover:border-border/40"
+                    )}
+                  >
+                    <p className="text-sm font-bold">{o.title}</p>
+                    <p className="text-[11px] text-muted-foreground/60">{o.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {isPermuta ? (
+              /* Permuta: o produto é OBRIGATÓRIO (é o que o influencer recebe) */
+              <div className="space-y-2">
+                <Label className="text-xs flex items-center gap-1.5"><Gift className="h-3.5 w-3.5 text-accent" /> Produto que o influencer recebe *</Label>
                 <Input
                   placeholder="Ex: 1 vestido à escolha, kit degustação..."
                   value={form.physical_item}
                   onChange={(e) => update("physical_item", e.target.value)}
                   className="rounded-xl border-border/20"
                 />
-              )}
-            </div>
+              </div>
+            ) : (
+              /* Paga: produto físico opcional */
+              <div className="rounded-2xl border border-border/20 bg-muted/10 p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs flex items-center gap-1.5"><Gift className="h-3.5 w-3.5 text-accent" /> Vou enviar um produto físico</Label>
+                  <Switch checked={form.hasItem} onCheckedChange={(v) => update("hasItem", v)} />
+                </div>
+                {form.hasItem && (
+                  <Input
+                    placeholder="Ex: 1 vestido à escolha, kit degustação..."
+                    value={form.physical_item}
+                    onChange={(e) => update("physical_item", e.target.value)}
+                    className="rounded-xl border-border/20"
+                  />
+                )}
+              </div>
+            )}
 
-            {/* Vagas + valor */}
+            {/* Vagas + (valor por influencer OU taxa da permuta) */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label className="text-xs flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Vagas (influencers)</Label>
@@ -199,18 +245,27 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
                   className="rounded-xl border-border/20"
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs">R$ por influencer</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/40">R$</span>
-                  <Input
-                    type="number" min="1" step="1" inputMode="decimal"
-                    value={form.reward_amount}
-                    onChange={(e) => update("reward_amount", e.target.value)}
-                    className="rounded-xl border-border/20 pl-8"
-                  />
+              {isPermuta ? (
+                <div className="space-y-2">
+                  <Label className="text-xs">Taxa da plataforma</Label>
+                  <div className="rounded-xl border border-border/20 bg-muted/10 px-3 h-10 flex items-center text-sm text-muted-foreground/80">
+                    R$ {PERMUTA_FEE} / vaga
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label className="text-xs">R$ por influencer (mín. R$ {MIN_REWARD})</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/40">R$</span>
+                    <Input
+                      type="number" min={MIN_REWARD} step="1" inputMode="decimal"
+                      value={form.reward_amount}
+                      onChange={(e) => update("reward_amount", e.target.value)}
+                      className="rounded-xl border-border/20 pl-8"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Filtros de público */}
@@ -269,14 +324,23 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
               "rounded-2xl border p-4 transition-colors",
               budget.total > 0 ? "border-primary/30 bg-primary/[0.06]" : "border-border/20 bg-muted/10"
             )}>
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground/60">
-                <span>{slotsN} vagas × {fmt(rewardN)}</span>
-                <span>{fmt(budget.base)}</span>
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground/40 mt-1">
-                <span>Taxa da plataforma ({PLATFORM_FEE_PCT}%)</span>
-                <span>{fmt(budget.fee)}</span>
-              </div>
+              {isPermuta ? (
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground/60">
+                  <span>{slotsN} vagas × {fmt(PERMUTA_FEE)} (taxa)</span>
+                  <span>{fmt(budget.total)}</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground/60">
+                    <span>{slotsN} vagas × {fmt(rewardN)}</span>
+                    <span>{fmt(budget.base)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground/40 mt-1">
+                    <span>Taxa da plataforma ({PLATFORM_FEE_PCT}%)</span>
+                    <span>{fmt(budget.fee)}</span>
+                  </div>
+                </>
+              )}
               <div className="h-px bg-border/30 my-2" />
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold">Total da campanha</span>

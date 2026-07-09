@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   demo, demoId,
   type Campaign, type CampaignApplication,
-  PLATFORM_FEE_PCT, computeBudget, computeSplit,
+  PLATFORM_FEE_PCT, computeBudget, computeSplit, computePermutaBudget,
 } from "@/lib/campaigns";
 
 // Marca do lojista. Demo grava em localStorage; real em brands (Supabase).
@@ -51,7 +51,8 @@ export interface Product {
 export interface CreateCampaignInput {
   name: string;
   description?: string | null;
-  reward_amount: number;
+  reward_type?: Campaign["reward_type"]; // "per_video" (paga) | "permuta"
+  reward_amount: number;                 // R$ por influencer (paga) · 0 na permuta
   slots: number;
   target_city?: string | null;
   target_state?: string | null;
@@ -198,14 +199,20 @@ export function useBrand() {
   // Cria um gig localizado. Já calcula total_budget (base + fee da plataforma).
   const createCampaign = async (input: CreateCampaignInput): Promise<Campaign | null> => {
     if (!brand) return null;
-    const { total } = computeBudget(input.slots, input.reward_amount);
+    const rtype = input.reward_type ?? "per_video";
+    const isPermuta = rtype === "permuta";
+    // Permuta: influencer recebe o produto (reward_amount=0); marca paga só a taxa.
+    const reward = isPermuta ? 0 : input.reward_amount;
+    const { total } = isPermuta
+      ? computePermutaBudget(input.slots)
+      : computeBudget(input.slots, input.reward_amount);
     const base: Campaign = {
       id: demoId("camp"),
       brand_id: brand.id,
       name: input.name,
       description: input.description ?? null,
-      reward_type: "per_video",
-      reward_amount: input.reward_amount,
+      reward_type: rtype,
+      reward_amount: reward,
       slots: input.slots,
       slots_filled: 0,
       target_city: input.target_city ?? null,

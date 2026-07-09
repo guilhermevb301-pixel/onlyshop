@@ -8,7 +8,7 @@
 import { isDemoSession } from "@/lib/onboarding";
 
 // ---- Contratos --------------------------------------------------------------
-export type RewardType = "per_video" | "commission";
+export type RewardType = "per_video" | "commission" | "permuta";
 export type TargetGender = "any" | "female" | "male";
 export type CampaignStatus = "draft" | "active" | "paused" | "completed";
 export type ApplicationStatus =
@@ -98,6 +98,18 @@ export function computeSplit(reward: number, feePct = PLATFORM_FEE_PCT) {
   const influencer = reward;                  // 100% pro influencer
   const platform = reward * (feePct / 100);   // taxa que a MARCA pagou em cima
   return { influencer, platform };
+}
+
+// Valor MÍNIMO de uma campanha PAGA (por influencer/vídeo). Barra o "R$1".
+export const MIN_REWARD = 10;
+// PERMUTA: o influencer recebe o PRODUTO (sem dinheiro). A marca paga esta taxa
+// por contratação (vaga) pra plataforma — só isso.
+export const PERMUTA_FEE = 25;
+
+// Custo de uma campanha de PERMUTA: só a taxa da plataforma × vagas.
+export function computePermutaBudget(slots: number, fee = PERMUTA_FEE) {
+  const total = (slots || 0) * fee;
+  return { base: 0, fee: total, total };
 }
 
 // ---- Geo helper (demo calcula distância sem o banco) ------------------------

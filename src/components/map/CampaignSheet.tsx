@@ -29,6 +29,7 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
 
   const left = Math.max(0, campaign.slots - campaign.slots_filled);
   const { influencer } = computeSplit(campaign.reward_amount);
+  const isPermuta = campaign.reward_type === "permuta"; // recebe o produto, sem R$
 
   const handleAccept = async () => {
     setLoading(true);
@@ -76,7 +77,7 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
               <p className="text-xs text-muted-foreground/70 mt-0.5">{campaign.brand_name}</p>
             </div>
             <Badge className="gap-1 bg-accent text-accent-foreground border-0 text-xs shrink-0 tabular-nums">
-              <BadgeDollarSign className="h-3.5 w-3.5" />{brl(campaign.reward_amount)}
+              <BadgeDollarSign className="h-3.5 w-3.5" />{isPermuta ? "Permuta" : brl(campaign.reward_amount)}
             </Badge>
           </div>
           <SheetDescription className="sr-only">
@@ -88,7 +89,7 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
 
         {/* destaques */}
         <div className="grid grid-cols-3 gap-2 mt-5 animate-slide-up opacity-0" style={step(1)}>
-          <Info icon={<BadgeDollarSign className="h-4 w-4 text-accent" />} value={brl(campaign.reward_amount)} label="por vídeo" />
+          <Info icon={<BadgeDollarSign className="h-4 w-4 text-accent" />} value={isPermuta ? "Permuta" : brl(campaign.reward_amount)} label={isPermuta ? "tipo" : "por vídeo"} />
           <Info icon={<Users className="h-4 w-4" />} value={`${left}`} label={`vaga${left !== 1 ? "s" : ""} restante${left !== 1 ? "s" : ""}`} />
           <Info icon={<MapPin className="h-4 w-4 text-accent" />} value={`${campaign.distance_km} km`} label="de você" />
         </div>
@@ -114,10 +115,17 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
           style={step(3)}
         >
           <p className="text-[10px] uppercase tracking-[0.18em] text-accent/70 font-semibold">Você recebe</p>
-          <p className="text-3xl font-black text-accent tabular-nums mt-1 leading-none">{brl(influencer)}</p>
-          <p className="text-[10px] text-muted-foreground/55 mt-1.5">
-            por vídeo aprovado · o valor é todo seu
-          </p>
+          {isPermuta ? (
+            <>
+              <p className="text-xl font-black text-accent mt-1 leading-tight">{campaign.physical_item || "Produto da marca"}</p>
+              <p className="text-[10px] text-muted-foreground/55 mt-1.5">permuta · o produto é seu ao entregar o vídeo</p>
+            </>
+          ) : (
+            <>
+              <p className="text-3xl font-black text-accent tabular-nums mt-1 leading-none">{brl(influencer)}</p>
+              <p className="text-[10px] text-muted-foreground/55 mt-1.5">por vídeo aprovado · o valor é todo seu</p>
+            </>
+          )}
         </div>
 
         {/* CTA */}

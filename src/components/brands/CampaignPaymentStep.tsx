@@ -6,7 +6,7 @@ import { QrCode, CreditCard, Loader2, ShieldCheck, Lock, ArrowLeft } from "lucid
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  demo, demoId, computeBudget, PLATFORM_FEE_PCT,
+  demo, demoId, PLATFORM_FEE_PCT,
   type Campaign,
 } from "@/lib/campaigns";
 
@@ -26,7 +26,11 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
   const [method, setMethod] = useState<Method>("pix");
   const [paying, setPaying] = useState(false);
 
-  const { base, fee, total } = computeBudget(campaign.slots, campaign.reward_amount);
+  // O total a pagar é o total_budget da campanha (já calculado certo pra paga ou permuta).
+  const isPermuta = campaign.reward_type === "permuta";
+  const total = campaign.total_budget;
+  const base = isPermuta ? 0 : campaign.slots * campaign.reward_amount;
+  const fee = total - base;
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   // Tenta o pagamento REAL via Mercado Pago (Checkout Pro). Abre a aba ANTES do
@@ -122,8 +126,14 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
           <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.2em] font-semibold">Total a pagar</p>
           <p className="text-4xl font-black mt-1 text-accent tabular-nums tracking-tight">{fmt(total)}</p>
           <div className="mt-4 space-y-2 text-xs">
-            <Row label={`${campaign.slots} influencers × ${fmt(campaign.reward_amount)}`} value={fmt(base)} />
-            <Row label={`Taxa da plataforma (${PLATFORM_FEE_PCT}%)`} value={fmt(fee)} muted />
+            {isPermuta ? (
+              <Row label={`${campaign.slots} vagas · taxa da plataforma`} value={fmt(total)} />
+            ) : (
+              <>
+                <Row label={`${campaign.slots} influencers × ${fmt(campaign.reward_amount)}`} value={fmt(base)} />
+                <Row label={`Taxa da plataforma (${PLATFORM_FEE_PCT}%)`} value={fmt(fee)} muted />
+              </>
+            )}
             <div className="h-px bg-border/40 my-1" />
             <Row label="Total" value={fmt(total)} bold />
           </div>

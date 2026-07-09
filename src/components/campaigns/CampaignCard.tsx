@@ -42,9 +42,9 @@ export function CampaignCard({ c, onClick, ctaLabel, onCta, ctaDisabled, compact
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
             <Badge className="gap-1 bg-accent text-accent-foreground border-0 text-[11px]">
-              <BadgeDollarSign className="h-3 w-3" />R$ {c.reward_amount}
+              <BadgeDollarSign className="h-3 w-3" />{c.reward_type === "permuta" ? "Permuta" : `R$ ${c.reward_amount}`}
             </Badge>
-            <span className="text-[9px] text-muted-foreground/50">por vídeo</span>
+            <span className="text-[9px] text-muted-foreground/50">{c.reward_type === "permuta" ? "produto" : "por vídeo"}</span>
           </div>
         </div>
 
