@@ -107,8 +107,11 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
     }
   };
 
-  const handlePaid = async () => {
-    if (created) await onFunded(created.id);
+  const handlePaid = async (realPayment: boolean) => {
+    // Pagamento REAL: NÃO marca funded aqui — o webhook do Mercado Pago confirma o
+    // pagamento e coloca a campanha no ar. Ela já aparece no painel como "aguardando
+    // pagamento". Só o demo (sem webhook) marca funded na hora.
+    if (created && !realPayment) await onFunded(created.id);
     handleClose(false);
   };
 

@@ -12,7 +12,9 @@ import {
 
 interface Props {
   campaign: Campaign;            // campanha recém-criada (ainda não paga)
-  onPaid: () => void;            // dispara markCampaignFunded + fecha o fluxo
+  // realPayment=true → abriu o checkout REAL: NÃO marca funded aqui (o webhook do
+  // Mercado Pago confirma o pagamento e coloca no ar). false → demo (marca funded).
+  onPaid: (realPayment: boolean) => void;
   onBack?: () => void;           // volta pro form
 }
 
@@ -86,7 +88,7 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
           created_at: now,
         });
         await new Promise((r) => setTimeout(r, 700));
-        onPaid();
+        onPaid(false); // demo: marca funded (não há webhook)
         toast.success(realOpened ? "Pagamento aberto no Mercado Pago!" : "Campanha no ar!", {
           description: realOpened
             ? `Conclua o pagamento de ${fmt(total)} na aba do Mercado Pago — a campanha "${campaign.name}" já está no seu painel.`
@@ -94,10 +96,14 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
         });
         return;
       }
-      // Fora do demo (futuro, com contas reais): se o checkout abriu, segue.
+      // Pagamento REAL: NÃO marca funded aqui. A campanha entra no ar SÓ quando o
+      // webhook do Mercado Pago confirmar o pagamento de verdade (fica "aguardando
+      // pagamento" no painel até lá).
       if (realOpened) {
-        onPaid();
-        toast.success("Pagamento aberto no Mercado Pago!", { description: `Conclua o pagamento de ${fmt(total)}.` });
+        onPaid(true);
+        toast.success("Pagamento aberto no Mercado Pago!", {
+          description: `Conclua o pagamento de ${fmt(total)}. Assim que confirmar, sua campanha entra no ar automaticamente.`,
+        });
       } else {
         toast.error("Pagamento indisponível agora", { description: "Tente de novo em instantes." });
       }

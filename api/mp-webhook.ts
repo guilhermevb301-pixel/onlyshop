@@ -65,9 +65,9 @@ export default async function handler(req: any, res: any) {
     // 2) Registra o dinheiro entrando + reservado pra campanha (na conta do lojista).
     if (brandUserId && amount > 0) {
       const now = new Date().toISOString();
-      await sb("platform_credits", {
+      await sb("platform_credits?on_conflict=provider_ref,kind", {
         method: "POST",
-        headers: { Prefer: "return=minimal" },
+        headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, // idempotente (não duplica se o MP reenviar)
         body: JSON.stringify([
           { user_id: brandUserId, kind: "topup", amount, campaign_id: campaignId, status: "completed", provider: "mercadopago", provider_ref: String(paymentId), created_at: now },
           { user_id: brandUserId, kind: "campaign_hold", amount: -amount, campaign_id: campaignId, status: "completed", provider: "mercadopago", provider_ref: String(paymentId), created_at: now },
