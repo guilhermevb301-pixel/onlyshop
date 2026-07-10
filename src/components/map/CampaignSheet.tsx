@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  MapPin, Gift, Users, BadgeDollarSign, Loader2, CheckCircle2, ArrowRight,
+  MapPin, Gift, Users, BadgeDollarSign, Loader2, CheckCircle2, ArrowRight, ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useCampaignApplications } from "@/hooks/useCampaignApplications";
 import { computeSplit } from "@/lib/campaigns";
 import type { CampaignNear } from "@/lib/campaigns";
@@ -24,6 +25,18 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
   const { apply } = useCampaignApplications();
   const [loading, setLoading] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  // Briefing/exigências não vêm no campaigns_near — busca ao abrir a campanha.
+  const [briefing, setBriefing] = useState<string | null>(null);
+  const campId = campaign?.campaign_id;
+  useEffect(() => {
+    if (!open || !campId) { setBriefing(null); return; }
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.from("campaigns" as any).select("briefing").eq("id", campId).maybeSingle();
+      if (alive) setBriefing((data as any)?.briefing ?? null);
+    })();
+    return () => { alive = false; };
+  }, [open, campId]);
 
   if (!campaign) return null;
 
@@ -127,6 +140,16 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
             </>
           )}
         </div>
+
+        {/* Briefing / exigências da marca — o influencer vê antes de topar */}
+        {briefing && (
+          <div className="mt-3 rounded-[1.25rem] bg-white/[0.03] ring-1 ring-white/[0.06] p-4 animate-slide-up opacity-0" style={step(3)}>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/50 font-semibold flex items-center gap-1.5">
+              <ClipboardList className="h-3 w-3 text-accent" /> O que a marca pede
+            </p>
+            <p className="text-xs text-white/75 mt-2 whitespace-pre-line leading-relaxed">{briefing}</p>
+          </div>
+        )}
 
         {/* CTA */}
         <div className="animate-slide-up opacity-0" style={step(4)}>

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, ArrowRight, Loader2, MapPin, Users, Gift, Clock, Wallet } from "lucide-react";
+import { Plus, ArrowRight, Loader2, MapPin, Users, Gift, Clock, Wallet, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CampaignPaymentStep } from "./CampaignPaymentStep";
@@ -41,7 +41,7 @@ const GENDERS: { value: TargetGender; label: string }[] = [
 ];
 
 const empty = {
-  name: "", description: "",
+  name: "", description: "", briefing: "",
   reward_type: "per_video" as "per_video" | "permuta",
   hasItem: false, physical_item: "",
   slots: "5", reward_amount: "50",
@@ -94,6 +94,7 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
       const camp = await onCreate({
         name: form.name.trim(),
         description: form.description.trim() || null,
+        briefing: form.briefing.trim() || null,
         reward_type: form.reward_type,
         reward_amount: isPermuta ? 0 : rewardN,
         slots: slotsN,
@@ -179,6 +180,19 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
                 rows={2}
                 className="rounded-xl border-border/20"
               />
+            </div>
+
+            {/* Briefing estruturado — exigências que o influencer vê antes de aceitar */}
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1.5"><ClipboardList className="h-3.5 w-3.5 text-accent" /> Briefing / exigências</Label>
+              <Textarea
+                placeholder={"Ex:\n• Marcar @sualoja no vídeo\n• Mostrar o produto por 5s+\n• Postar até sexta\n• Não usar concorrentes"}
+                value={form.briefing}
+                onChange={(e) => update("briefing", e.target.value)}
+                rows={4}
+                className="rounded-xl border-border/20 text-xs"
+              />
+              <p className="text-[10px] text-muted-foreground/50">O influencer vê isso antes de aceitar — deixa claro o que você espera.</p>
             </div>
 
             {/* Tipo: campanha paga vs permuta */}

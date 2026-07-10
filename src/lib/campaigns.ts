@@ -21,6 +21,7 @@ export interface Campaign {
   brand_id: string;
   name: string;
   description?: string | null;
+  briefing?: string | null; // exigências estruturadas da campanha (o influencer vê antes de aceitar)
   reward_type: RewardType;
   reward_amount: number;
   slots: number;

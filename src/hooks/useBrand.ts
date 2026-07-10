@@ -51,6 +51,7 @@ export interface Product {
 export interface CreateCampaignInput {
   name: string;
   description?: string | null;
+  briefing?: string | null;              // exigências da campanha (o que o influencer precisa fazer)
   reward_type?: Campaign["reward_type"]; // "per_video" (paga) | "permuta"
   reward_amount: number;                 // R$ por influencer (paga) · 0 na permuta
   slots: number;
@@ -211,6 +212,7 @@ export function useBrand() {
       brand_id: brand.id,
       name: input.name,
       description: input.description ?? null,
+      briefing: input.briefing ?? null,
       reward_type: rtype,
       reward_amount: reward,
       slots: input.slots,
@@ -239,6 +241,7 @@ export function useBrand() {
           brand_id: brand.id,
           name: base.name,
           description: base.description,
+          briefing: base.briefing,
           reward_type: base.reward_type,
           reward_amount: base.reward_amount,
           slots: base.slots,
