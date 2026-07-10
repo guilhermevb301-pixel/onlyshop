@@ -63,6 +63,9 @@ export interface CampaignApplication {
   influencer_user_id: string;
   status: ApplicationStatus;
   delivery_url?: string | null;
+  // Entrega editável: vários links de comprovação + comentário do influencer.
+  proofs?: { links?: string[]; comment?: string } | null;
+  posted_at?: string | null;
   distance_km?: number | null;
   created_at: string;
   updated_at: string;

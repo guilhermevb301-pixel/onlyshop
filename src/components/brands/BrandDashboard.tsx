@@ -231,6 +231,8 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
                 const status = statusOf(a);
                 const reward = rewardFor(a.campaign_id);
                 const split = computeSplit(reward);
+                const isPermuta = campaigns.find((c) => c.id === a.campaign_id)?.reward_type === "permuta";
+                const proofLinks = a.proofs?.links?.length ? a.proofs.links : (a.delivery_url ? [a.delivery_url] : []);
                 const isDelivered = status === "delivered";
                 const isApproved = status === "approved" || status === "paid";
                 const isRejected = status === "rejected";
@@ -258,24 +260,38 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-accent tabular-nums">{fmt(reward)}</p>
-                          <p className="text-[10px] text-muted-foreground/40">por vídeo</p>
+                          <p className="text-sm font-bold text-accent tabular-nums">{isPermuta ? "Permuta" : fmt(reward)}</p>
+                          <p className="text-[10px] text-muted-foreground/40">{isPermuta ? "produto" : "por vídeo"}</p>
                         </div>
                       </div>
 
-                      {a.delivery_url && (
-                        <a
-                          href={a.delivery_url} target="_blank" rel="noopener noreferrer"
-                          className="mt-2.5 flex items-center gap-1.5 text-[11px] text-primary hover:underline truncate min-h-[36px] py-1"
-                        >
-                          <ExternalLink className="h-3 w-3 shrink-0" /> <span className="truncate">{a.delivery_url}</span>
-                        </a>
+                      {/* Comprovações da entrega (um ou mais links) + comentário do influencer */}
+                      {proofLinks.length > 0 && (
+                        <div className="mt-2.5 space-y-1.5">
+                          {proofLinks.map((l, idx) => (
+                            <a
+                              key={idx}
+                              href={l} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 text-[11px] text-primary hover:underline truncate min-h-[32px] py-0.5"
+                            >
+                              <ExternalLink className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{proofLinks.length > 1 ? `Comprovação ${idx + 1} — ` : ""}{l}</span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {a.proofs?.comment && (
+                        <p className="mt-1.5 text-[11px] text-muted-foreground/70 italic leading-relaxed rounded-lg bg-white/[0.03] px-2.5 py-1.5">
+                          "{a.proofs.comment}"
+                        </p>
                       )}
 
                       {isDelivered && (
                         <div className="mt-3 space-y-2">
                           <p className="text-[10px] text-muted-foreground/50">
-                            Aprovar libera {fmt(split.influencer)} pro influencer (taxa {PLATFORM_FEE_PCT}%).
+                            {isPermuta
+                              ? "Aprovar confirma a permuta (o influencer já recebeu o produto)."
+                              : `Aprovar libera ${fmt(split.influencer)} pro influencer (taxa ${PLATFORM_FEE_PCT}%).`}
                           </p>
                           <div className="flex items-center gap-2">
                             <Button

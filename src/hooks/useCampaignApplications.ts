@@ -24,7 +24,7 @@ export function useCampaignApplications() {
       // mostra "Campanha" genérica e R$ 0,00.
       const { data } = await supabase
         .from("campaign_applications" as any)
-        .select("*, campaigns(name, reward_amount, physical_item, brand_id, brands(name))")
+        .select("*, campaigns(name, reward_amount, reward_type, physical_item, brand_id, brands(name))")
         .eq("influencer_user_id", user.id)
         .order("created_at", { ascending: false });
       const mapped = ((data as any[]) || []).map((a) => ({
@@ -32,6 +32,7 @@ export function useCampaignApplications() {
         campaign: {
           title: a.campaigns?.name ?? null,
           reward_amount: Number(a.campaigns?.reward_amount ?? 0),
+          reward_type: a.campaigns?.reward_type ?? "per_video",
           physical_item: a.campaigns?.physical_item ?? null,
           brand_name: a.campaigns?.brands?.name ?? null,
           distance_km: a.distance_km ?? null,
@@ -79,12 +80,21 @@ export function useCampaignApplications() {
     }
   }, [user, refresh]);
 
-  // Influencer envia o link da entrega (vídeo postado no canal dele).
-  const submitDelivery = useCallback(async (appId: string, url: string): Promise<void> => {
-    if (demo.isOn() || !user) { demo.updateApp(appId, { status: "delivered", delivery_url: url }); await refresh(); return; }
+  // Influencer envia/edita a entrega: vários links de comprovação + comentário.
+  // Editável até a marca aprovar (postou errado, vídeo flopou → repostar/trocar).
+  const submitDelivery = useCallback(async (appId: string, links: string[], comment = ""): Promise<void> => {
+    const clean = links.map((l) => l.trim()).filter(Boolean);
+    const primary = clean[0] || null;
+    const proofs = { links: clean, comment: comment.trim() || undefined };
+    const now = new Date().toISOString();
+    if (demo.isOn() || !user) {
+      demo.updateApp(appId, { status: "delivered", delivery_url: primary, proofs });
+      await refresh();
+      return;
+    }
     try {
       await supabase.from("campaign_applications" as any)
-        .update({ status: "delivered", delivery_url: url, updated_at: new Date().toISOString() } as any)
+        .update({ status: "delivered", delivery_url: primary, proofs, posted_at: now, updated_at: now } as any)
         .eq("id", appId);
       await refresh();
     } catch (e) {

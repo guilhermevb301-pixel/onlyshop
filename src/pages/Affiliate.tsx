@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCampaignApplications } from "@/hooks/useCampaignApplications";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { DeliveryEditor } from "@/components/campaigns/DeliveryEditor";
 import {
-  DollarSign, MapPin, Send, Loader2, CheckCircle, Clock, Hourglass,
+  DollarSign, MapPin, Send, CheckCircle, Clock, Hourglass, Pencil,
   CircleDollarSign, ExternalLink, Sparkles, TrendingUp, ArrowRight, Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -104,8 +104,8 @@ export default function Affiliate() {
   const { applications, balance, loading, submitDelivery, computeSplit } = useCampaignApplications();
   void user;
 
-  // input de link por candidatura + flag de envio
-  const [urls, setUrls] = useState<Record<string, string>>({});
+  // qual candidatura está com o editor de entrega aberto + flag de envio
+  const [editorApp, setEditorApp] = useState<string | null>(null);
   const [sending, setSending] = useState<string | null>(null);
 
   const campaigns = applications.filter((a) => VISIBLE.includes(a.status));
@@ -114,31 +114,24 @@ export default function Affiliate() {
   const payout = (a: CampaignApplication) =>
     computeSplit(a.campaign?.reward_amount || 0).influencer;
 
-  const handleSend = async (a: CampaignApplication) => {
-    const url = (urls[a.id] || "").trim();
-    if (!url) {
-      toast.error("Cole o link do vídeo postado");
-      return;
-    }
-    if (!/^https?:\/\//i.test(url)) {
-      toast.error("Link inválido", { description: "Use o link completo (https://...)" });
-      return;
-    }
-    setSending(a.id);
+  const openEditor = (id: string) => setEditorApp(id);
+
+  const handleSubmit = async (links: string[], comment: string) => {
+    const appId = editorApp;
+    if (!appId) return;
+    setSending(appId);
     try {
-      await submitDelivery(a.id, url);
-      setUrls((p) => ({ ...p, [a.id]: "" }));
-      // Aviso (não bloqueia) se não parece um post de rede social — entrega de vídeo.
-      if (!/(instagram|tiktok|youtu)/i.test(url)) {
-        toast.info("Confira o link", { description: "Use o link do post público (Instagram, TikTok ou YouTube)." });
-      }
-      toast.success("Entrega enviada", { description: "A marca vai revisar seu vídeo." });
+      await submitDelivery(appId, links, comment);
+      setEditorApp(null);
+      toast.success("Entrega enviada", { description: "A marca vai revisar. Dá pra editar até ela aprovar." });
     } catch {
       toast.error("Não foi possível enviar agora");
     } finally {
       setSending(null);
     }
   };
+
+  const editing = editorApp ? applications.find((x) => x.id === editorApp) : null;
 
   // ---- Loading: skeleton espelha o layout real (balance + 3 stats + cards) ----
   if (loading) {
@@ -277,7 +270,7 @@ export default function Affiliate() {
               const StatusIcon = cfg.icon;
               const reward = a.campaign?.reward_amount || 0;
               const net = payout(a);
-              const isSending = sending === a.id;
+              const isPermuta = a.campaign?.reward_type === "permuta";
 
               return (
                 <li
@@ -316,58 +309,82 @@ export default function Affiliate() {
                         </Badge>
                       </div>
 
-                      {/* accepted: input pra colar link + enviar entrega */}
+                      {/* accepted: botão que abre o editor de entrega */}
                       {a.status === "accepted" && (
                         <div className="space-y-2 pt-1">
                           <p className="text-[11px] text-muted-foreground/60 flex items-center gap-1.5">
                             <TrendingUp className="h-3 w-3 text-accent" />
-                            Você ganha <strong className="text-accent">{fmt(net)}</strong> ao entregar o vídeo
+                            {isPermuta ? (
+                              <>Você recebe <strong className="text-accent">o produto</strong> ao entregar o vídeo</>
+                            ) : (
+                              <>Você ganha <strong className="text-accent">{fmt(net)}</strong> ao entregar o vídeo</>
+                            )}
                           </p>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Cole o link do vídeo postado"
-                              className="h-11 text-xs rounded-xl border-border/30 bg-background/60 flex-1"
-                              value={urls[a.id] || ""}
-                              onChange={(e) => setUrls((p) => ({ ...p, [a.id]: e.target.value }))}
-                              onKeyDown={(e) => { if (e.key === "Enter") handleSend(a); }}
-                              aria-label="Link do vídeo postado"
-                            />
-                            <Button
-                              className="group h-11 rounded-xl gap-1.5 bg-gradient-primary text-white border-0 shrink-0 active:scale-[.98] transition-all ease-[cubic-bezier(.32,.72,0,1)]"
-                              onClick={() => handleSend(a)}
-                              disabled={isSending || !(urls[a.id] || "").trim()}
-                              aria-busy={isSending}
-                            >
-                              {isSending
-                                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /><span className="sr-only">Enviando…</span></>
-                                : <Send className="h-3.5 w-3.5 transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] group-hover:translate-x-0.5" />}
-                              Enviar
-                            </Button>
-                          </div>
+                          <Button
+                            className="group w-full h-11 rounded-xl gap-1.5 bg-gradient-primary text-white border-0 active:scale-[.98] transition-transform ease-[cubic-bezier(.32,.72,0,1)]"
+                            onClick={() => openEditor(a.id)}
+                          >
+                            <Send className="h-3.5 w-3.5 transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] group-hover:translate-x-0.5" />
+                            Enviar entrega
+                          </Button>
                         </div>
                       )}
 
-                      {/* delivered / approved / paid: valor + status + link da entrega */}
+                      {/* delivered / approved / paid: valor + comprovações + editar */}
                       {a.status !== "accepted" && (
-                        <div className="flex items-center justify-between pt-3 border-t border-border/15 animate-fade-in">
-                          <div>
-                            <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-semibold">
-                              {PAYOUT_LABEL[a.status] ?? "A receber"}
-                            </p>
-                            <p className={cn("text-lg font-black tabular-nums leading-tight", a.status === "paid" ? "text-accent" : "text-foreground")}>
-                              {fmt(net)}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground/50">de {fmt(reward)} por vídeo</p>
+                        <div className="pt-3 border-t border-border/15 space-y-2.5 animate-fade-in">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-semibold">
+                                {PAYOUT_LABEL[a.status] ?? "A receber"}
+                              </p>
+                              {isPermuta ? (
+                                <p className="text-base font-black text-accent leading-tight mt-0.5">Produto da marca</p>
+                              ) : (
+                                <>
+                                  <p className={cn("text-lg font-black tabular-nums leading-tight", a.status === "paid" ? "text-accent" : "text-foreground")}>
+                                    {fmt(net)}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground/50">de {fmt(reward)} por vídeo</p>
+                                </>
+                              )}
+                            </div>
+                            {/* Editável só enquanto a marca não aprovou */}
+                            {a.status === "delivered" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditor(a.id)}
+                                className="rounded-full h-9 gap-1.5 text-xs border-border/40 shrink-0"
+                              >
+                                <Pencil className="h-3 w-3" /> Editar
+                              </Button>
+                            )}
                           </div>
-                          {a.delivery_url && (
-                            <a
-                              href={a.delivery_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-[11px] text-muted-foreground/55 hover:text-accent transition-colors min-h-[44px] px-2 -mr-2 rounded-lg"
-                            >
-                              <ExternalLink className="h-3 w-3" /> Ver entrega
-                            </a>
+
+                          {/* Links de comprovação (um ou mais) */}
+                          {(() => {
+                            const proofLinks = a.proofs?.links?.length ? a.proofs.links : (a.delivery_url ? [a.delivery_url] : []);
+                            if (proofLinks.length === 0) return null;
+                            return (
+                              <div className="flex flex-wrap gap-1.5">
+                                {proofLinks.map((l, idx) => (
+                                  <a
+                                    key={idx}
+                                    href={l}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-accent transition-colors bg-white/[0.04] ring-1 ring-white/[0.06] rounded-full px-2.5 py-1"
+                                  >
+                                    <ExternalLink className="h-3 w-3" /> {proofLinks.length > 1 ? `Link ${idx + 1}` : "Ver entrega"}
+                                  </a>
+                                ))}
+                              </div>
+                            );
+                          })()}
+
+                          {a.proofs?.comment && (
+                            <p className="text-[11px] text-muted-foreground/60 italic leading-relaxed">"{a.proofs.comment}"</p>
                           )}
                         </div>
                       )}
@@ -379,6 +396,19 @@ export default function Affiliate() {
           </ul>
         )}
       </section>
+
+      {/* Editor de entrega: vários links + comentário, editável até aprovar */}
+      {editing && (
+        <DeliveryEditor
+          open
+          onOpenChange={(o) => { if (!o) setEditorApp(null); }}
+          initialLinks={editing.proofs?.links?.length ? editing.proofs.links : (editing.delivery_url ? [editing.delivery_url] : [])}
+          initialComment={editing.proofs?.comment ?? ""}
+          isEdit={editing.status === "delivered"}
+          submitting={sending === editorApp}
+          onSubmit={handleSubmit}
+        />
+      )}
     </div>
   );
 }
