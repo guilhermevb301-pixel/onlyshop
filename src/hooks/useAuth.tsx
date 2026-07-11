@@ -54,30 +54,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fetch user profile and role
   const fetchUserData = async (userId: string) => {
     try {
-      // Fetch profile
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
+      // Profile e role EM PARALELO — antes eram dois await em série (~1,5s de tela
+      // travada em conexão lenta, porque o app só renderiza depois disso). Agora o
+      // tempo é o da query mais lenta, não a soma.
+      const [profileRes, roleRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", userId).single(),
+        supabase.from("user_roles").select("role").eq("user_id", userId).single(),
+      ]);
 
-      if (profileError && profileError.code !== "PGRST116") {
-        console.error("Error fetching profile:", profileError);
-      } else if (profileData) {
-        setProfile(profileData as Profile);
+      if (profileRes.error && profileRes.error.code !== "PGRST116") {
+        console.error("Error fetching profile:", profileRes.error);
+      } else if (profileRes.data) {
+        setProfile(profileRes.data as Profile);
       }
 
-      // Fetch user role
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .single();
-
-      if (roleError && roleError.code !== "PGRST116") {
-        console.error("Error fetching role:", roleError);
-      } else if (roleData) {
-        setUserRole(roleData as UserRole);
+      if (roleRes.error && roleRes.error.code !== "PGRST116") {
+        console.error("Error fetching role:", roleRes.error);
+      } else if (roleRes.data) {
+        setUserRole(roleRes.data as UserRole);
       }
     } catch (error) {
       console.error("Error in fetchUserData:", error);
