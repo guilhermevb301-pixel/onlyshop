@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { CampaignPaymentStep } from "./CampaignPaymentStep";
 import { CampaignWizard } from "./CampaignWizard";
 import {
-  computeBudget, computePermutaBudget,
+  computeBudget, computePermutaBudget, MIN_REWARD,
   type Campaign, type TargetGender,
 } from "@/lib/campaigns";
 import type { CreateCampaignInput } from "@/hooks/useBrand";
