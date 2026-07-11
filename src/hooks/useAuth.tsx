@@ -20,7 +20,7 @@ interface Profile {
 }
 
 interface UserRole {
-  role: "viewer" | "learner" | "affiliate" | "agency" | "brand" | "admin";
+  role: "viewer" | "learner" | "affiliate" | "agency" | "brand" | "admin" | "ambassador";
 }
 
 interface AuthContextType {

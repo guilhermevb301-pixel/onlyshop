@@ -28,7 +28,7 @@ export function referralLink(code?: string | null): string {
 export async function resolveReferrer(code: string): Promise<string | null> {
   try {
     const { data } = await supabase
-      .from("profiles").select("user_id").eq("referral_code", code.toUpperCase()).maybeSingle();
+      .from("profiles" as any).select("user_id").eq("referral_code", code.toUpperCase()).maybeSingle();
     return (data as any)?.user_id ?? null;
   } catch { return null; }
 }

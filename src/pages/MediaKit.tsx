@@ -33,13 +33,13 @@ export default function MediaKit() {
     (async () => {
       try {
         const { data } = await supabase
-          .from("profiles")
+          .from("profiles" as any)
           .select("user_id, display_name, username, avatar_url, city, state, niches, level, bio")
           .eq("referral_code", (code || "").toUpperCase())
           .maybeSingle();
         setKit((data as any) ?? null);
         if (data) {
-          const { data: r } = await supabase.from("ratings").select("stars").eq("rated_user_id", (data as any).user_id);
+          const { data: r } = await supabase.from("ratings" as any).select("stars").eq("rated_user_id", (data as any).user_id);
           const arr = ((r as any[]) || []);
           if (arr.length) setRating({ avg: arr.reduce((s, x) => s + Number(x.stars), 0) / arr.length, count: arr.length });
           // Nível real (user_levels) — profiles.level é coluna morta (sempre 1).

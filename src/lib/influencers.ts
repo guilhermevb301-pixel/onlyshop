@@ -41,12 +41,12 @@ function fileToDataUrl(file: File): Promise<string> {
 export async function listInfluencers(userId: string): Promise<Persona[]> {
   if (isDemoSession()) return readDemo();
   const { data, error } = await supabase
-    .from("user_influencers")
+    .from("user_influencers" as any)
     .select("id, name, niche, description, photo_url")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error || !data) return [];
-  return data.map(influencerToPersona);
+  return (data as any[]).map(influencerToPersona);
 }
 
 // Cria um influencer: sobe a foto e persiste os metadados.
@@ -85,13 +85,13 @@ export async function createInfluencer(input: {
   const photo_url = pub.publicUrl;
 
   const { data, error } = await supabase
-    .from("user_influencers")
+    .from("user_influencers" as any)
     .insert({ user_id: userId, name, niche, description, photo_url })
     .select("id, name, niche, description, photo_url")
     .single();
   if (error || !data) throw new Error(error?.message || "Não consegui salvar o influencer.");
 
-  return influencerToPersona(data);
+  return influencerToPersona(data as any);
 }
 
 // Cria um influencer a partir de uma imagem JÁ hospedada (gerada por IA — áudio 1).
@@ -114,12 +114,12 @@ export async function createInfluencerFromUrl(input: {
   }
 
   const { data, error } = await supabase
-    .from("user_influencers")
+    .from("user_influencers" as any)
     .insert({ user_id: userId, name, niche, description, photo_url: photoUrl })
     .select("id, name, niche, description, photo_url")
     .single();
   if (error || !data) throw new Error(error?.message || "Não consegui salvar o influencer.");
-  return influencerToPersona(data);
+  return influencerToPersona(data as any);
 }
 
 // Remove um influencer customizado.
@@ -128,5 +128,5 @@ export async function deleteInfluencer(id: string): Promise<void> {
     writeDemo(readDemo().filter((p) => p.id !== id));
     return;
   }
-  await supabase.from("user_influencers").delete().eq("id", id);
+  await supabase.from("user_influencers" as any).delete().eq("id", id);
 }

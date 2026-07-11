@@ -38,7 +38,7 @@ export function useReferral() {
     try {
       // Minha rede direta (quem se cadastrou pelo meu link).
       const { data: net } = await supabase
-        .from("profiles")
+        .from("profiles" as any)
         .select("user_id, display_name, username, avatar_url, city, created_at")
         .eq("referred_by", user.id)
         .order("created_at", { ascending: false });
@@ -56,7 +56,7 @@ export function useReferral() {
 
       // Meus ganhos de indicação.
       const { data: earn } = await supabase
-        .from("referral_earnings")
+        .from("referral_earnings" as any)
         .select("amount, kind, source_amount, created_at")
         .eq("earner_user_id", user.id)
         .order("created_at", { ascending: false });
