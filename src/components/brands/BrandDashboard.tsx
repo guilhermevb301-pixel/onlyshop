@@ -6,9 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CampaignCard } from "@/components/campaigns/CampaignCard";
 import { CreateCampaignSheet } from "./CreateCampaignSheet";
+import { RateInfluencerSheet } from "./RateInfluencerSheet";
+import { useRatings } from "@/hooks/useRatings";
 import {
   Building2, CheckCircle2, Globe, MapPin, Megaphone, Wallet,
-  Users, ExternalLink, CircleCheck, BadgeDollarSign, X, User,
+  Users, ExternalLink, CircleCheck, BadgeDollarSign, X, User, Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -54,6 +56,9 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
   const [overrides, setOverrides] = useState<Record<string, CampaignApplication["status"]>>({});
   // Trava de ação por candidatura (evita duplo clique → pagamento duplicado).
   const [busy, setBusy] = useState<Record<string, boolean>>({});
+  // Avaliação guiada (marca → influencer) após aprovar a entrega.
+  const ratings = useRatings();
+  const [rateFor, setRateFor] = useState<CampaignApplication | null>(null);
 
   const statusOf = (a: CampaignApplication) => overrides[a.id] ?? a.status;
 
@@ -318,12 +323,26 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
                       )}
 
                       {isApproved && (
-                        <p className="mt-2.5 text-[11px] text-success flex items-center gap-1.5">
-                          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-success/15">
-                            <CircleCheck className="h-3 w-3" />
-                          </span>
-                          Pago · {fmt(split.influencer)} liberados pro influencer
-                        </p>
+                        <div className="mt-2.5 flex items-center justify-between gap-2">
+                          <p className="text-[11px] text-success flex items-center gap-1.5 min-w-0">
+                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-success/15 shrink-0">
+                              <CircleCheck className="h-3 w-3" />
+                            </span>
+                            <span className="truncate">{isPermuta ? "Entrega aprovada" : `Pago · ${fmt(split.influencer)}`}</span>
+                          </p>
+                          {(() => {
+                            const r = ratings.myRatingFor(a.id);
+                            return r ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-warning bg-warning/10 ring-1 ring-warning/20 rounded-full px-2.5 py-1 shrink-0">
+                                <Star className="h-3 w-3 fill-warning" /> {r.stars} · Avaliado
+                              </span>
+                            ) : (
+                              <Button variant="outline" size="sm" onClick={() => setRateFor(a)} className="rounded-full h-8 gap-1.5 text-[11px] border-border/40 shrink-0">
+                                <Star className="h-3 w-3" /> Avaliar
+                              </Button>
+                            );
+                          })()}
+                        </div>
                       )}
 
                       {isRejected && (
@@ -342,6 +361,18 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Avaliação guiada da marca → influencer (após aprovar) */}
+      {rateFor && (
+        <RateInfluencerSheet
+          open={!!rateFor}
+          onOpenChange={(o) => { if (!o) setRateFor(null); }}
+          applicationId={rateFor.id}
+          ratedUserId={rateFor.influencer_user_id}
+          influencerName={(rateFor as any).influencer?.display_name || undefined}
+          onDone={() => ratings.refresh()}
+        />
+      )}
     </div>
   );
 }

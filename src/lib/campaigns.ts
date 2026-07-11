@@ -86,6 +86,18 @@ export interface PlatformCredit {
   created_at: string;
 }
 
+// Avaliação da marca -> influencer (fluxo guiado de 4 critérios). Tabela `ratings`.
+export interface Rating {
+  id: string;
+  application_id: string;
+  rater_user_id: string;
+  rated_user_id: string;
+  stars: number; // média arredondada dos 4 critérios (1..5)
+  criteria?: { prazo?: number; qualidade?: number; briefing?: number; comunicacao?: number } | null;
+  comment?: string | null;
+  created_at: string;
+}
+
 export const PLATFORM_FEE_PCT = 20;
 
 // Custo de uma campanha pro lojista: base + fee da plataforma.
@@ -175,6 +187,7 @@ export function demoCampaigns(userLat?: number | null, userLon?: number | null):
 const APPS_KEY = "onlyshop_demo_applications";
 const CREDITS_KEY = "onlyshop_demo_credits";
 const MY_CAMPAIGNS_KEY = "onlyshop_demo_my_campaigns";
+const RATINGS_KEY = "onlyshop_demo_ratings";
 
 function read<T>(key: string): T[] {
   try { const r = localStorage.getItem(key); return r ? (JSON.parse(r) as T[]) : []; } catch { return []; }
@@ -203,6 +216,9 @@ export const demo = {
   // campanhas criadas pelo lojista em demo
   myCampaigns(): Campaign[] { return read<Campaign>(MY_CAMPAIGNS_KEY); },
   addCampaign(c: Campaign) { write(MY_CAMPAIGNS_KEY, [c, ...read<Campaign>(MY_CAMPAIGNS_KEY)]); },
+  // avaliações demo (marca -> influencer)
+  ratings(): Rating[] { return read<Rating>(RATINGS_KEY); },
+  addRating(r: Rating) { write(RATINGS_KEY, [r, ...read<Rating>(RATINGS_KEY)]); },
 };
 
 // id curto pra registros demo
