@@ -71,4 +71,20 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Separa as libs grandes em chunks próprios: baixam em paralelo e ficam em
+    // cache entre deploys (o usuário não rebaixa React/Supabase a cada atualização).
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          // Só o core que é usado em TODA a app vira chunk fixo (cache entre deploys).
+          // O resto (recharts, radix de páginas específicas) o Rollup mantém lazy,
+          // junto da página que importa — não pesa na abertura.
+          if (/[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) return "react-vendor";
+          if (id.includes("@supabase")) return "supabase";
+        },
+      },
+    },
+  },
 }));
