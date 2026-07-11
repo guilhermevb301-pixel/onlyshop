@@ -10,6 +10,9 @@ import { Loader2, Sparkles, Users2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useGamification } from "@/hooks/useGamification";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ActivityFeed } from "@/components/feed/ActivityFeed";
+import { useActivity } from "@/hooks/useActivity";
 
 const PAGE_SIZE = 15;
 
@@ -19,6 +22,7 @@ export default function Feed() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { addPoints } = useGamification();
+  const activity = useActivity();
   const navigate = useNavigate();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,6 +217,15 @@ export default function Feed() {
         </div>
       </div>
 
+      <Tabs defaultValue="comunidade" className="w-full">
+        <div className="px-4 pb-2">
+          <TabsList className="w-full grid grid-cols-2 bg-muted/20 rounded-full h-9">
+            <TabsTrigger value="comunidade" className="rounded-full text-xs">Comunidade</TabsTrigger>
+            <TabsTrigger value="atividade" className="rounded-full text-xs">Atividade</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="comunidade" className="mt-0">
+
       {/* Pull to refresh */}
       <div
         className="flex justify-center items-center overflow-hidden transition-all duration-200"
@@ -261,6 +274,12 @@ export default function Feed() {
         {loadingMore && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/30" />}
         {!hasMore && posts.length > 0 && <p className="text-[11px] text-muted-foreground/30">Você viu tudo ✨</p>}
       </div>
+        </TabsContent>
+
+        <TabsContent value="atividade" className="mt-0 px-4 pt-4 pb-8">
+          <ActivityFeed events={activity.events} loading={activity.loading} />
+        </TabsContent>
+      </Tabs>
 
       {/* FAB — criar post */}
       {user && (
