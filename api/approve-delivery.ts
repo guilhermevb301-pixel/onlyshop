@@ -109,6 +109,17 @@ export default async function handler(req: any, res: any) {
       console.error("xp grant failed (non-fatal):", xpErr);
     }
 
+    // 7) Pontos de território (dono da rua/bairro/cidade). BEST-EFFORT; a RPC é
+    // idempotente (trava por territory_awarded_at) e nunca pode derrubar o pagamento.
+    try {
+      await sb("rpc/award_territory", {
+        method: "POST",
+        body: JSON.stringify({ _application_id: applicationId, _points: 10 }),
+      });
+    } catch (tErr) {
+      console.error("award_territory failed (non-fatal):", tErr);
+    }
+
     return res.status(200).json({ ok: true, influencer_share: influencerShare });
   } catch (e) {
     console.error("approve-delivery:", e);

@@ -61,6 +61,10 @@ export interface CreateCampaignInput {
   min_followers: number;
   deadline_hours: number;
   physical_item?: string | null;
+  territory_scope?: Campaign["territory_scope"];
+  territory_name?: string | null;
+  territory_neighborhood?: string | null;
+  territory_street?: string | null;
 }
 
 const DEMO_BRAND_KEY = "onlyshop_demo_brand";
@@ -241,6 +245,10 @@ export function useBrand() {
       min_followers: input.min_followers,
       deadline_hours: input.deadline_hours,
       physical_item: input.physical_item ?? null,
+      territory_scope: input.territory_scope ?? "cidade",
+      territory_name: input.territory_name ?? null,
+      territory_neighborhood: input.territory_neighborhood ?? null,
+      territory_street: input.territory_street ?? null,
       platform_fee_pct: PLATFORM_FEE_PCT,
       total_budget: total,
       funded: false, // pago só depois (CampaignPaymentStep)
@@ -270,6 +278,10 @@ export function useBrand() {
           min_followers: base.min_followers,
           deadline_hours: base.deadline_hours,
           physical_item: base.physical_item,
+          territory_scope: base.territory_scope,
+          territory_name: base.territory_name,
+          territory_neighborhood: base.territory_neighborhood,
+          territory_street: base.territory_street,
           platform_fee_pct: base.platform_fee_pct,
           total_budget: base.total_budget,
           funded: false,

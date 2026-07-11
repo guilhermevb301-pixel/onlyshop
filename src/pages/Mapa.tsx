@@ -5,6 +5,8 @@ import { useGeolocation, type GeoLocation } from "@/hooks/useGeolocation";
 import { useCampaignsNear } from "@/hooks/useCampaignsNear";
 import { CampaignCard } from "@/components/campaigns/CampaignCard";
 import { SocialProofBar } from "@/components/map/SocialProofBar";
+import { TerritoryOwnerBar } from "@/components/map/TerritoryOwnerBar";
+import { useTerritories } from "@/hooks/useTerritories";
 import { CampaignSheet } from "@/components/map/CampaignSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +45,7 @@ export default function Mapa() {
   const [resolving, setResolving] = useState(false);
 
   const { campaigns, loading: campaignsLoading } = useCampaignsNear(loc?.latitude, loc?.longitude);
+  const { territories } = useTerritories(loc?.latitude, loc?.longitude);
 
   if (authLoading) {
     return (
@@ -139,6 +142,9 @@ export default function Mapa() {
       ) : (
         <>
           <SocialProofBar campaigns={campaigns} />
+          {territories.length > 0 && (
+            <div className="mt-3"><TerritoryOwnerBar territories={territories} /></div>
+          )}
 
           {view === "map" ? (
             <div

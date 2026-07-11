@@ -9,6 +9,7 @@ import { isDemoSession } from "@/lib/onboarding";
 
 // ---- Contratos --------------------------------------------------------------
 export type RewardType = "per_video" | "commission" | "permuta";
+export type TerritoryScope = "rua" | "bairro" | "cidade" | "zona";
 export type TargetGender = "any" | "female" | "male";
 export type CampaignStatus = "draft" | "active" | "paused" | "completed";
 export type ApplicationStatus =
@@ -36,6 +37,30 @@ export interface Campaign {
   total_budget: number;
   funded: boolean;
   status: CampaignStatus;
+  // Domínio geográfico (feature mapa-dominio)
+  territory_scope?: TerritoryScope;
+  territory_name?: string | null;
+  territory_neighborhood?: string | null;
+  territory_street?: string | null;
+}
+
+// Dono de um território (rua/bairro/cidade/zona) — retornado por territories_near.
+export interface Territory {
+  id: string;
+  scope: TerritoryScope;
+  name: string;
+  city: string | null;
+  state: string | null;
+  neighborhood?: string | null;
+  score: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  owner_user_id?: string | null;
+  owner_username?: string | null;
+  owner_display_name?: string | null;
+  owner_avatar_url?: string | null;
+  owner_level?: number | null;
+  distance_km?: number | null;
 }
 
 // Linha retornada por campaigns_near() — usada no mapa

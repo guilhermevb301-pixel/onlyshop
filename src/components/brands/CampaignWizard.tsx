@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import {
-  MapPin, Users, Gift, Clock, ClipboardList, ArrowRight, ArrowLeft, Loader2, Sparkles, Rocket,
+  MapPin, Users, Gift, Clock, ClipboardList, ArrowRight, ArrowLeft, Loader2, Sparkles, Rocket, Flag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -88,6 +88,33 @@ export function CampaignWizard({ form, update, onSubmit, loading, budget, fmt, i
                 <Input placeholder="UF" maxLength={2} value={form.target_state} onChange={(e) => update("target_state", e.target.value.toUpperCase())} className="rounded-xl border-border/20 w-16 uppercase" />
               </div>
               <p className="text-[10px] text-muted-foreground/50">Campanha local aparece pra quem está perto — é onde você compete.</p>
+            </div>
+
+            {/* Escopo do domínio — onde você quer ser o dono */}
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1.5"><Flag className="h-3.5 w-3.5 text-accent" /> Onde você domina</Label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(["rua", "bairro", "cidade", "zona"] as const).map((sc) => (
+                  <button
+                    key={sc}
+                    type="button"
+                    onClick={() => update("territory_scope", sc)}
+                    className={cn(
+                      "rounded-xl border py-2 text-[11px] font-semibold capitalize transition-all active:scale-[.97]",
+                      form.territory_scope === sc ? "border-primary/50 bg-primary/[0.1] text-primary" : "border-border/20 bg-muted/10 text-muted-foreground/70"
+                    )}
+                  >
+                    {sc}
+                  </button>
+                ))}
+              </div>
+              {form.territory_scope === "rua" && (
+                <Input placeholder="Nome da rua (ex: Rua XV de Novembro)" value={form.territory_street} onChange={(e) => update("territory_street", e.target.value)} className="rounded-xl border-border/20" />
+              )}
+              {form.territory_scope === "bairro" && (
+                <Input placeholder="Nome do bairro (ex: Centro)" value={form.territory_neighborhood} onChange={(e) => update("territory_neighborhood", e.target.value)} className="rounded-xl border-border/20" />
+              )}
+              <p className="text-[10px] text-muted-foreground/50">Quanto mais específico, mais fácil virar o dono do lugar 👑</p>
             </div>
           </div>
         )}

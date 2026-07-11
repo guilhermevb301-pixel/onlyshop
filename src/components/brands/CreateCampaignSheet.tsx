@@ -41,6 +41,8 @@ const empty = {
   hasItem: false, physical_item: "",
   slots: "5", reward_amount: "50",
   target_city: "", target_state: "",
+  territory_scope: "cidade" as "rua" | "bairro" | "cidade" | "zona",
+  territory_neighborhood: "", territory_street: "",
   target_gender: "any" as TargetGender,
   min_followers: "0",
   deadline_hours: "168",
@@ -100,6 +102,13 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
         physical_item: isPermuta
           ? (form.physical_item.trim() || null)
           : (form.hasItem ? (form.physical_item.trim() || null) : null),
+        territory_scope: form.territory_scope,
+        territory_name:
+          form.territory_scope === "rua" ? (form.territory_street.trim() || null)
+          : form.territory_scope === "bairro" ? (form.territory_neighborhood.trim() || null)
+          : (form.target_city.trim() || null),
+        territory_neighborhood: form.territory_neighborhood.trim() || null,
+        territory_street: form.territory_street.trim() || null,
       });
       if (!camp) throw new Error("Não foi possível criar a campanha.");
       setCreated(camp);
