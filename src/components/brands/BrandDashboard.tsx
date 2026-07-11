@@ -9,14 +9,16 @@ import { CreateCampaignSheet } from "./CreateCampaignSheet";
 import { RateInfluencerSheet } from "./RateInfluencerSheet";
 import { InfluencerProfileSheet } from "./InfluencerProfileSheet";
 import { useRatings } from "@/hooks/useRatings";
+import { useChat } from "@/hooks/useChat";
+import { useNavigate } from "react-router-dom";
 import {
   Building2, CheckCircle2, Globe, MapPin, Megaphone, Wallet,
-  Users, ExternalLink, CircleCheck, BadgeDollarSign, X, User, Star,
+  Users, ExternalLink, CircleCheck, BadgeDollarSign, X, User, Star, MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  computeBudget, computeSplit, PLATFORM_FEE_PCT, demo,
+  computeBudget, computeSplit, PLATFORM_FEE_PCT, demo, isCampaignChatOpen,
   type CampaignApplication, type CampaignNear,
 } from "@/lib/campaigns";
 
@@ -63,6 +65,18 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
   // Perfil do influencer que aceitou (abre pelo card).
   const [profileApp, setProfileApp] = useState<CampaignApplication | null>(null);
   const fmtFollowers = (n: number) => Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+  // Chat temporário com o influencer (só enquanto a campanha está ativa).
+  const navigate = useNavigate();
+  const { startConversation } = useChat();
+  const openChat = async (a: CampaignApplication) => {
+    try {
+      const cid = await startConversation(a.influencer_user_id);
+      if (cid) navigate(`/chat?c=${cid}`);
+      else toast.error("Não foi possível abrir a conversa");
+    } catch {
+      toast.error("Não foi possível abrir a conversa");
+    }
+  };
 
   const statusOf = (a: CampaignApplication) => overrides[a.id] ?? a.status;
 
@@ -286,6 +300,17 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
                           <p className="text-[10px] text-muted-foreground/40">{isPermuta ? "produto" : "por vídeo"}</p>
                         </div>
                       </div>
+
+                      {/* Chat temporário — só enquanto a campanha está ativa (accepted/delivered) */}
+                      {isCampaignChatOpen(status) && (
+                        <button
+                          type="button"
+                          onClick={() => openChat(a)}
+                          className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary bg-primary/10 ring-1 ring-primary/20 rounded-full px-3 py-1.5 hover:bg-primary/15 transition-colors active:scale-[.98]"
+                        >
+                          <MessageSquare className="h-3 w-3" /> Conversar
+                        </button>
+                      )}
 
                       {/* Comprovações da entrega (um ou mais links) + comentário do influencer */}
                       {proofLinks.length > 0 && (

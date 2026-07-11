@@ -4,16 +4,18 @@ import { useCampaignApplications } from "@/hooks/useCampaignApplications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DeliveryEditor } from "@/components/campaigns/DeliveryEditor";
+import { useChat } from "@/hooks/useChat";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DollarSign, MapPin, Send, CheckCircle, Clock, Hourglass, Pencil,
-  CircleDollarSign, ExternalLink, Sparkles, TrendingUp, ArrowRight, Lock,
+  CircleDollarSign, ExternalLink, Sparkles, TrendingUp, ArrowRight, Lock, MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Link } from "react-router-dom";
-import { demo, demoId, type ApplicationStatus, type CampaignApplication } from "@/lib/campaigns";
+import { Link, useNavigate } from "react-router-dom";
+import { demo, demoId, isCampaignChatOpen, type ApplicationStatus, type CampaignApplication } from "@/lib/campaigns";
 
 // Status que entram na lista "Minhas campanhas" (filtra fora applied/rejected).
 const VISIBLE: ApplicationStatus[] = ["accepted", "delivered", "approved", "paid"];
@@ -107,6 +109,21 @@ export default function Affiliate() {
   // qual candidatura está com o editor de entrega aberto + flag de envio
   const [editorApp, setEditorApp] = useState<string | null>(null);
   const [sending, setSending] = useState<string | null>(null);
+  // Chat temporário com a marca (só enquanto a campanha está ativa).
+  const navigate = useNavigate();
+  const { startConversation } = useChat();
+  const openChatWithBrand = async (a: CampaignApplication) => {
+    try {
+      const { data } = await supabase.from("campaigns" as any).select("brand_id, brands(user_id)").eq("id", a.campaign_id).single();
+      const brandUserId = (data as any)?.brands?.user_id;
+      if (!brandUserId) { toast.error("Não foi possível abrir a conversa"); return; }
+      const cid = await startConversation(brandUserId);
+      if (cid) navigate(`/chat?c=${cid}`);
+      else toast.error("Não foi possível abrir a conversa");
+    } catch {
+      toast.error("Não foi possível abrir a conversa");
+    }
+  };
 
   const campaigns = applications.filter((a) => VISIBLE.includes(a.status));
 
@@ -308,6 +325,17 @@ export default function Affiliate() {
                           {cfg.label}
                         </Badge>
                       </div>
+
+                      {/* Chat temporário com a marca — só enquanto a campanha está ativa */}
+                      {isCampaignChatOpen(a.status) && (
+                        <button
+                          type="button"
+                          onClick={() => openChatWithBrand(a)}
+                          className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary bg-primary/10 ring-1 ring-primary/20 rounded-full px-3 py-1.5 hover:bg-primary/15 transition-colors active:scale-[.98]"
+                        >
+                          <MessageSquare className="h-3 w-3" /> Falar com a marca
+                        </button>
+                      )}
 
                       {/* accepted: botão que abre o editor de entrega */}
                       {a.status === "accepted" && (

@@ -1,16 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useChat } from "@/hooks/useChat";
 import { ConversationList } from "@/components/chat/ConversationList";
 import { ChatView } from "@/components/chat/ChatView";
 import { MessageSquare } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 export default function Chat() {
   const { user } = useAuth();
   const { conversations, loading, startConversation, fetchConversations } = useChat();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+
+  // Abre direto na conversa vinda de /chat?c=<id> (botões de campanha / media-kit).
+  useEffect(() => {
+    const c = searchParams.get("c");
+    if (c) setActiveConversationId(c);
+  }, [searchParams]);
 
   if (!user) {
     return (

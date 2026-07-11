@@ -36,6 +36,7 @@ const PostDetail = lazy(() => import("./pages/PostDetail"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const MediaKit = lazy(() => import("./pages/MediaKit"));
 const Rede = lazy(() => import("./pages/Rede"));
+const Chat = lazy(() => import("./pages/Chat"));
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,7 @@ const App = () => (
                 <Route path="/em-breve" element={<EmBreve />} />
                 <Route path="/comunidade" element={<Feed />} />
                 <Route path="/rede" element={<Rede />} />
+                <Route path="/chat" element={<Chat />} />
                 <Route path="/post/:id" element={<PostDetail />} />
                 <Route path="/u/:username" element={<PublicProfile />} />
               </Route>

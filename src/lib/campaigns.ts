@@ -145,6 +145,13 @@ export function computePermutaBudget(slots: number, fee = PERMUTA_FEE) {
   return { base: 0, fee: total, total };
 }
 
+// Chat temporário (estilo Uber): só fica aberto ENQUANTO a campanha está ativa —
+// da candidatura até a entrega. Depois de aprovada/paga/recusada, fecha. Regra
+// única compartilhada pelos dois lados (marca e influencer) pra não divergir.
+export function isCampaignChatOpen(status?: string) {
+  return status === "accepted" || status === "delivered";
+}
+
 // ---- Geo helper (demo calcula distância sem o banco) ------------------------
 export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
