@@ -3,10 +3,11 @@ import type { Brand, Campaign } from "@/hooks/useBrand";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CampaignCard } from "@/components/campaigns/CampaignCard";
 import { CreateCampaignSheet } from "./CreateCampaignSheet";
 import { RateInfluencerSheet } from "./RateInfluencerSheet";
+import { InfluencerProfileSheet } from "./InfluencerProfileSheet";
 import { useRatings } from "@/hooks/useRatings";
 import {
   Building2, CheckCircle2, Globe, MapPin, Megaphone, Wallet,
@@ -59,6 +60,9 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
   // Avaliação guiada (marca → influencer) após aprovar a entrega.
   const ratings = useRatings();
   const [rateFor, setRateFor] = useState<CampaignApplication | null>(null);
+  // Perfil do influencer que aceitou (abre pelo card).
+  const [profileApp, setProfileApp] = useState<CampaignApplication | null>(null);
+  const fmtFollowers = (n: number) => Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 
   const statusOf = (a: CampaignApplication) => overrides[a.id] ?? a.status;
 
@@ -250,18 +254,31 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
                   >
                     <div className="rounded-[calc(1.5rem-1px)] bg-card/80 backdrop-blur p-3.5 ring-1 ring-white/[0.04] shadow-[var(--shadow-bezel-inset)]">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 ring-1 ring-white/[0.06]">
-                          <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/10 text-muted-foreground">
-                            <User className="h-4 w-4" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate">{a.campaign?.title || "Campanha"}</p>
-                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60">
-                            <StatusBadge status={status} />
-                            {a.distance_km != null && (
-                              <span className="flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{a.distance_km} km</span>
-                            )}
+                        {/* Header clicável → abre o perfil de quem aceitou */}
+                        <div
+                          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer rounded-xl -m-1 p-1 hover:bg-white/[0.03] transition-colors"
+                          role="button" tabIndex={0}
+                          onClick={() => setProfileApp(a)}
+                          onKeyDown={(e) => { if (e.key === "Enter") setProfileApp(a); }}
+                        >
+                          <Avatar className="h-10 w-10 ring-1 ring-white/[0.06] shrink-0">
+                            {a.influencer?.avatar_url ? <AvatarImage src={a.influencer.avatar_url} alt="" /> : null}
+                            <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/10 text-muted-foreground">
+                              {a.influencer?.display_name ? a.influencer.display_name[0]?.toUpperCase() : <User className="h-4 w-4" />}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate">{a.influencer?.display_name || a.influencer?.username || "Influencer"}</p>
+                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60">
+                              <StatusBadge status={status} />
+                              {a.influencer?.followers_count != null && (
+                                <span className="flex items-center gap-0.5"><Users className="h-2.5 w-2.5" />{fmtFollowers(a.influencer.followers_count)}</span>
+                              )}
+                              {a.distance_km != null && (
+                                <span className="flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{a.distance_km} km</span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground/40 truncate">{a.campaign?.title || "Campanha"}</p>
                           </div>
                         </div>
                         <div className="text-right shrink-0">
@@ -371,6 +388,15 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
           ratedUserId={rateFor.influencer_user_id}
           influencerName={(rateFor as any).influencer?.display_name || undefined}
           onDone={() => ratings.refresh()}
+        />
+      )}
+
+      {/* Perfil do influencer que aceitou (read-only) */}
+      {profileApp && (
+        <InfluencerProfileSheet
+          application={profileApp}
+          open={!!profileApp}
+          onOpenChange={(o) => { if (!o) setProfileApp(null); }}
         />
       )}
     </div>

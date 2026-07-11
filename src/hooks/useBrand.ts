@@ -114,7 +114,25 @@ export function useBrand() {
         .select("*")
         .in("campaign_id", campaignIds)
         .order("created_at", { ascending: false });
-      setApplications(((data as unknown as CampaignApplication[]) || []));
+      const apps = ((data as any[]) || []);
+      // Enriquece com o perfil de quem aceitou (N+1 — NÃO há FK pra embed PostgREST).
+      // try/catch DEDICADO: se a query de profiles falhar, a lista de candidaturas
+      // NÃO some (degrada pra "sem perfil"), preservando aprovar/recusar.
+      try {
+        const ids = [...new Set(apps.map((a) => a.influencer_user_id).filter(Boolean))];
+        if (ids.length) {
+          const { data: profs } = await supabase
+            .from("profiles")
+            .select("user_id, username, display_name, avatar_url, bio, city, state, niches, followers_count, website, xp, level")
+            .in("user_id", ids);
+          const pmap = new Map(((profs as any[]) || []).map((p) => [p.user_id, p]));
+          setApplications(apps.map((a) => ({ ...a, influencer: pmap.get(a.influencer_user_id) })) as unknown as CampaignApplication[]);
+          return;
+        }
+      } catch (e) {
+        console.error("enrich applications:", e); // degrada graciosamente
+      }
+      setApplications(apps as unknown as CampaignApplication[]);
     } catch {
       setApplications([]);
     }

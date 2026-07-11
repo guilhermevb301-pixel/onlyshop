@@ -72,6 +72,23 @@ export interface CampaignApplication {
   updated_at: string;
   // enriquecido no front (demo): dados da campanha pra exibir na lista
   campaign?: Partial<CampaignNear>;
+  // enriquecido no lado da MARCA (N+1): perfil de quem aceitou a campanha
+  influencer?: {
+    user_id: string;
+    username?: string | null;
+    display_name?: string | null;
+    avatar_url?: string | null;
+    bio?: string | null;
+    city?: string | null;
+    state?: string | null;
+    niches?: string[] | null;
+    followers_count?: number | null;
+    website?: string | null;
+    instagram_username?: string | null;
+    tiktok_username?: string | null;
+    xp?: number | null;
+    level?: number | null;
+  };
 }
 
 export interface PlatformCredit {
