@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { setStoredRef } from "@/lib/referral";
+import { getLevelInfo } from "@/hooks/useGamification";
 import { Button } from "@/components/ui/button";
 import { Loader2, MapPin, Star, ArrowRight, Sparkles, BadgeCheck } from "lucide-react";
 
@@ -24,6 +25,7 @@ export default function MediaKit() {
   const { code } = useParams();
   const [kit, setKit] = useState<Kit | null>(null);
   const [rating, setRating] = useState<{ avg: number; count: number } | null>(null);
+  const [xp, setXp] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,6 +42,9 @@ export default function MediaKit() {
           const { data: r } = await supabase.from("ratings").select("stars").eq("rated_user_id", (data as any).user_id);
           const arr = ((r as any[]) || []);
           if (arr.length) setRating({ avg: arr.reduce((s, x) => s + Number(x.stars), 0) / arr.length, count: arr.length });
+          // Nível real (user_levels) — profiles.level é coluna morta (sempre 1).
+          const { data: lvl } = await supabase.from("user_levels" as any).select("total_xp").eq("user_id", (data as any).user_id).maybeSingle();
+          setXp(Number((lvl as any)?.total_xp ?? 0));
         }
       } finally {
         setLoading(false);
@@ -100,7 +105,7 @@ export default function MediaKit() {
                 </span>
               )}
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 ring-1 ring-primary/20 px-3 py-1 text-xs text-primary">
-                Nível {kit?.level ?? 1}
+                {getLevelInfo(xp).emoji} {getLevelInfo(xp).label}
               </span>
               {rating && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.05] ring-1 ring-white/10 px-3 py-1 text-xs text-white/80">

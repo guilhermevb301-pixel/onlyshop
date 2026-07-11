@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DeliveryEditor } from "@/components/campaigns/DeliveryEditor";
 import { useChat } from "@/hooks/useChat";
+import { useMyLevel } from "@/hooks/useMyLevel";
+import { LevelBadge } from "@/components/gamification/LevelBadge";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DollarSign, MapPin, Send, CheckCircle, Clock, Hourglass, Pencil,
@@ -104,6 +106,7 @@ seedDemoApplications();
 export default function Affiliate() {
   const { user } = useAuth();
   const { applications, balance, loading, submitDelivery, computeSplit } = useCampaignApplications();
+  const { totalXp, loading: xpLoading } = useMyLevel();
   void user;
 
   // qual candidatura está com o editor de entrega aberto + flag de envio
@@ -188,6 +191,13 @@ export default function Affiliate() {
         <p className="text-xs text-muted-foreground/60 mt-0.5">
           Suas campanhas e o que você já faturou
         </p>
+        <div className="mt-3">
+          {xpLoading ? (
+            <div className="h-7 w-40 rounded-full bg-muted/20 animate-pulse" />
+          ) : (
+            <LevelBadge totalXp={totalXp} showBar />
+          )}
+        </div>
       </header>
 
       {/* Balance Card — herói double-bezel, dinheiro em cyan */}

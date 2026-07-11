@@ -18,6 +18,8 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useMyLevel } from "@/hooks/useMyLevel";
+import { LevelBadge } from "@/components/gamification/LevelBadge";
 import {
   demo, computeSplit, computeBudget,
   type CampaignApplication, type Campaign,
@@ -78,6 +80,7 @@ export default function Profile() {
   const role = userRole?.role || "viewer";
   const isBrand = role === "brand";
   const isViewer = role === "viewer";
+  const { totalXp: myXp } = useMyLevel();
 
   useEffect(() => {
     if (user) fetchMetrics();
@@ -343,6 +346,9 @@ export default function Profile() {
                     ) : profile?.bio ? (
                       <p className="text-sm leading-relaxed text-foreground/80">{profile.bio}</p>
                     ) : null}
+                    {!isBrand && !isViewer && (
+                      <div className="pt-0.5"><LevelBadge totalXp={myXp} showBar /></div>
+                    )}
                     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50">
                       <Calendar className="h-3 w-3" />
                       Entrou {formatDistanceToNow(new Date(user.created_at), { addSuffix: true, locale: ptBR })}

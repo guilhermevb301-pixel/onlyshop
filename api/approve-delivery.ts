@@ -91,6 +91,24 @@ export default async function handler(req: any, res: any) {
         }]),
       });
     }
+
+    // 6) XP pro influencer (entrega aprovada). BEST-EFFORT — try/catch isolado,
+    // roda DEPOIS do ledger/status já persistidos e NUNCA altera o 200 do pagamento.
+    // Vale pra paga e permuta (a aprovação sempre acontece acima).
+    try {
+      await sb("rpc/add_gamification_points", {
+        method: "POST",
+        body: JSON.stringify({
+          _user_id: app.influencer_user_id,
+          _action: "campaign_approved",
+          _points: 80,
+          _metadata: { application_id: applicationId, campaign_id: app.campaign_id },
+        }),
+      });
+    } catch (xpErr) {
+      console.error("xp grant failed (non-fatal):", xpErr);
+    }
+
     return res.status(200).json({ ok: true, influencer_share: influencerShare });
   } catch (e) {
     console.error("approve-delivery:", e);

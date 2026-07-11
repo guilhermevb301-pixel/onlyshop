@@ -17,6 +17,7 @@ const POINT_VALUES: Record<string, number> = {
   video_published: 50,
   first_sale: 500,
   live_done: 200,
+  campaign_approved: 80, // XP quando a marca APROVA a entrega (amarrado ao dinheiro real)
 };
 
 export const LEVELS = [
