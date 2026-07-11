@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { LocationNichesCard } from "@/components/profile/LocationNichesCard";
 import { ConnectTikTok } from "@/components/tiktok/ConnectTikTok";
+import { SocialLinksCard } from "@/components/profile/SocialLinksCard";
 
 // Demo detection — espelha o DEMO_FLAG/DEMO_EMAIL do useAuth.
 // No modo demo (login localStorage, sem backend) qualquer chamada real ao
@@ -181,6 +182,8 @@ export default function Settings() {
       >
         <ConnectTikTok />
       </SettingsCard>
+
+      <SocialLinksCard delay={140} />
 
       {/* Security */}
       <SettingsCard

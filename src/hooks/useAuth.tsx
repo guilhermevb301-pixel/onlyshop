@@ -14,6 +14,9 @@ interface Profile {
   bio: string | null;
   referral_code?: string | null;
   referred_by?: string | null;
+  instagram_username?: string | null;
+  tiktok_username?: string | null;
+  website?: string | null;
 }
 
 interface UserRole {

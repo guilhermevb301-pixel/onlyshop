@@ -123,7 +123,7 @@ export function useBrand() {
         if (ids.length) {
           const { data: profs } = await supabase
             .from("profiles")
-            .select("user_id, username, display_name, avatar_url, bio, city, state, niches, followers_count, website, xp, level")
+            .select("user_id, username, display_name, avatar_url, bio, city, state, niches, followers_count, website, instagram_username, tiktok_username, xp, level")
             .in("user_id", ids);
           const pmap = new Map(((profs as any[]) || []).map((p) => [p.user_id, p]));
           setApplications(apps.map((a) => ({ ...a, influencer: pmap.get(a.influencer_user_id) })) as unknown as CampaignApplication[]);
