@@ -52,6 +52,19 @@ function toEmbedUrl(url: string): string | null {
   } catch { return null; }
 }
 
+// Valida que é uma URL http(s) REAL (não só startsWith('http')) antes de virar href.
+function safeUrl(u: string | null | undefined): string | null {
+  if (!u) return null;
+  const s = u.trim();
+  const withProto = /^https?:\/\//i.test(s) ? s : `https://${s}`;
+  try {
+    const url = new URL(withProto);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 // Página pública de "media-kit / assessoria" — o link que o creator/embaixador põe
 // na bio (onlyshopbrasil.com.br/i/CODIGO). Mostra o perfil dele + CTA. Quem se
 // cadastra a partir daqui entra na REDE dele (referral).
@@ -111,7 +124,7 @@ export default function MediaKit() {
     kit.tiktok_username && { icon: Music2, label: "TikTok", url: `https://tiktok.com/@${kit.tiktok_username.replace(/^@/, "")}` },
     kit.youtube_username && { icon: Youtube, label: "YouTube", url: `https://youtube.com/@${kit.youtube_username.replace(/^@/, "")}` },
     kit.whatsapp && { icon: MessageCircle, label: "WhatsApp", url: `https://wa.me/${kit.whatsapp.replace(/\D/g, "")}` },
-    kit.website && { icon: Globe, label: "Site", url: kit.website.startsWith("http") ? kit.website : `https://${kit.website}` },
+    (kit.website && safeUrl(kit.website)) ? { icon: Globe, label: "Site", url: safeUrl(kit.website) as string } : null,
   ] : []).filter(Boolean) as { icon: typeof Instagram; label: string; url: string }[];
 
   // "Me contrate": logado → abre chat com o creator; deslogado → cadastro (entra na rede dele).
@@ -217,18 +230,18 @@ export default function MediaKit() {
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 font-semibold flex items-center gap-1.5 mb-2"><Briefcase className="h-3 w-3" /> Trabalhos</p>
             <div className="space-y-2">
               {portfolio.slice(0, 6).map((p) => {
-                const link = p.proofs?.links?.[0];
+                const href = safeUrl(p.proofs?.links?.[0]);
                 const inner = (
                   <div className="flex items-center gap-2 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold truncate">{p.campaign_title || "Campanha"}</p>
                       <p className="text-[11px] text-muted-foreground/60 truncate">{p.brand_name || "Marca"}</p>
                     </div>
-                    {link && <ExternalLink className="h-3.5 w-3.5 text-accent shrink-0" />}
+                    {href && <ExternalLink className="h-3.5 w-3.5 text-accent shrink-0" />}
                   </div>
                 );
-                return link
-                  ? <a key={p.application_id} href={link.startsWith("http") ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{inner}</a>
+                return href
+                  ? <a key={p.application_id} href={href} target="_blank" rel="noopener noreferrer">{inner}</a>
                   : <div key={p.application_id}>{inner}</div>;
               })}
             </div>

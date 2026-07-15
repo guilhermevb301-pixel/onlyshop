@@ -7,7 +7,7 @@ import {
 
 // Candidaturas do influencer + saldo. Demo grava em localStorage; real no Supabase.
 export function useCampaignApplications() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [applications, setApplications] = useState<CampaignApplication[]>([]);
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -76,6 +76,9 @@ export function useCampaignApplications() {
 
   // Influencer aceita/candidata a uma campanha.
   const apply = useCallback(async (c: CampaignNear): Promise<boolean> => {
+    // Marca não aceita campanha (só cria) — a RLS já barra no banco; isto evita
+    // o request e dá feedback caso a UI seja driblada.
+    if (userRole?.role === "brand") return false;
     const now = new Date().toISOString();
     const app: CampaignApplication = {
       id: demoId("app"),
@@ -98,7 +101,7 @@ export function useCampaignApplications() {
     } catch {
       return false; // erro real → não finge que aceitou
     }
-  }, [user, refresh]);
+  }, [user, userRole, refresh]);
 
   // Influencer envia/edita a entrega: vários links de comprovação + comentário.
   // Editável até a marca aprovar (postou errado, vídeo flopou → repostar/trocar).
