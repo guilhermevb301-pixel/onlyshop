@@ -25,6 +25,7 @@ const INFLUENCER_NAV: Item[] = [
 ];
 const BRAND_NAV: Item[] = [
   { to: "/brands", icon: Megaphone, label: "Minhas campanhas", accent: true },
+  { to: "/mapa", icon: MapPin, label: "Mapa", accent: true },
   { to: "/rede", icon: Network, label: "Minha rede", accent: true },
   { to: "/wallet", icon: Wallet, label: "Carteira" },
   { to: "/comunidade", icon: Users2, label: "Comunidade" },

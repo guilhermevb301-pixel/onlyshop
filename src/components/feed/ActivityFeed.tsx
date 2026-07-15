@@ -1,28 +1,10 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Trophy, TrendingUp, Crown, UserPlus, Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import type { ActivityEvent } from "@/hooks/useActivity";
-
-const ICON: Record<string, { icon: typeof Trophy; color: string }> = {
-  campaign_done: { icon: Trophy, color: "text-accent" },
-  xp_levelup: { icon: TrendingUp, color: "text-primary" },
-  street_owner: { icon: Crown, color: "text-warning" },
-  new_signup: { icon: UserPlus, color: "text-accent" },
-};
-
-function textFor(e: ActivityEvent): string {
-  const who = e.actor?.display_name || (e.actor?.username ? `@${e.actor.username}` : "Alguém");
-  const local = e.city ? ` em ${e.city}` : "";
-  switch (e.type) {
-    case "campaign_done": return `${who} fez uma campanha${local} 🎬`;
-    case "xp_levelup": return `${who} subiu pra ${e.metadata?.to || "um novo nível"} 🚀`;
-    case "street_owner": return `${who} virou dono de ${e.metadata?.name || "um território"} 👑`;
-    case "new_signup": return `${who} entrou no OnlyShop 👋`;
-    default: return `${who} fez algo novo`;
-  }
-}
+import { activityIcon, activityText } from "@/lib/activity-text";
 
 export function ActivityFeed({ events, loading }: { events: ActivityEvent[]; loading: boolean }) {
   if (loading && events.length === 0) {
@@ -44,7 +26,7 @@ export function ActivityFeed({ events, loading }: { events: ActivityEvent[]; loa
   return (
     <div className="space-y-2.5">
       {events.map((e) => {
-        const cfg = ICON[e.type] || { icon: Sparkles, color: "text-muted-foreground" };
+        const cfg = activityIcon(e.type);
         const Icon = cfg.icon;
         const name = e.actor?.display_name || e.actor?.username || "?";
         return (
@@ -55,7 +37,7 @@ export function ActivityFeed({ events, loading }: { events: ActivityEvent[]; loa
                 <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/10 text-xs font-bold">{name[0]?.toUpperCase() || "?"}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-white/85 leading-snug">{textFor(e)}</p>
+                <p className="text-xs text-white/85 leading-snug">{activityText(e)}</p>
                 <p className="text-[10px] text-muted-foreground/45 mt-0.5">{formatDistanceToNow(new Date(e.created_at), { addSuffix: true, locale: ptBR })}</p>
               </div>
               <span className={cn("h-8 w-8 rounded-full grid place-items-center bg-white/[0.04] ring-1 ring-white/[0.06] shrink-0", cfg.color)}>

@@ -6,14 +6,17 @@ import { useCampaignsNear } from "@/hooks/useCampaignsNear";
 import { CampaignCard } from "@/components/campaigns/CampaignCard";
 import { SocialProofBar } from "@/components/map/SocialProofBar";
 import { TerritoryOwnerBar } from "@/components/map/TerritoryOwnerBar";
+import { MapActivityTicker } from "@/components/map/MapActivityTicker";
 import { useTerritories } from "@/hooks/useTerritories";
 import { CampaignSheet } from "@/components/map/CampaignSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Map as MapIcon, List, Loader2, Navigation, Compass, ArrowRight, Sparkles } from "lucide-react";
+import { MapPin, Map as MapIcon, List, Loader2, Navigation, Compass, ArrowRight, Sparkles, Clock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CampaignNear } from "@/lib/campaigns";
+import { getCurrentLocation, setCurrentLocation, getLocationHistory, removeFromHistory, locationKey, type LocationHistoryItem } from "@/lib/locationHistory";
+import { HelpTip } from "@/components/ui/help-tip";
 
 // Leaflet acessa window e é pesado → carrega só quando o mapa aparece.
 const CampaignMap = lazy(() => import("@/components/map/CampaignMap"));
@@ -24,19 +27,9 @@ export default function Mapa() {
   const { user, loading: authLoading } = useAuth();
   const { loading: geoLoading, requestBrowserLocation, reverseGeocode, forwardGeocode } = useGeolocation();
 
-  // Reaproveita a localização salva no onboarding (não pede de novo).
-  const [loc, setLoc] = useState<GeoLocation | null>(() => {
-    try {
-      const raw = localStorage.getItem("onlyshop_demo_location");
-      if (raw) {
-        const d = JSON.parse(raw);
-        if (d?.lat != null && d?.lon != null) {
-          return { latitude: d.lat, longitude: d.lon, city: d.city ?? undefined, state: d.state ?? undefined };
-        }
-      }
-    } catch { /* ignora */ }
-    return null;
-  });
+  // Reaproveita a última localização (persiste no reload — antes só ficava em memória).
+  const [loc, setLoc] = useState<GeoLocation | null>(() => (getCurrentLocation() as GeoLocation | null));
+  const [history, setHistory] = useState<LocationHistoryItem[]>(() => getLocationHistory());
   const [view, setView] = useState<View>("map");
   const [selected, setSelected] = useState<CampaignNear | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -56,6 +49,16 @@ export default function Mapa() {
   }
   if (!user) return <Navigate to="/auth" replace />;
 
+  // Aplica uma localização: memória + persiste (slot atual + histórico).
+  const applyLoc = (geo: GeoLocation) => {
+    setLoc(geo);
+    setCurrentLocation(geo);
+    setHistory(getLocationHistory());
+  };
+  const pickLocation = (item: LocationHistoryItem) =>
+    applyLoc({ latitude: item.latitude, longitude: item.longitude, city: item.city, state: item.state });
+  const removeLocation = (key: string) => { removeFromHistory(key); setHistory(getLocationHistory()); };
+
   // GPS do navegador.
   const detectGps = async () => {
     setResolving(true);
@@ -63,7 +66,7 @@ export default function Mapa() {
       const geo = await requestBrowserLocation();
       if (geo) {
         const addr = await reverseGeocode(geo.latitude, geo.longitude);
-        setLoc({ ...geo, ...addr });
+        applyLoc({ ...geo, ...addr });
       }
     } finally {
       setResolving(false);
@@ -76,7 +79,7 @@ export default function Mapa() {
     setResolving(true);
     try {
       const geo = await forwardGeocode(city.trim(), stateUf.trim() || undefined);
-      if (geo) setLoc(geo);
+      if (geo) applyLoc(geo);
     } finally {
       setResolving(false);
     }
@@ -106,6 +109,9 @@ export default function Mapa() {
           stateUf={stateUf}
           setStateUf={setStateUf}
           loading={resolving || geoLoading}
+          history={history}
+          onPick={pickLocation}
+          onRemove={removeLocation}
         />
       </div>
     );
@@ -122,7 +128,7 @@ export default function Mapa() {
             <Compass className="h-5 w-5 text-primary-foreground" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg font-bold tracking-tight leading-none">Perto de você</h1>
+            <h1 className="text-lg font-bold tracking-tight leading-none flex items-center gap-1.5">Perto de você <HelpTip id="mapa.home" side="bottom" /></h1>
             <p className="text-xs text-muted-foreground/60 truncate mt-1 flex items-center gap-1">
               <MapPin className="h-3 w-3" />
               {loc.city ? `${loc.city}${loc.state ? `, ${loc.state}` : ""}` : "Sua região"}
@@ -145,6 +151,7 @@ export default function Mapa() {
           {territories.length > 0 && (
             <div className="mt-3"><TerritoryOwnerBar territories={territories} /></div>
           )}
+          <div className="mt-3"><MapActivityTicker /></div>
 
           {view === "map" ? (
             <div
@@ -326,7 +333,7 @@ function MapLoadingSkeleton({ view }: { view: View }) {
 }
 
 function LocationPrompt({
-  onDetect, onCity, city, setCity, stateUf, setStateUf, loading,
+  onDetect, onCity, city, setCity, stateUf, setStateUf, loading, history, onPick, onRemove,
 }: {
   onDetect: () => void;
   onCity: () => void;
@@ -335,6 +342,9 @@ function LocationPrompt({
   stateUf: string;
   setStateUf: (v: string) => void;
   loading: boolean;
+  history: LocationHistoryItem[];
+  onPick: (item: LocationHistoryItem) => void;
+  onRemove: (key: string) => void;
 }) {
   return (
     // double-bezel: casca com gradiente de borda + núcleo OLED
@@ -365,6 +375,27 @@ function LocationPrompt({
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
             Usar minha localização
           </Button>
+
+          {/* Locais recentes (estilo Uber) */}
+          {history.length > 0 && (
+            <div className="mt-4 space-y-1.5 text-left">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/40 flex items-center gap-1.5"><Clock className="h-3 w-3" /> Recentes</p>
+              {history.map((h) => {
+                const k = locationKey(h);
+                return (
+                  <div key={k} className="flex items-center gap-2 rounded-xl bg-white/[0.04] ring-1 ring-white/[0.06] px-3 py-2">
+                    <button type="button" onClick={() => onPick(h)} className="flex items-center gap-2 flex-1 min-w-0 text-left active:scale-[.99] transition-transform">
+                      <MapPin className="h-3.5 w-3.5 text-accent shrink-0" />
+                      <span className="text-xs truncate">{h.city ? `${h.city}${h.state ? `, ${h.state}` : ""}` : "Localização salva"}</span>
+                    </button>
+                    <button type="button" onClick={() => onRemove(k)} aria-label="Remover local" className="text-muted-foreground/40 hover:text-destructive shrink-0 p-1">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <div className="flex items-center gap-3 my-5">
             <div className="h-px flex-1 bg-white/10" />

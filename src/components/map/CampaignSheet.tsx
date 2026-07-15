@@ -8,6 +8,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCampaignApplications } from "@/hooks/useCampaignApplications";
+import { useAuth } from "@/hooks/useAuth";
 import { computeSplit } from "@/lib/campaigns";
 import type { CampaignNear } from "@/lib/campaigns";
 
@@ -23,6 +24,8 @@ const brl = (n: number) =>
 // Bottom-sheet de detalhe da campanha + ação de aceitar (candidatar).
 export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetProps) {
   const { apply } = useCampaignApplications();
+  const { userRole } = useAuth();
+  const isBrand = userRole?.role === "brand"; // marca não aceita campanha (só cria)
   const [loading, setLoading] = useState(false);
   const [accepted, setAccepted] = useState(false);
   // Briefing/exigências não vêm no campaigns_near — busca ao abrir a campanha.
@@ -153,7 +156,11 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
 
         {/* CTA */}
         <div className="animate-slide-up opacity-0" style={step(4)}>
-          {accepted ? (
+          {isBrand ? (
+            <div className="mt-5 rounded-2xl bg-white/[0.04] ring-1 ring-white/[0.08] py-3 px-4 text-center text-xs text-muted-foreground/70">
+              Você é uma <span className="font-semibold text-foreground">marca</span> — dá pra ver quem está por perto, mas quem aceita campanha é o influencer. Crie as suas em <span className="text-primary font-semibold">Minhas campanhas</span>.
+            </div>
+          ) : accepted ? (
             <div className="mt-5 rounded-full bg-accent/10 ring-1 ring-accent/30 py-3 flex items-center justify-center gap-2 text-sm font-semibold text-accent">
               <CheckCircle2 className="h-4 w-4" /> Você topou esta campanha
             </div>

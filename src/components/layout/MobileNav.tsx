@@ -15,7 +15,7 @@ const INFLUENCER: NavItem[] = [
 ];
 const BRAND: NavItem[] = [
   { href: "/brands", icon: Megaphone, label: "Campanhas" },
-  { href: "/brands", icon: Megaphone, label: "", isAction: true },
+  { href: "/mapa", icon: MapPin, label: "", isAction: true },
   { href: "/rede", icon: Network, label: "Rede" },
   { href: "/wallet", icon: Wallet, label: "Carteira" },
   { href: "/profile", icon: User, label: "Perfil" },

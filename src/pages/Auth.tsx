@@ -46,7 +46,8 @@ export default function Auth() {
   // Redirect pós-login: 1º acesso vai pro onboarding; depois, pro destino do papel.
   if (user) {
     if (needsOnboarding) return <Navigate to="/onboarding" replace />;
-    const target = userRole?.role === "brand" ? "/brands" : "/inicio";
+    // Home do influencer = o MAPA (pedido do Biel: o mapa é o core pra onde volta).
+    const target = userRole?.role === "brand" ? "/brands" : "/mapa";
     return <Navigate to={target} replace />;
   }
 

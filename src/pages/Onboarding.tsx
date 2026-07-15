@@ -50,7 +50,7 @@ export default function Onboarding() {
   const [storeName, setStoreName] = useState("");
 
   const dest = useMemo(
-    () => (pickedRole === "brand" ? "/brands" : "/inicio"),
+    () => (pickedRole === "brand" ? "/brands" : "/mapa"),
     [pickedRole]
   );
 
@@ -58,7 +58,7 @@ export default function Onboarding() {
   if (!authLoading && !user) return <Navigate to="/auth" replace />;
   // Já passou pelo onboarding -> vai pro destino do papel.
   if (!authLoading && user && !needsOnboarding) {
-    return <Navigate to={role === "brand" ? "/brands" : "/inicio"} replace />;
+    return <Navigate to={role === "brand" ? "/brands" : "/mapa"} replace />;
   }
 
   const toggleNiche = (n: string) =>
