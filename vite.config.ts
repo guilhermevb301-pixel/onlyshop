@@ -50,7 +50,18 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Atualização INSTANTÂNEA: o SW novo assume na hora e limpa o cache antigo,
+        // senão o usuário fica vendo a versão velha do app após cada deploy.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
+          {
+            // HTML sempre fresco (rede primeiro) → sempre pega o último bundle.
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: { cacheName: "html-cache", networkTimeoutSeconds: 3 },
+          },
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
             handler: "NetworkFirst",
