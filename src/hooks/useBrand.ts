@@ -23,6 +23,7 @@ export interface Brand {
   verified: boolean;
   status: string;
   created_at: string;
+  team_invite_code?: string | null; // Fase 2: link de convite do time
 }
 
 // Re-exporta o contrato canônico — quem importa Campaign daqui pega o mesmo de @/lib/campaigns.

@@ -22,6 +22,7 @@ const Install = lazy(() => import("./pages/Install"));
 const Admin = lazy(() => import("./pages/Admin"));
 const BrandArea = lazy(() => import("./pages/BrandArea"));
 const BrandTeam = lazy(() => import("./pages/BrandTeam"));
+const TeamJoin = lazy(() => import("./pages/TeamJoin"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -68,6 +69,7 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/r/:code" element={<RedirectLink />} />
               <Route path="/i/:code" element={<MediaKit />} />
+              <Route path="/time/entrar/:code" element={<TeamJoin />} />
 
               {/* App routes with layout */}
               <Route element={<AppLayout />}>

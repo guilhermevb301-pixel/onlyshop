@@ -1,8 +1,11 @@
 import { useBrand } from "@/hooks/useBrand";
 import { useAuth } from "@/hooks/useAuth";
 import { useBrandTeam } from "@/hooks/useBrandTeam";
+import { useTeamRewards } from "@/hooks/useTeamRewards";
 import { BrandRegistration } from "@/components/brands/BrandRegistration";
 import { BrandTeamDashboard } from "@/components/brands/BrandTeamDashboard";
+import { RewardsSection } from "@/components/brands/RewardsSection";
+import { TeamInviteCard } from "@/components/brands/TeamInviteCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -13,6 +16,7 @@ export default function BrandTeam() {
   const { user, loading: authLoading } = useAuth();
   const { brand, campaigns, loading, createBrand, refetch } = useBrand();
   const { members, loading: teamLoading } = useBrandTeam(brand?.id ?? null, campaigns);
+  const { rewards, create, setStatus } = useTeamRewards(brand?.id ?? null);
 
   if (authLoading || loading) {
     return (
@@ -48,5 +52,13 @@ export default function BrandTeam() {
     return <BrandRegistration onRegister={createBrand} onDone={refetch} />;
   }
 
-  return <BrandTeamDashboard brand={brand} members={members} loading={teamLoading} />;
+  return (
+    <BrandTeamDashboard
+      brand={brand}
+      members={members}
+      loading={teamLoading}
+      extraTop={<RewardsSection rewards={rewards} onCreate={create} onCancel={(id) => setStatus(id, "cancelled")} />}
+      extraBottom={<TeamInviteCard code={brand.team_invite_code} />}
+    />
+  );
 }
