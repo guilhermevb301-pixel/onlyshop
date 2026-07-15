@@ -158,16 +158,19 @@
   .glow-primary { box-shadow: var(--shadow-glow); }
   .glow-accent { box-shadow: var(--shadow-glow-accent); }
 
+  /* Barras fixas (nav/header): SEM backdrop-blur — em elemento fixo o desfoque
+     recomputa a cada frame do scroll e trava no celular. Fundo quase opaco
+     (95%) dá o mesmo visual de barra sólida, custo ~zero. */
   .glass {
-    @apply bg-background/70 backdrop-blur-2xl border border-border/30;
+    @apply bg-background/90 border border-border/30;
   }
 
   .dark .glass {
-    @apply bg-white/[0.04] backdrop-blur-2xl border border-white/[0.08];
+    @apply bg-[#0d0d11]/95 border border-white/[0.08];
   }
 
   .glass-dark {
-    @apply bg-background/40 backdrop-blur-3xl border border-white/5;
+    @apply bg-background/85 border border-white/5;
   }
 
   .text-gradient-primary {
@@ -266,4 +269,17 @@
   .hide-scrollbar::-webkit-scrollbar { display: none; }
 
   .touch-pan-y { touch-action: pan-y; }
+}
+
+/* ===========================================================================
+   PERFORMANCE MOBILE: desliga backdrop-blur no celular. backdrop-filter é o
+   maior causador de jank de scroll na GPU de celular (recomputa o desfoque do
+   fundo a cada frame). Os elementos que usavam blur já têm fundo opaco o
+   suficiente pra ficarem bons sem ele. No desktop (lg+, >=1024px) o blur fica.
+   =========================================================================== */
+@media (max-width: 1023px) {
+  [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
 }
