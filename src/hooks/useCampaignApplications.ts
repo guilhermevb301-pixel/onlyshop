@@ -20,24 +20,44 @@ export function useCampaignApplications() {
         setBalance(0);
         return;
       }
-      // Traz também os dados da campanha (nome, valor, marca) — senão "Meus ganhos"
-      // mostra "Campanha" genérica e R$ 0,00.
       const { data } = await supabase
         .from("campaign_applications" as any)
-        .select("*, campaigns(name, reward_amount, reward_type, physical_item, brand_id, brands(name))")
+        .select("*")
         .eq("influencer_user_id", user.id)
         .order("created_at", { ascending: false });
-      const mapped = ((data as any[]) || []).map((a) => ({
-        ...a,
-        campaign: {
-          title: a.campaigns?.name ?? null,
-          reward_amount: Number(a.campaigns?.reward_amount ?? 0),
-          reward_type: a.campaigns?.reward_type ?? "per_video",
-          physical_item: a.campaigns?.physical_item ?? null,
-          brand_name: a.campaigns?.brands?.name ?? null,
-          distance_km: a.distance_km ?? null,
-        },
-      }));
+      const apps = ((data as any[]) || []);
+      // Enriquece via N+1 (NÃO embed): o embed campaigns(...) retorna NULL pro
+      // influencer (só service_role resolve) → era o bug "Campanha / R$ 0,00" em
+      // Meus ganhos. A leitura direta de campaigns é pública, então funciona.
+      const cids = [...new Set(apps.map((a) => a.campaign_id).filter(Boolean))];
+      const cmap = new Map<string, any>();
+      if (cids.length) {
+        const { data: camps } = await supabase
+          .from("campaigns" as any)
+          .select("id, name, reward_amount, reward_type, physical_item, brand_id")
+          .in("id", cids);
+        const bids = [...new Set(((camps as any[]) || []).map((c) => c.brand_id).filter(Boolean))];
+        const bmap = new Map<string, string>();
+        if (bids.length) {
+          const { data: brs } = await supabase.from("brands" as any).select("id, name").in("id", bids);
+          ((brs as any[]) || []).forEach((b) => bmap.set(b.id, b.name));
+        }
+        ((camps as any[]) || []).forEach((c) => cmap.set(c.id, { ...c, brand_name: bmap.get(c.brand_id) ?? null }));
+      }
+      const mapped = apps.map((a) => {
+        const c = cmap.get(a.campaign_id);
+        return {
+          ...a,
+          campaign: {
+            title: c?.name ?? null,
+            reward_amount: Number(c?.reward_amount ?? 0),
+            reward_type: c?.reward_type ?? "per_video",
+            physical_item: c?.physical_item ?? null,
+            brand_name: c?.brand_name ?? null,
+            distance_km: a.distance_km ?? null,
+          },
+        };
+      });
       setApplications(mapped as unknown as CampaignApplication[]);
       const { data: credits } = await supabase
         .from("platform_credits" as any)
