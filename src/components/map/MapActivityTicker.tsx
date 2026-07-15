@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useActivity } from "@/hooks/useActivity";
 import { activityIcon, activityText } from "@/lib/activity-text";
 import { cn } from "@/lib/utils";
@@ -20,11 +21,19 @@ export function MapActivityTicker() {
           {recent.map((e) => {
             const cfg = activityIcon(e.type);
             const Icon = cfg.icon;
-            return (
-              <div key={e.id} className="flex items-center gap-2 text-[11px]">
+            const uname = e.actor?.username;
+            const inner = (
+              <>
                 <Icon className={cn("h-3 w-3 shrink-0", cfg.color)} />
-                <span className="text-white/75 truncate">{activityText(e)}</span>
-              </div>
+                <span className="truncate">{activityText(e)}</span>
+              </>
+            );
+            return uname ? (
+              <Link key={e.id} to={`/u/${uname}`} className="flex items-center gap-2 text-[11px] text-white/75 hover:text-accent transition-colors">
+                {inner}
+              </Link>
+            ) : (
+              <div key={e.id} className="flex items-center gap-2 text-[11px] text-white/75">{inner}</div>
             );
           })}
         </div>

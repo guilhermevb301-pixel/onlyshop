@@ -111,6 +111,8 @@ export interface CampaignApplication {
     website?: string | null;
     instagram_username?: string | null;
     tiktok_username?: string | null;
+    youtube_username?: string | null;
+    whatsapp?: string | null;
     xp?: number | null;
     level?: number | null;
   };

@@ -188,11 +188,11 @@ const steps = [
 
 const faqs = [
   { q: "Preciso ter muitos seguidores?", a: "Não. As campanhas são por entrega de vídeo, não por número de seguidores. Se você grava um vídeo honesto do produto, você pode pegar a vaga." },
-  { q: "Quanto custa pra usar?", a: "Pro creator é grátis — você só ganha. O lojista paga o prêmio das vagas que abrir + 20% de taxa da plataforma. Sem mensalidade pra ninguém." },
+  { q: "Quanto custa pra usar?", a: "Pro creator é grátis, você só ganha. O lojista paga o prêmio das vagas que abrir + 20% de taxa da plataforma. Sem mensalidade pra ninguém." },
   { q: "Como recebo o dinheiro?", a: "Quando a marca aprova seu vídeo, o valor cai no seu saldo. Você saca via PIX direto pela carteira do app." },
   { q: "Qual o split?", a: "Você (creator) fica com 80% do prêmio da vaga; a OnlyShop fica com 20%. Tudo transparente, mostrado antes de você aceitar." },
   { q: "Funciona na minha cidade?", a: "Estamos começando por Sorocaba/SP e expandindo praça por praça. Crie sua conta e o mapa já mostra o que tem perto de você." },
-  { q: "E se eu sou lojista?", a: "Você abre uma campanha, define o prêmio por vídeo e quantas vagas quer. Só paga pelas entregas aprovadas — quem não entrega, não custa." },
+  { q: "E se eu sou lojista?", a: "Você abre uma campanha, define o prêmio por vídeo e quantas vagas quer. Só paga pelas entregas aprovadas. Quem não entrega, não custa." },
   { q: "Funciona no celular?", a: "Sim. O app roda no navegador e instala como app nativo (PWA) direto no seu celular." },
 ];
 
@@ -297,8 +297,8 @@ export default function Landing() {
               <h1 className="text-4xl sm:text-5xl md:text-[4.2rem] font-extrabold mb-6 leading-[0.98] tracking-tight">
                 Marcas e lojas{" "}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(346,100%,58%)] to-[hsl(270,91%,65%)]">perto de você</span>{" "}
-                procurando quem grave vídeo —{" "}
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(174,100%,47%)] to-[hsl(174,100%,60%)]">ganhe por entrega</span>
+                procurando quem grave vídeo.{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(174,100%,47%)] to-[hsl(174,100%,60%)]">Ganhe por entrega</span>
               </h1>
 
               <p className="text-base sm:text-lg text-white/60 mb-8 max-w-md leading-relaxed mx-auto lg:mx-0">
@@ -662,7 +662,7 @@ export default function Landing() {
                   <div className="flex items-end gap-1.5 my-3">
                     <span className="text-4xl font-extrabold">Por entrega</span>
                   </div>
-                  <p className="text-xs text-white/45 mb-5">Você define o prêmio por vídeo e quantas vagas quer. Só paga pelas entregas aprovadas — quem não entrega, não custa.</p>
+                  <p className="text-xs text-white/45 mb-5">Você define o prêmio por vídeo e quantas vagas quer. Só paga pelas entregas aprovadas. Quem não entrega, não custa.</p>
 
                   {/* Calculadora (computeBudget/computeSplit reais) */}
                   <div className="rounded-2xl bg-black/40 border border-white/[0.06] p-4 mb-5 space-y-4">
@@ -705,7 +705,7 @@ export default function Landing() {
           </div>
 
           <Reveal delay={120} className="mt-6 text-center">
-            <p className="text-[11px] text-white/30">TikTok Shop, Instagram Shop e vídeo gerado por IA estão no roadmap — <Link to="/em-breve" className="underline underline-offset-2 hover:text-white/60 transition-colors">ver o que vem por aí</Link>.</p>
+            <p className="text-[11px] text-white/30">TikTok Shop, Instagram Shop e vídeo gerado por IA estão no roadmap. <Link to="/em-breve" className="underline underline-offset-2 hover:text-white/60 transition-colors">Ver o que vem por aí</Link>.</p>
           </Reveal>
         </div>
       </section>

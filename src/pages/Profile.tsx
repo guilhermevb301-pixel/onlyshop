@@ -20,6 +20,10 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useMyLevel } from "@/hooks/useMyLevel";
 import { LevelBadge } from "@/components/gamification/LevelBadge";
+import { PublicPageCard } from "@/components/profile/PublicPageCard";
+import { SocialLinksCard } from "@/components/profile/SocialLinksCard";
+import { IntroVideoCard } from "@/components/profile/IntroVideoCard";
+import { CampaignDeliverySheet } from "@/components/campaigns/CampaignDeliverySheet";
 import {
   demo, computeSplit, computeBudget,
   type CampaignApplication, type Campaign,
@@ -390,6 +394,15 @@ export default function Profile() {
         </div>
       </div>
 
+      {/* ===== Sua página pública (linktree): link + editar redes/vídeo inline ===== */}
+      {!isBrand && !isViewer && (
+        <div className="px-4 space-y-5">
+          <PublicPageCard />
+          <SocialLinksCard />
+          <IntroVideoCard />
+        </div>
+      )}
+
       {/* ===== Histórico do MVP (sem Posts/Curtidas/Salvos) ===== */}
       {!isViewer && (
         <div className="px-4">
@@ -466,8 +479,10 @@ function AffiliateHistory({ metrics, loading }: { metrics: Metrics; loading: boo
     () => metrics.credits.filter((c) => c.kind === "payout" || c.kind === "withdrawal"),
     [metrics.credits],
   );
+  const [selected, setSelected] = useState<CampaignApplication | null>(null);
 
   return (
+    <>
     <Tabs defaultValue="entregas" className="w-full">
       <TabsList className="w-full grid grid-cols-2 h-11 p-1 bg-muted/30 rounded-full border-0">
         {([["entregas", Send, "Minhas entregas"], ["ganhos", TrendingUp, "Ganhos"]] as const).map(([val, Icon, label]) => (
@@ -497,7 +512,11 @@ function AffiliateHistory({ metrics, loading }: { metrics: Metrics; loading: boo
               const net = computeSplit(a.campaign?.reward_amount || 0).influencer;
               return (
                 <li key={a.id} className="animate-fade-in" style={{ animationDelay: `${i * 60}ms`, animationFillMode: "both" }}>
-                  <div className="rounded-[1.35rem] bg-gradient-to-b from-border/30 to-transparent p-px transition-all duration-300 ease-[cubic-bezier(.32,.72,0,1)] hover:from-primary/30 active:scale-[.99]">
+                  <button
+                    type="button"
+                    onClick={() => setSelected(a)}
+                    className="w-full text-left rounded-[1.35rem] bg-gradient-to-b from-border/30 to-transparent p-px transition-all duration-300 ease-[cubic-bezier(.32,.72,0,1)] hover:from-primary/30 active:scale-[.99]"
+                  >
                     <div className="rounded-[calc(1.35rem-1px)] bg-card/70 backdrop-blur p-3.5 shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.04)]">
                       <div className="flex items-start gap-3">
                         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/30 to-accent/15 flex items-center justify-center shrink-0 ring-1 ring-white/[0.06]">
@@ -520,18 +539,11 @@ function AffiliateHistory({ metrics, loading }: { metrics: Metrics; loading: boo
                           <span className="text-xs font-black tabular-nums text-accent">{fmt(net)}</span>
                         </div>
                       </div>
-                      {a.delivery_url && (
-                        <a
-                          href={a.delivery_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-2.5 flex items-center gap-1 text-[11px] text-muted-foreground/55 hover:text-accent transition-colors min-h-[44px] -mb-1.5"
-                        >
-                          <ExternalLink className="h-3 w-3" /> Ver entrega
-                        </a>
-                      )}
+                      <div className="mt-2.5 flex items-center gap-1 text-[11px] text-muted-foreground/45">
+                        <ExternalLink className="h-3 w-3" /> Toque para ver o detalhe {a.posted_at ? "e a data" : ""}
+                      </div>
                     </div>
-                  </div>
+                  </button>
                 </li>
               );
             })}
@@ -578,6 +590,8 @@ function AffiliateHistory({ metrics, loading }: { metrics: Metrics; loading: boo
         )}
       </TabsContent>
     </Tabs>
+    <CampaignDeliverySheet application={selected} open={!!selected} onOpenChange={(o) => !o && setSelected(null)} />
+    </>
   );
 }
 

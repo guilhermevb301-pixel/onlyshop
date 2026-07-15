@@ -86,7 +86,7 @@ export default function Inicio() {
           Ache campanhas perto de você e <span className="text-gradient-primary">ganhe por vídeo</span>
         </h1>
         <p className="text-muted-foreground text-base lg:text-lg max-w-xl mt-5">
-          Marcas e lojas da sua região querem creators. Pegue uma campanha, grave um vídeo simples e receba por entrega — sem precisar de seguidor nenhum.
+          Marcas e lojas da sua região querem creators. Pegue uma campanha, grave um vídeo simples e receba por entrega, sem precisar de seguidor nenhum.
         </p>
         <Link
           to="/mapa"

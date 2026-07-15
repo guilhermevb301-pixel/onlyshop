@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Globe, User, Instagram, Music2 } from "lucide-react";
+import { MapPin, Globe, User, Instagram, Music2, Youtube, MessageCircle } from "lucide-react";
 import type { CampaignApplication } from "@/lib/campaigns";
 
 interface Props {
@@ -74,8 +74,8 @@ export function InfluencerProfileSheet({ application, open, onOpenChange }: Prop
             </div>
           )}
 
-          {/* Links sociais (populados pela feature B; só aparecem se existirem) */}
-          {(inf?.instagram_username || inf?.tiktok_username || inf?.website) && (
+          {/* Links sociais (a marca precisa ver quem é a pessoa no IG/TikTok/YouTube) */}
+          {(inf?.instagram_username || inf?.tiktok_username || inf?.youtube_username || inf?.whatsapp || inf?.website) && (
             <div className="flex flex-wrap gap-2 mt-4">
               {inf?.instagram_username && (
                 <a href={`https://instagram.com/${inf.instagram_username.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer"
@@ -87,6 +87,18 @@ export function InfluencerProfileSheet({ application, open, onOpenChange }: Prop
                 <a href={`https://tiktok.com/@${inf.tiktok_username.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] px-3 py-1.5 text-white/80 hover:text-accent">
                   <Music2 className="h-3.5 w-3.5" /> @{inf.tiktok_username.replace(/^@/, "")}
+                </a>
+              )}
+              {inf?.youtube_username && (
+                <a href={`https://youtube.com/@${inf.youtube_username.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] px-3 py-1.5 text-white/80 hover:text-accent">
+                  <Youtube className="h-3.5 w-3.5" /> YouTube
+                </a>
+              )}
+              {inf?.whatsapp && (
+                <a href={`https://wa.me/${inf.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] px-3 py-1.5 text-white/80 hover:text-accent">
+                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                 </a>
               )}
               {inf?.website && (
