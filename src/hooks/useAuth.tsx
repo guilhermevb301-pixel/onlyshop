@@ -17,6 +17,9 @@ interface Profile {
   instagram_username?: string | null;
   tiktok_username?: string | null;
   website?: string | null;
+  youtube_username?: string | null;
+  whatsapp?: string | null;
+  intro_video_url?: string | null;
 }
 
 interface UserRole {

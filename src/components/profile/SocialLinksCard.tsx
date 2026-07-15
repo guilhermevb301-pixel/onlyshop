@@ -3,13 +3,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Instagram, Music2, Globe, Loader2, Check } from "lucide-react";
+import { Instagram, Music2, Globe, Loader2, Check, Youtube, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 // Tira https://, domínio, @ e barras — guarda só o handle (@usuario).
 const cleanHandle = (v: string) =>
   v.trim()
-    .replace(/^https?:\/\/(www\.)?(instagram|tiktok)\.com\//i, "")
+    .replace(/^https?:\/\/(www\.)?(instagram|tiktok|youtube)\.com\/(@)?/i, "")
     .replace(/^@/, "")
     .replace(/\/.*$/, "")
     .trim();
@@ -21,6 +21,8 @@ export function SocialLinksCard({ delay = 0 }: { delay?: number }) {
   const [ig, setIg] = useState(profile?.instagram_username ?? "");
   const [tt, setTt] = useState(profile?.tiktok_username ?? "");
   const [site, setSite] = useState(profile?.website ?? "");
+  const [yt, setYt] = useState(profile?.youtube_username ?? "");
+  const [wa, setWa] = useState(profile?.whatsapp ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -31,6 +33,8 @@ export function SocialLinksCard({ delay = 0 }: { delay?: number }) {
         instagram_username: cleanHandle(ig) || null,
         tiktok_username: cleanHandle(tt) || null,
         website: site.trim() || null,
+        youtube_username: cleanHandle(yt) || null,
+        whatsapp: wa.replace(/\D/g, "") || null,
       });
       setSaved(true);
       toast.success("Links salvos!", { description: "As marcas veem seus links quando você aceita uma campanha." });
@@ -58,6 +62,8 @@ export function SocialLinksCard({ delay = 0 }: { delay?: number }) {
         <div className="mt-4 space-y-3">
           <Field icon={<Instagram className="h-4 w-4" />} label="Instagram" prefix="@" value={ig} onChange={setIg} placeholder="seu_usuario" />
           <Field icon={<Music2 className="h-4 w-4" />} label="TikTok" prefix="@" value={tt} onChange={setTt} placeholder="seu_usuario" />
+          <Field icon={<Youtube className="h-4 w-4" />} label="YouTube" prefix="@" value={yt} onChange={setYt} placeholder="seu_canal" />
+          <Field icon={<MessageCircle className="h-4 w-4" />} label="WhatsApp" value={wa} onChange={setWa} placeholder="55 11 9..." />
           <Field icon={<Globe className="h-4 w-4" />} label="Website / link" value={site} onChange={setSite} placeholder="https://..." />
           <Button onClick={save} disabled={saving} className="w-full h-11 rounded-xl gap-2 bg-gradient-primary border-0 text-white active:scale-[.98] transition-transform" aria-busy={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : null}

@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import { LocationNichesCard } from "@/components/profile/LocationNichesCard";
 import { ConnectTikTok } from "@/components/tiktok/ConnectTikTok";
 import { SocialLinksCard } from "@/components/profile/SocialLinksCard";
+import { IntroVideoCard } from "@/components/profile/IntroVideoCard";
 
 // Demo detection — espelha o DEMO_FLAG/DEMO_EMAIL do useAuth.
 // No modo demo (login localStorage, sem backend) qualquer chamada real ao
@@ -184,6 +185,8 @@ export default function Settings() {
       </SettingsCard>
 
       <SocialLinksCard delay={140} />
+
+      <IntroVideoCard delay={150} />
 
       {/* Security */}
       <SettingsCard

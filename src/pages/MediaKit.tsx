@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { setStoredRef } from "@/lib/referral";
 import { getLevelInfo } from "@/hooks/useGamification";
+import { useAuth } from "@/hooks/useAuth";
+import { startConversation } from "@/lib/chat";
 import { Button } from "@/components/ui/button";
-import { Loader2, MapPin, Star, ArrowRight, Sparkles, BadgeCheck } from "lucide-react";
+import { toast } from "sonner";
+import { HelpTip } from "@/components/ui/help-tip";
+import {
+  Loader2, MapPin, Star, ArrowRight, Sparkles, BadgeCheck,
+  Instagram, Music2, Youtube, Globe, MessageCircle, ExternalLink, Briefcase,
+} from "lucide-react";
 
 interface Kit {
   user_id: string;
@@ -16,6 +23,33 @@ interface Kit {
   niches: string[] | null;
   level: number | null;
   bio: string | null;
+  instagram_username: string | null;
+  tiktok_username: string | null;
+  youtube_username: string | null;
+  whatsapp: string | null;
+  website: string | null;
+  intro_video_url: string | null;
+}
+
+interface PortfolioItem {
+  application_id: string;
+  campaign_title: string | null;
+  brand_name: string | null;
+  reward_amount: number | null;
+  posted_at: string | null;
+  proofs: { links?: string[]; comment?: string } | null;
+}
+
+// Converte URL do YouTube/Vimeo em URL de embed (iframe). Senão, null.
+function toEmbedUrl(url: string): string | null {
+  try {
+    const u = url.trim();
+    const yt = u.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+    if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+    const vm = u.match(/vimeo\.com\/(\d+)/);
+    if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+    return null;
+  } catch { return null; }
 }
 
 // Página pública de "media-kit / assessoria" — o link que o creator/embaixador põe
@@ -23,9 +57,13 @@ interface Kit {
 // cadastra a partir daqui entra na REDE dele (referral).
 export default function MediaKit() {
   const { code } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [kit, setKit] = useState<Kit | null>(null);
   const [rating, setRating] = useState<{ avg: number; count: number } | null>(null);
   const [xp, setXp] = useState(0);
+  const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
+  const [contracting, setContracting] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,17 +72,21 @@ export default function MediaKit() {
       try {
         const { data } = await supabase
           .from("profiles" as any)
-          .select("user_id, display_name, username, avatar_url, city, state, niches, level, bio")
+          .select("user_id, display_name, username, avatar_url, city, state, niches, level, bio, instagram_username, tiktok_username, youtube_username, whatsapp, website, intro_video_url")
           .eq("referral_code", (code || "").toUpperCase())
           .maybeSingle();
         setKit((data as any) ?? null);
         if (data) {
-          const { data: r } = await supabase.from("ratings" as any).select("stars").eq("rated_user_id", (data as any).user_id);
+          const uid = (data as any).user_id;
+          const { data: r } = await supabase.from("ratings" as any).select("stars").eq("rated_user_id", uid);
           const arr = ((r as any[]) || []);
           if (arr.length) setRating({ avg: arr.reduce((s, x) => s + Number(x.stars), 0) / arr.length, count: arr.length });
           // Nível real (user_levels) — profiles.level é coluna morta (sempre 1).
-          const { data: lvl } = await supabase.from("user_levels" as any).select("total_xp").eq("user_id", (data as any).user_id).maybeSingle();
+          const { data: lvl } = await supabase.from("user_levels" as any).select("total_xp").eq("user_id", uid).maybeSingle();
           setXp(Number((lvl as any)?.total_xp ?? 0));
+          // Portfólio de trabalhos (RPC pública, campos de vitrine).
+          const { data: port } = await supabase.rpc("public_creator_portfolio" as any, { _user_id: uid });
+          setPortfolio(((port as any[]) || []) as PortfolioItem[]);
         }
       } finally {
         setLoading(false);
@@ -63,6 +105,26 @@ export default function MediaKit() {
   const name = kit?.display_name || kit?.username || "Este creator";
   const initial = (name[0] || "?").toUpperCase();
   const local = kit?.city ? `${kit.city}${kit.state ? `, ${kit.state}` : ""}` : null;
+  const embed = kit?.intro_video_url ? toEmbedUrl(kit.intro_video_url) : null;
+  const socials = (kit ? [
+    kit.instagram_username && { icon: Instagram, label: "Instagram", url: `https://instagram.com/${kit.instagram_username.replace(/^@/, "")}` },
+    kit.tiktok_username && { icon: Music2, label: "TikTok", url: `https://tiktok.com/@${kit.tiktok_username.replace(/^@/, "")}` },
+    kit.youtube_username && { icon: Youtube, label: "YouTube", url: `https://youtube.com/@${kit.youtube_username.replace(/^@/, "")}` },
+    kit.whatsapp && { icon: MessageCircle, label: "WhatsApp", url: `https://wa.me/${kit.whatsapp.replace(/\D/g, "")}` },
+    kit.website && { icon: Globe, label: "Site", url: kit.website.startsWith("http") ? kit.website : `https://${kit.website}` },
+  ] : []).filter(Boolean) as { icon: typeof Instagram; label: string; url: string }[];
+
+  // "Me contrate": logado → abre chat com o creator; deslogado → cadastro (entra na rede dele).
+  const handleContract = async () => {
+    if (!kit) { navigate("/auth"); return; }
+    if (!user) { navigate("/auth"); return; }
+    if (user.id === kit.user_id) { navigate("/chat"); return; }
+    setContracting(true);
+    const cid = await startConversation(user.id, kit.user_id);
+    setContracting(false);
+    if (cid) navigate(`/chat?c=${cid}`);
+    else toast.error("Não foi possível abrir a conversa agora");
+  };
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -127,18 +189,64 @@ export default function MediaKit() {
           </div>
         </div>
 
-        {/* CTA — contratar / cadastrar (entra na rede dele) */}
-        <div className="mt-5 space-y-2.5 animate-slide-up [animation-delay:80ms]">
-          <Button asChild size="lg" className="group w-full h-13 rounded-2xl gap-2 bg-gradient-primary border-0 font-semibold text-base shadow-[var(--shadow-glow-cta)] active:scale-[.98] transition-transform">
-            <Link to="/auth">
-              {kit ? `Quero contratar ${name.split(" ")[0]}` : "Entrar no OnlyShop"}
-              <span className="grid place-items-center h-6 w-6 rounded-full bg-white/15 transition-transform group-hover:translate-x-0.5">
-                <ArrowRight className="h-3.5 w-3.5" />
-              </span>
-            </Link>
+        {/* Vídeo de apresentação */}
+        {embed && (
+          <div className="mt-4 rounded-2xl overflow-hidden ring-1 ring-white/[0.08] aspect-video bg-black animate-slide-up [animation-delay:60ms]">
+            <iframe src={embed} title="Apresentação" className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+          </div>
+        )}
+
+        {/* Links sociais */}
+        {socials.length > 0 && (
+          <div className="mt-4 flex flex-wrap justify-center gap-2 animate-slide-up [animation-delay:80ms]">
+            {socials.map((s) => {
+              const Icon = s.icon;
+              return (
+                <a key={s.label} href={s.url} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] px-3 py-2 text-xs text-white/80 hover:text-accent hover:ring-accent/30 transition-colors">
+                  <Icon className="h-3.5 w-3.5" /> {s.label}
+                </a>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Trabalhos (portfólio) */}
+        {portfolio.length > 0 && (
+          <div className="mt-5 animate-slide-up [animation-delay:100ms]">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 font-semibold flex items-center gap-1.5 mb-2"><Briefcase className="h-3 w-3" /> Trabalhos</p>
+            <div className="space-y-2">
+              {portfolio.slice(0, 6).map((p) => {
+                const link = p.proofs?.links?.[0];
+                const inner = (
+                  <div className="flex items-center gap-2 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold truncate">{p.campaign_title || "Campanha"}</p>
+                      <p className="text-[11px] text-muted-foreground/60 truncate">{p.brand_name || "Marca"}</p>
+                    </div>
+                    {link && <ExternalLink className="h-3.5 w-3.5 text-accent shrink-0" />}
+                  </div>
+                );
+                return link
+                  ? <a key={p.application_id} href={link.startsWith("http") ? link : `https://${link}`} target="_blank" rel="noopener noreferrer">{inner}</a>
+                  : <div key={p.application_id}>{inner}</div>;
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* CTA — me contrate / cadastrar (entra na rede dele) */}
+        <div className="mt-5 space-y-2.5 animate-slide-up [animation-delay:120ms]">
+          <Button onClick={handleContract} disabled={contracting} size="lg" className="group w-full h-13 rounded-2xl gap-2 bg-gradient-primary border-0 font-semibold text-base shadow-[var(--shadow-glow-cta)] active:scale-[.98] transition-transform">
+            {contracting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {kit ? (user ? `Falar com ${name.split(" ")[0]}` : `Quero contratar ${name.split(" ")[0]}`) : "Entrar no OnlyShop"}
+            <span className="grid place-items-center h-6 w-6 rounded-full bg-white/15 transition-transform group-hover:translate-x-0.5">
+              <ArrowRight className="h-3.5 w-3.5" />
+            </span>
           </Button>
-          <p className="text-center text-[11px] text-muted-foreground/50">
-            Crie sua conta grátis, encontre creators perto de você e contrate em minutos.
+          <p className="text-center text-[11px] text-muted-foreground/50 flex items-center justify-center gap-1">
+            {user ? "Fale direto e feche pela plataforma, com pagamento seguro." : "Crie sua conta grátis e contrate em minutos."}
+            <HelpTip id="mediakit.contratar" className="h-4 w-4" iconClassName="h-3 w-3" />
           </p>
         </div>
 
