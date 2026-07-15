@@ -282,4 +282,21 @@
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
+  /* Animações decorativas INFINITAS desligadas no celular: o app "descansa"
+     quando parado (repaint contínuo é o que mais pesa em cel fraco). O spinner
+     de loading (animate-spin curto) e os one-shot (fade/slide-in) continuam. */
+  .animate-float,
+  .animate-gradient,
+  [class*="_6s_linear_infinite"],
+  [class*="_8s_linear_infinite"] {
+    animation: none !important;
+  }
+  /* Blurs decorativos com raio menor: paint muito mais barato (custo ~ raio²). */
+  .blur-3xl { filter: blur(24px) !important; }
+  .blur-2xl { filter: blur(16px) !important; }
+}
+
+/* Usuários com "reduzir movimento" ligado: zero animação infinita, em qualquer tela. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float, .animate-gradient, [class*="linear_infinite"] { animation: none !important; }
 }
