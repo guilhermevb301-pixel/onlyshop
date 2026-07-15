@@ -116,6 +116,21 @@ export interface CampaignApplication {
   };
 }
 
+// Fase 2 "Meu time": um afiliado do time da marca, agregado a partir das
+// candidaturas nas campanhas dela (derivado de campaign_applications).
+export interface TeamMember {
+  user_id: string;
+  influencer?: CampaignApplication["influencer"];
+  deliveries: number;   // entregas (delivered + approved + paid)
+  approved: number;     // aprovadas (approved + paid)
+  totalPaid: number;    // soma do reward das aprovadas — 100% vai pro influencer (NÃO expõe fee)
+  avgRating: number | null;
+  ratingCount: number;
+  lastActivity: string | null;
+  campaignsCount: number;
+  sampleApplication: CampaignApplication; // pra abrir o InfluencerProfileSheet no clique
+}
+
 export interface PlatformCredit {
   id: string;
   user_id: string;

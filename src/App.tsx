@@ -21,6 +21,7 @@ const Affiliate = lazy(() => import("./pages/Affiliate"));
 const Install = lazy(() => import("./pages/Install"));
 const Admin = lazy(() => import("./pages/Admin"));
 const BrandArea = lazy(() => import("./pages/BrandArea"));
+const BrandTeam = lazy(() => import("./pages/BrandTeam"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -76,6 +77,7 @@ const App = () => (
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/brands" element={<BrandArea />} />
+                <Route path="/time" element={<BrandTeam />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<Settings />} />

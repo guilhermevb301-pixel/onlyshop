@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, MapPin, BadgeDollarSign, Wallet, User, Megaphone, Network } from "lucide-react";
+import { LayoutGrid, MapPin, BadgeDollarSign, Wallet, User, Megaphone, Network, UsersRound } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -15,8 +15,8 @@ const INFLUENCER: NavItem[] = [
 ];
 const BRAND: NavItem[] = [
   { href: "/brands", icon: Megaphone, label: "Campanhas" },
+  { href: "/time", icon: UsersRound, label: "Time" },
   { href: "/mapa", icon: MapPin, label: "", isAction: true },
-  { href: "/rede", icon: Network, label: "Rede" },
   { href: "/wallet", icon: Wallet, label: "Carteira" },
   { href: "/profile", icon: User, label: "Perfil" },
 ];
