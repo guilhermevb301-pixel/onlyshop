@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useReferral } from "@/hooks/useReferral";
+import { EarningsMathCard } from "@/components/referral/EarningsMathCard";
+import { ReferralSteps } from "@/components/referral/ReferralSteps";
+import { SubnetworkTeaser } from "@/components/referral/SubnetworkTeaser";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -67,18 +71,25 @@ export default function Rede() {
           <Button onClick={share} variant="outline" className="w-full mt-2.5 rounded-xl h-11 gap-2 border-white/10 bg-white/[0.03] hover:bg-white/[0.06]">
             <Share2 className="h-4 w-4" /> Compartilhar meu link
           </Button>
-          <p className="text-[11px] text-muted-foreground/55 mt-3 leading-relaxed">
-            Quem se cadastrar por esse link entra na sua rede. Cada empresa que você trouxer:
-            <b className="text-white/80"> 33% na 1ª compra + 5% recorrente</b> pra sempre.
+          <p className="text-[11px] text-muted-foreground/55 mt-3 leading-relaxed flex items-start gap-1">
+            <span>Quem se cadastrar por esse link entra na sua rede.</span>
+            <HelpTip id="rede.link" side="top" className="h-4 w-4" iconClassName="h-3 w-3" />
           </p>
         </div>
+      </div>
+
+      {/* Como você ganha — a matemática em destaque (pedido do Biel) */}
+      <div className="animate-slide-up [animation-delay:40ms] space-y-3">
+        <EarningsMathCard />
+        <ReferralSteps />
+        <SubnetworkTeaser />
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2.5 animate-slide-up [animation-delay:60ms]">
         <Stat icon={<Users className="h-4 w-4 text-accent" />} value={network.length} label="na sua rede" />
         <Stat icon={<Building2 className="h-4 w-4 text-primary" />} value={companies} label="empresas" />
-        <Stat icon={<BadgeDollarSign className="h-4 w-4 text-accent" />} value={brl(earnings)} label="ganhos" highlight />
+        <Stat icon={<BadgeDollarSign className="h-4 w-4 text-accent" />} value={brl(earnings)} label="ganhos" highlight help="rede.ganhos" />
       </div>
 
       {/* Lista da rede */}
@@ -119,13 +130,16 @@ export default function Rede() {
   );
 }
 
-function Stat({ icon, value, label, highlight }: { icon: React.ReactNode; value: React.ReactNode; label: string; highlight?: boolean }) {
+function Stat({ icon, value, label, highlight, help }: { icon: React.ReactNode; value: React.ReactNode; label: string; highlight?: boolean; help?: string }) {
   return (
     <div className={`rounded-2xl px-3 py-3 text-center ring-1 ${highlight ? "bg-accent/[0.07] ring-accent/20" : "bg-white/[0.03] ring-white/[0.06]"}`}>
       <div className="flex items-center justify-center gap-1">{icon}
         <span className={`tabular-nums font-black ${highlight ? "text-base text-accent" : "text-lg text-foreground/90"}`}>{value}</span>
       </div>
-      <p className="text-[10px] text-muted-foreground/60 mt-0.5">{label}</p>
+      <p className="text-[10px] text-muted-foreground/60 mt-0.5 flex items-center justify-center gap-0.5">
+        {label}
+        {help && <HelpTip id={help} className="h-3.5 w-3.5" iconClassName="h-2.5 w-2.5" />}
+      </p>
     </div>
   );
 }
