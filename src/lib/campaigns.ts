@@ -36,6 +36,7 @@ export interface Campaign {
   platform_fee_pct: number;
   total_budget: number;
   funded: boolean;
+  auto_approve?: boolean; // aprova/paga automático ao postar (opt-in da marca)
   status: CampaignStatus;
   // Domínio geográfico (feature mapa-dominio)
   territory_scope?: TerritoryScope;

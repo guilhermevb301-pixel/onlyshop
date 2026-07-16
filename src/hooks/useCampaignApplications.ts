@@ -119,6 +119,27 @@ export function useCampaignApplications() {
       await supabase.from("campaign_applications" as any)
         .update({ status: "delivered", delivery_url: primary, proofs, posted_at: now, updated_at: now } as any)
         .eq("id", appId);
+      // Auto-aprovação (opt-in da marca): se a campanha é auto_approve, dispara a
+      // aprovação/pagamento na hora. O SERVIDOR revalida tudo (auto_approve, funded,
+      // delivered, dono, comprovante). Best-effort: se não for auto ou falhar, a
+      // entrega segue como "delivered" pra revisão manual — nunca bloqueia a entrega.
+      try {
+        if (clean.length) {
+          const { data: appRow } = await supabase.from("campaign_applications" as any).select("campaign_id").eq("id", appId).maybeSingle();
+          const cid = (appRow as any)?.campaign_id;
+          if (cid) {
+            const { data: camp } = await supabase.from("campaigns" as any).select("auto_approve").eq("id", cid).maybeSingle();
+            if ((camp as any)?.auto_approve) {
+              const { data: { session } } = await supabase.auth.getSession();
+              await fetch("/api/approve-delivery", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
+                body: JSON.stringify({ applicationId: appId }),
+              });
+            }
+          }
+        }
+      } catch { /* auto-approve é best-effort — não derruba a entrega */ }
       await refresh();
     } catch (e) {
       console.error("submitDelivery:", e);

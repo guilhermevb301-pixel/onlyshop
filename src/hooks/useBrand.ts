@@ -66,6 +66,7 @@ export interface CreateCampaignInput {
   territory_name?: string | null;
   territory_neighborhood?: string | null;
   territory_street?: string | null;
+  auto_approve?: boolean; // aprova/paga automático ao postar (opt-in da marca)
 }
 
 const DEMO_BRAND_KEY = "onlyshop_demo_brand";
@@ -253,6 +254,7 @@ export function useBrand() {
       platform_fee_pct: PLATFORM_FEE_PCT,
       total_budget: total,
       funded: false, // pago só depois (CampaignPaymentStep)
+      auto_approve: input.auto_approve ?? false,
       status: "active",
     };
 
@@ -286,6 +288,7 @@ export function useBrand() {
           platform_fee_pct: base.platform_fee_pct,
           total_budget: base.total_budget,
           funded: false,
+          auto_approve: base.auto_approve,
           status: "active",
         } as any)
         .select()

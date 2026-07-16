@@ -1,9 +1,10 @@
 // =============================================================================
-// /api/approve-delivery — aprova a entrega e faz o SPLIT 80/20 (automático).
+// /api/approve-delivery — aprova a entrega e credita o influencer (automático).
 //
-// O lojista aprova uma entrega -> 80% do reward vira saldo do influencer
-// (platform_credits kind=payout); os 20% ficam com a plataforma (na conta MP).
-// Verifica que quem chama é DONO da campanha (via JWT). Idempotente.
+// O influencer recebe o valor CHEIO do reward (a taxa de 20% foi cobrada da marca,
+// em cima — computeBudget). Vira saldo dele em platform_credits kind=payout.
+// Autoriza: o DONO da campanha (via JWT) OU o próprio influencer quando a campanha
+// é auto_approve + funded + delivered + tem comprovante (opt-in da marca). Idempotente.
 //
 // Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 // =============================================================================
@@ -45,14 +46,29 @@ export default async function handler(req: any, res: any) {
 
     // 2) Busca a candidatura + reward + dono da campanha (pra autorizar).
     const appRes = await sb(
-      `campaign_applications?id=eq.${encodeURIComponent(applicationId)}&select=id,status,influencer_user_id,campaign_id,campaigns(reward_amount,brands(user_id))`
+      `campaign_applications?id=eq.${encodeURIComponent(applicationId)}&select=id,status,influencer_user_id,campaign_id,proofs,delivery_url,campaigns(reward_amount,auto_approve,funded,brands(user_id))`
     );
     const rows = await appRes.json();
     const app = Array.isArray(rows) ? rows[0] : null;
     if (!app) return res.status(404).json({ error: "candidatura não encontrada" });
 
     const ownerId = app.campaigns?.brands?.user_id;
-    if (ownerId !== callerId) return res.status(403).json({ error: "só o dono da campanha pode aprovar" });
+    const isOwner = ownerId === callerId;
+    // Auto-aprovação (opt-in da marca): o influencer só pode DISPARAR a aprovação se
+    // a campanha for auto_approve E estiver PAGA (funded — dinheiro já retido) E o
+    // status for delivered E ele for o dono da candidatura E tiver comprovante.
+    // Reusa o MESMO caminho (dup-check + status abaixo impedem pagar duas vezes).
+    const proofLinks = Array.isArray(app.proofs?.links) ? app.proofs.links.filter(Boolean) : [];
+    const hasProof = proofLinks.length > 0 || !!app.delivery_url;
+    const isSelfAuto =
+      app.campaigns?.auto_approve === true &&
+      app.campaigns?.funded === true &&
+      app.status === "delivered" &&
+      callerId === app.influencer_user_id &&
+      hasProof;
+    if (!isOwner && !isSelfAuto) {
+      return res.status(403).json({ error: "não autorizado a aprovar esta entrega" });
+    }
 
     // 3) Idempotência: já aprovado/pago? não credita de novo.
     if (app.status === "approved" || app.status === "paid") {

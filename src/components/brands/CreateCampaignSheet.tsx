@@ -46,6 +46,7 @@ const empty = {
   target_gender: "any" as TargetGender,
   min_followers: "0",
   deadline_hours: "168",
+  auto_approve: false,
 };
 
 export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerVariant = "default", resumeCampaign }: Props) {
@@ -109,6 +110,7 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
           : (form.target_city.trim() || null),
         territory_neighborhood: form.territory_neighborhood.trim() || null,
         territory_street: form.territory_street.trim() || null,
+        auto_approve: form.auto_approve,
       });
       if (!camp) throw new Error("Não foi possível criar a campanha.");
       setCreated(camp);
