@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
   Loader2, MapPin, Star, ArrowRight, Sparkles, BadgeCheck,
-  Instagram, Music2, Youtube, Globe, MessageCircle, ExternalLink, Briefcase,
+  Instagram, Music2, Youtube, Globe, MessageCircle, ExternalLink, Briefcase, Film,
 } from "lucide-react";
 
 interface Kit {
@@ -29,6 +29,10 @@ interface Kit {
   whatsapp: string | null;
   website: string | null;
   intro_video_url: string | null;
+  reach_estimate: number | null;
+  avg_views: number | null;
+  whatsapp_business: string | null;
+  video_gallery: string[] | null;
 }
 
 interface PortfolioItem {
@@ -85,7 +89,7 @@ export default function MediaKit() {
       try {
         const { data } = await supabase
           .from("profiles" as any)
-          .select("user_id, display_name, username, avatar_url, city, state, niches, level, bio, instagram_username, tiktok_username, youtube_username, whatsapp, website, intro_video_url")
+          .select("user_id, display_name, username, avatar_url, city, state, niches, level, bio, instagram_username, tiktok_username, youtube_username, whatsapp, website, intro_video_url, reach_estimate, avg_views, whatsapp_business, video_gallery")
           .eq("referral_code", (code || "").toUpperCase())
           .maybeSingle();
         setKit((data as any) ?? null);
@@ -124,8 +128,18 @@ export default function MediaKit() {
     kit.tiktok_username && { icon: Music2, label: "TikTok", url: `https://tiktok.com/@${kit.tiktok_username.replace(/^@/, "")}` },
     kit.youtube_username && { icon: Youtube, label: "YouTube", url: `https://youtube.com/@${kit.youtube_username.replace(/^@/, "")}` },
     kit.whatsapp && { icon: MessageCircle, label: "WhatsApp", url: `https://wa.me/${kit.whatsapp.replace(/\D/g, "")}` },
+    kit.whatsapp_business && { icon: MessageCircle, label: "WhatsApp Business", url: `https://wa.me/${kit.whatsapp_business.replace(/\D/g, "")}` },
     (kit.website && safeUrl(kit.website)) ? { icon: Globe, label: "Site", url: safeUrl(kit.website) as string } : null,
   ] : []).filter(Boolean) as { icon: typeof Instagram; label: string; url: string }[];
+
+  // Alcance auto-declarado (informado pelo creator) + galeria de vídeos (áudios 1 e 3).
+  const reachStats = (kit ? [
+    kit.reach_estimate != null && { label: "alcança", value: kit.reach_estimate },
+    kit.avg_views != null && { label: "views/post", value: kit.avg_views },
+  ] : []).filter(Boolean) as { label: string; value: number }[];
+  const gallery = (kit?.video_gallery ?? [])
+    .map((u) => ({ embed: toEmbedUrl(u), mp4: /\.mp4(\?|$)/i.test(u) ? safeUrl(u) : null }))
+    .filter((g) => g.embed || g.mp4);
 
   // "Me contrate": logado → abre chat com o creator; deslogado → cadastro (entra na rede dele).
   const handleContract = async () => {
@@ -221,6 +235,39 @@ export default function MediaKit() {
                 </a>
               );
             })}
+          </div>
+        )}
+
+        {/* Alcance (informado pelo creator — áudio 1: não precisa ser famoso) */}
+        {reachStats.length > 0 && (
+          <div className="mt-4 animate-slide-up [animation-delay:90ms]">
+            <div className="grid grid-cols-2 gap-2.5">
+              {reachStats.map((s) => (
+                <div key={s.label} className="rounded-2xl bg-accent/[0.06] ring-1 ring-accent/20 p-4 text-center">
+                  <p className="text-2xl font-black text-accent tabular-nums">{s.value.toLocaleString("pt-BR")}</p>
+                  <p className="text-[11px] text-muted-foreground/60 mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground/40 text-center mt-1.5">alcance informado pelo creator</p>
+          </div>
+        )}
+
+        {/* Galeria de vídeos (cases/campeões — áudio 3: espelhar os vídeos tocando) */}
+        {gallery.length > 0 && (
+          <div className="mt-5 animate-slide-up [animation-delay:100ms]">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 font-semibold flex items-center gap-1.5 mb-2"><Film className="h-3 w-3" /> Vídeos</p>
+            <div className="space-y-3">
+              {gallery.map((g, i) => (
+                <div key={i} className="rounded-2xl overflow-hidden ring-1 ring-white/[0.08] aspect-video bg-black">
+                  {g.embed ? (
+                    <iframe src={g.embed} title={`Vídeo ${i + 1}`} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                  ) : (
+                    <video src={g.mp4 as string} controls playsInline className="w-full h-full object-cover" />
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

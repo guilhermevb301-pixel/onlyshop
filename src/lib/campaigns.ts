@@ -113,9 +113,29 @@ export interface CampaignApplication {
     tiktok_username?: string | null;
     youtube_username?: string | null;
     whatsapp?: string | null;
+    whatsapp_business?: string | null;
+    reach_estimate?: number | null;
+    avg_views?: number | null;
     xp?: number | null;
     level?: number | null;
   };
+}
+
+// Influenciador ativo perto (áudio 3 do Biel: o mapa mostra quem está próximo).
+// Vem da RPC influencers_near. Campos de vitrine — sem contato/split.
+export interface InfluencerNear {
+  user_id: string;
+  referral_code: string | null;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  state: string | null;
+  niches: string[] | null;
+  followers_count: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  distance_km: number | null;
 }
 
 // Fase 2 "Meu time": um afiliado do time da marca, agregado a partir das

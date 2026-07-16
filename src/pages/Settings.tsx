@@ -14,6 +14,8 @@ import { LocationNichesCard } from "@/components/profile/LocationNichesCard";
 import { ConnectTikTok } from "@/components/tiktok/ConnectTikTok";
 import { SocialLinksCard } from "@/components/profile/SocialLinksCard";
 import { IntroVideoCard } from "@/components/profile/IntroVideoCard";
+import { ReachCard } from "@/components/profile/ReachCard";
+import { VideoGalleryCard } from "@/components/profile/VideoGalleryCard";
 
 // Demo detection — espelha o DEMO_FLAG/DEMO_EMAIL do useAuth.
 // No modo demo (login localStorage, sem backend) qualquer chamada real ao
@@ -186,7 +188,11 @@ export default function Settings() {
 
       <SocialLinksCard delay={140} />
 
+      <ReachCard delay={145} />
+
       <IntroVideoCard delay={150} />
+
+      <VideoGalleryCard delay={155} />
 
       {/* Security */}
       <SettingsCard

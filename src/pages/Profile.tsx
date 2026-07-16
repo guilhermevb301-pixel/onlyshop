@@ -23,6 +23,8 @@ import { LevelBadge } from "@/components/gamification/LevelBadge";
 import { PublicPageCard } from "@/components/profile/PublicPageCard";
 import { SocialLinksCard } from "@/components/profile/SocialLinksCard";
 import { IntroVideoCard } from "@/components/profile/IntroVideoCard";
+import { ReachCard } from "@/components/profile/ReachCard";
+import { VideoGalleryCard } from "@/components/profile/VideoGalleryCard";
 import { CampaignDeliverySheet } from "@/components/campaigns/CampaignDeliverySheet";
 import {
   demo, computeSplit, computeBudget,
@@ -399,7 +401,9 @@ export default function Profile() {
         <div className="px-4 space-y-5">
           <PublicPageCard />
           <SocialLinksCard />
+          <ReachCard />
           <IntroVideoCard />
+          <VideoGalleryCard />
         </div>
       )}
 

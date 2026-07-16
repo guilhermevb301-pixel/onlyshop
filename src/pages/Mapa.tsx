@@ -7,6 +7,7 @@ import { CampaignCard } from "@/components/campaigns/CampaignCard";
 import { SocialProofBar } from "@/components/map/SocialProofBar";
 import { TerritoryOwnerBar } from "@/components/map/TerritoryOwnerBar";
 import { MapActivityTicker } from "@/components/map/MapActivityTicker";
+import { InfluencersNearby } from "@/components/map/InfluencersNearby";
 import { useTerritories } from "@/hooks/useTerritories";
 import { CampaignSheet } from "@/components/map/CampaignSheet";
 import { Button } from "@/components/ui/button";
@@ -152,6 +153,7 @@ export default function Mapa() {
             <div className="mt-3"><TerritoryOwnerBar territories={territories} /></div>
           )}
           <div className="mt-3"><MapActivityTicker /></div>
+          <div className="mt-3"><InfluencersNearby lat={loc?.latitude} lon={loc?.longitude} /></div>
 
           {view === "map" ? (
             <div

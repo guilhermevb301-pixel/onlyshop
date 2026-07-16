@@ -20,6 +20,10 @@ interface Profile {
   youtube_username?: string | null;
   whatsapp?: string | null;
   intro_video_url?: string | null;
+  reach_estimate?: number | null;
+  avg_views?: number | null;
+  whatsapp_business?: string | null;
+  video_gallery?: string[] | null;
 }
 
 interface UserRole {

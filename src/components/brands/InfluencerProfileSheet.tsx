@@ -64,6 +64,17 @@ export function InfluencerProfileSheet({ application, open, onOpenChange }: Prop
             <Stat label="Avaliação" value={rating ? `${rating.avg.toFixed(1)}★` : "—"} />
           </div>
 
+          {/* Alcance real informado pelo creator (áudio 1: não precisa ser famoso) */}
+          {(inf?.reach_estimate != null || inf?.avg_views != null) && (
+            <>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {inf?.reach_estimate != null && <Stat label="alcança" value={inf.reach_estimate.toLocaleString("pt-BR")} />}
+                {inf?.avg_views != null && <Stat label="views/post" value={inf.avg_views.toLocaleString("pt-BR")} />}
+              </div>
+              <p className="text-[10px] text-muted-foreground/40 text-center mt-1">alcance informado pelo creator</p>
+            </>
+          )}
+
           {inf?.bio && <p className="text-sm text-white/70 mt-4 leading-relaxed">{inf.bio}</p>}
 
           {inf?.niches && inf.niches.length > 0 && (
