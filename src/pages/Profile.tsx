@@ -25,6 +25,7 @@ import { SocialLinksCard } from "@/components/profile/SocialLinksCard";
 import { IntroVideoCard } from "@/components/profile/IntroVideoCard";
 import { ReachCard } from "@/components/profile/ReachCard";
 import { VideoGalleryCard } from "@/components/profile/VideoGalleryCard";
+import { ShippingAddressCard } from "@/components/profile/ShippingAddressCard";
 import { CampaignDeliverySheet } from "@/components/campaigns/CampaignDeliverySheet";
 import {
   demo, computeSplit, computeBudget,
@@ -402,6 +403,7 @@ export default function Profile() {
           <PublicPageCard />
           <SocialLinksCard />
           <ReachCard />
+          <ShippingAddressCard />
           <IntroVideoCard />
           <VideoGalleryCard />
         </div>

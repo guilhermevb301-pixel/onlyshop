@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Globe, User, Instagram, Music2, Youtube, MessageCircle } from "lucide-react";
+import { MapPin, Globe, User, Instagram, Music2, Youtube, MessageCircle, Home } from "lucide-react";
 import type { CampaignApplication } from "@/lib/campaigns";
 
 interface Props {
@@ -19,9 +19,10 @@ export function InfluencerProfileSheet({ application, open, onOpenChange }: Prop
   const inf = application.influencer;
   const uid = application.influencer_user_id;
   const [rating, setRating] = useState<{ avg: number; count: number } | null>(null);
+  const [shipping, setShipping] = useState<any>(null);
 
   useEffect(() => {
-    if (!open || !uid) { setRating(null); return; }
+    if (!open || !uid) { setRating(null); setShipping(null); return; }
     let alive = true;
     (async () => {
       try {
@@ -29,6 +30,12 @@ export function InfluencerProfileSheet({ application, open, onOpenChange }: Prop
         const arr = ((data as any[]) || []);
         if (alive && arr.length) setRating({ avg: arr.reduce((s, r) => s + Number(r.stars), 0) / arr.length, count: arr.length });
       } catch { /* degrada — sem avaliação */ }
+      // Endereço de entrega — a RLS só devolve se esta marca tem candidatura aceita
+      // deste afiliado (confidencial até a contratação).
+      try {
+        const { data: sh } = await supabase.from("affiliate_shipping" as any).select("*").eq("user_id", uid).maybeSingle();
+        if (alive && sh) setShipping(sh);
+      } catch { /* sem acesso/sem endereço */ }
     })();
     return () => { alive = false; };
   }, [open, uid]);
@@ -118,6 +125,19 @@ export function InfluencerProfileSheet({ application, open, onOpenChange }: Prop
                   <Globe className="h-3.5 w-3.5" /> site
                 </a>
               )}
+            </div>
+          )}
+
+          {/* Endereço de entrega (liberado só porque este afiliado aceitou sua campanha) */}
+          {shipping && (shipping.address_street || shipping.address_city) && (
+            <div className="mt-4 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-3.5">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-semibold flex items-center gap-1.5 mb-1.5"><Home className="h-3 w-3 text-accent" /> Endereço de entrega</p>
+              <p className="text-xs text-white/80 leading-relaxed">
+                {[shipping.address_street, shipping.address_number].filter(Boolean).join(", ")}
+                {shipping.address_complement ? ` · ${shipping.address_complement}` : ""}<br />
+                {[shipping.address_district, shipping.address_city, shipping.address_state].filter(Boolean).join(" · ")}
+                {shipping.address_cep ? ` · CEP ${shipping.address_cep}` : ""}
+              </p>
             </div>
           )}
 
