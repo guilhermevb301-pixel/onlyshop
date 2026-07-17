@@ -4,6 +4,7 @@ import { useCampaignApplications } from "@/hooks/useCampaignApplications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DeliveryEditor } from "@/components/campaigns/DeliveryEditor";
+import { ProcessPhaseTracker } from "@/components/campaigns/ProcessPhaseTracker";
 import { useChat } from "@/hooks/useChat";
 import { useMyLevel } from "@/hooks/useMyLevel";
 import { LevelBadge } from "@/components/gamification/LevelBadge";
@@ -105,7 +106,7 @@ seedDemoApplications();
 
 export default function Affiliate() {
   const { user } = useAuth();
-  const { applications, balance, loading, submitDelivery, computeSplit } = useCampaignApplications();
+  const { applications, balance, loading, submitDelivery, submitPhaseProof, computeSplit } = useCampaignApplications();
   const { totalXp, loading: xpLoading } = useMyLevel();
   void user;
 
@@ -298,6 +299,7 @@ export default function Affiliate() {
               const reward = a.campaign?.reward_amount || 0;
               const net = payout(a);
               const isPermuta = a.campaign?.reward_type === "permuta";
+              const isProcess = a.campaign?.campaign_kind === "process";
 
               return (
                 <li
@@ -347,8 +349,15 @@ export default function Affiliate() {
                         </button>
                       )}
 
-                      {/* accepted: botão que abre o editor de entrega */}
-                      {a.status === "accepted" && (
+                      {/* Ganhe no Processo: fases pagando por etapa (substitui a entrega única) */}
+                      {isProcess && (
+                        <div className="pt-1">
+                          <ProcessPhaseTracker app={a} onSubmitProof={submitPhaseProof} />
+                        </div>
+                      )}
+
+                      {/* accepted: botão que abre o editor de entrega (só campanha padrão) */}
+                      {!isProcess && a.status === "accepted" && (
                         <div className="space-y-2 pt-1">
                           <p className="text-[11px] text-muted-foreground/60 flex items-center gap-1.5">
                             <TrendingUp className="h-3 w-3 text-accent" />
@@ -368,8 +377,8 @@ export default function Affiliate() {
                         </div>
                       )}
 
-                      {/* delivered / approved / paid: valor + comprovações + editar */}
-                      {a.status !== "accepted" && (
+                      {/* delivered / approved / paid: valor + comprovações + editar (só padrão) */}
+                      {!isProcess && a.status !== "accepted" && (
                         <div className="pt-3 border-t border-border/15 space-y-2.5 animate-fade-in">
                           <div className="flex items-start justify-between gap-2">
                             <div>

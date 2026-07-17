@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { CampaignPaymentStep } from "./CampaignPaymentStep";
 import { CampaignWizard } from "./CampaignWizard";
 import {
-  computeBudget, computePermutaBudget, MIN_REWARD,
+  computeBudget, computePermutaBudget, computeProcessBudget, PROCESS_PHASES_DEFAULT, MIN_REWARD,
   type Campaign, type TargetGender,
 } from "@/lib/campaigns";
 import type { CreateCampaignInput } from "@/hooks/useBrand";
@@ -47,6 +47,7 @@ const empty = {
   min_followers: "0",
   deadline_hours: "168",
   auto_approve: false,
+  campaign_kind: "standard" as "standard" | "process",
 };
 
 export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerVariant = "default", resumeCampaign }: Props) {
@@ -63,7 +64,10 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
   const slotsN = parseInt(form.slots) || 0;
   const rewardN = parseFloat(form.reward_amount) || 0;
   const isPermuta = form.reward_type === "permuta";
-  const budget = isPermuta ? computePermutaBudget(slotsN) : computeBudget(slotsN, rewardN);
+  const isProcess = form.campaign_kind === "process";
+  const budget = isProcess
+    ? computeProcessBudget(slotsN)
+    : isPermuta ? computePermutaBudget(slotsN) : computeBudget(slotsN, rewardN);
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   // No modo "retomar pagamento" não há form pra resetar — volta direto ao pagamento.
@@ -81,7 +85,9 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
   const handleSubmit = async () => {
     if (!form.name.trim()) { toast.error("Dê um título pra campanha."); return; }
     if (slotsN < 1) { toast.error("Defina pelo menos 1 vaga."); return; }
-    if (isPermuta) {
+    if (isProcess) {
+      // process: valor por etapa é fixo (R$134/vaga), sem reward manual.
+    } else if (isPermuta) {
       if (!form.physical_item.trim()) { toast.error("Na permuta, descreva o produto que o influencer recebe."); return; }
     } else if (rewardN < MIN_REWARD) {
       toast.error(`O valor mínimo é R$ ${MIN_REWARD} por influencer.`); return;
@@ -111,6 +117,8 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
         territory_neighborhood: form.territory_neighborhood.trim() || null,
         territory_street: form.territory_street.trim() || null,
         auto_approve: form.auto_approve,
+        campaign_kind: form.campaign_kind,
+        phases: form.campaign_kind === "process" ? PROCESS_PHASES_DEFAULT : undefined,
       });
       if (!camp) throw new Error("Não foi possível criar a campanha.");
       setCreated(camp);
@@ -172,6 +180,7 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
             budget={budget}
             fmt={fmt}
             isPermuta={isPermuta}
+            isProcess={isProcess}
             slotsN={slotsN}
             rewardN={rewardN}
           />

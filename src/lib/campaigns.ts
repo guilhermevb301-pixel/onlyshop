@@ -93,6 +93,8 @@ export interface CampaignNear {
   brand_lat: number;
   brand_lon: number;
   category?: string | null;
+  campaign_kind?: CampaignKind;
+  phases?: ProcessPhases | Record<string, never>;
 }
 
 export interface CampaignApplication {

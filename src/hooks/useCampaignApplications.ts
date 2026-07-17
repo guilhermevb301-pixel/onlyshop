@@ -34,7 +34,7 @@ export function useCampaignApplications() {
       if (cids.length) {
         const { data: camps } = await supabase
           .from("campaigns" as any)
-          .select("id, name, reward_amount, reward_type, physical_item, brand_id")
+          .select("id, name, reward_amount, reward_type, physical_item, brand_id, campaign_kind, phases")
           .in("id", cids);
         const bids = [...new Set(((camps as any[]) || []).map((c) => c.brand_id).filter(Boolean))];
         const bmap = new Map<string, string>();
@@ -55,6 +55,8 @@ export function useCampaignApplications() {
             physical_item: c?.physical_item ?? null,
             brand_name: c?.brand_name ?? null,
             distance_km: a.distance_km ?? null,
+            campaign_kind: c?.campaign_kind ?? "standard",
+            phases: c?.phases ?? {},
           },
         };
       });
@@ -96,12 +98,50 @@ export function useCampaignApplications() {
         campaign_id: c.campaign_id, influencer_user_id: user.id, status: "accepted", distance_km: c.distance_km,
       } as any);
       if (error) throw error;
+      // "Ganhe no Processo": paga a CONEXÃO (R$20) na hora do aceite. O servidor
+      // revalida tudo (funded, process, dono); se não for process/funded, no-op.
+      try {
+        const { data: camp } = await supabase.from("campaigns" as any).select("campaign_kind").eq("id", c.campaign_id).maybeSingle();
+        if ((camp as any)?.campaign_kind === "process") {
+          const { data: appRow } = await supabase.from("campaign_applications" as any)
+            .select("id").eq("campaign_id", c.campaign_id).eq("influencer_user_id", user.id)
+            .order("created_at", { ascending: false }).limit(1).maybeSingle();
+          const aid = (appRow as any)?.id;
+          if (aid) {
+            const { data: { session } } = await supabase.auth.getSession();
+            await fetch("/api/payout-process", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` }, body: JSON.stringify({ applicationId: aid, phase: "connection" }) });
+          }
+        }
+      } catch { /* conexão é best-effort, não bloqueia o aceite */ }
       await refresh();
       return true;
     } catch {
       return false; // erro real → não finge que aceitou
     }
   }, [user, userRole, refresh]);
+
+  // "Ganhe no Processo": afiliado envia comprovante de um vídeo/dia de live e dispara
+  // o payout da etapa (o servidor valida funded/comprovante/CAP). index = nº do vídeo/dia.
+  const submitPhaseProof = useCallback(async (appId: string, phase: "video" | "live", index: number, url: string): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      // 1) acrescenta o comprovante no array da fase (proofs.videos / proofs.lives)
+      const { data: appRow } = await supabase.from("campaign_applications" as any).select("proofs").eq("id", appId).maybeSingle();
+      const proofs = ((appRow as any)?.proofs as any) || {};
+      const key = phase === "video" ? "videos" : "lives";
+      const arr: string[] = Array.isArray(proofs[key]) ? [...proofs[key]] : [];
+      arr[index - 1] = url.trim();
+      const nextProofs = { ...proofs, [key]: arr };
+      await supabase.from("campaign_applications" as any).update({ proofs: nextProofs, updated_at: new Date().toISOString() } as any).eq("id", appId);
+      // 2) dispara o payout da etapa
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/payout-process", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` }, body: JSON.stringify({ applicationId: appId, phase, index }) });
+      await refresh();
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, [user, refresh]);
 
   // Influencer envia/edita a entrega: vários links de comprovação + comentário.
   // Editável até a marca aprovar (postou errado, vídeo flopou → repostar/trocar).
@@ -147,5 +187,5 @@ export function useCampaignApplications() {
     }
   }, [user, refresh]);
 
-  return { applications, balance, loading, apply, submitDelivery, refresh, computeSplit };
+  return { applications, balance, loading, apply, submitDelivery, submitPhaseProof, refresh, computeSplit };
 }

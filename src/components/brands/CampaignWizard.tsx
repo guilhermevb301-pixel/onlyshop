@@ -32,6 +32,7 @@ interface Props {
   budget: { base: number; fee: number; total: number };
   fmt: (v: number) => string;
   isPermuta: boolean;
+  isProcess?: boolean;
   slotsN: number;
   rewardN: number;
 }
@@ -39,7 +40,7 @@ interface Props {
 // Wizard passo-a-passo de criar campanha (uma etapa por tela, mobile-first).
 // NÃO cria campanha nem toca pagamento — só chama onSubmit() (o handleSubmit da
 // casca) no último passo. Reusa o mesmo `form`/`update` da casca.
-export function CampaignWizard({ form, update, onSubmit, loading, budget, fmt, isPermuta, slotsN, rewardN }: Props) {
+export function CampaignWizard({ form, update, onSubmit, loading, budget, fmt, isPermuta, isProcess, slotsN, rewardN }: Props) {
   const [wizardStep, setWizardStep] = useState(0);
   const TOTAL = 5;
 
@@ -48,7 +49,7 @@ export function CampaignWizard({ form, update, onSubmit, loading, budget, fmt, i
     switch (wizardStep) {
       case 0: return form.name.trim().length >= 2;
       case 1: return !isPermuta || form.physical_item.trim().length > 0;
-      case 2: return slotsN >= 1 && (isPermuta || rewardN >= MIN_REWARD);
+      case 2: return slotsN >= 1 && (isPermuta || isProcess || rewardN >= MIN_REWARD);
       default: return true;
     }
   };
@@ -122,15 +123,15 @@ export function CampaignWizard({ form, update, onSubmit, loading, budget, fmt, i
         {/* PASSO 1 — Tipo */}
         {wizardStep === 1 && (
           <div className="space-y-4 animate-fade-in">
-            <StepHead icon={<Gift className="h-4 w-4 text-accent" />} title="Como você paga?" sub="Dinheiro por vídeo ou produto em permuta." />
+            <StepHead icon={<Gift className="h-4 w-4 text-accent" />} title="Como você paga?" sub="Por vídeo, permuta, ou remunerando o processo." />
             <div className="grid grid-cols-2 gap-2">
               {([
                 { t: "per_video", title: "Campanha paga", desc: "R$ por vídeo" },
                 { t: "permuta", title: "Permuta", desc: "Produto por vídeo" },
               ]).map((o) => {
-                const active = form.reward_type === o.t;
+                const active = !isProcess && form.reward_type === o.t;
                 return (
-                  <button key={o.t} type="button" onClick={() => update("reward_type", o.t)}
+                  <button key={o.t} type="button" onClick={() => { update("reward_type", o.t); update("campaign_kind", "standard"); }}
                     className={cn("rounded-2xl border p-3 text-left transition-all active:scale-[.98]", active ? "border-primary/50 bg-primary/[0.08] ring-1 ring-primary/30" : "border-border/20 bg-muted/10 hover:border-border/40")}>
                     <p className="text-sm font-bold">{o.title}</p>
                     <p className="text-[11px] text-muted-foreground/60">{o.desc}</p>
@@ -138,7 +139,17 @@ export function CampaignWizard({ form, update, onSubmit, loading, budget, fmt, i
                 );
               })}
             </div>
-            {isPermuta ? (
+            {/* Ganhe no Processo — paga o afiliado por etapa */}
+            <button type="button" onClick={() => update("campaign_kind", "process")}
+              className={cn("w-full rounded-2xl border p-3 text-left transition-all active:scale-[.98]", isProcess ? "border-accent/50 bg-accent/[0.08] ring-1 ring-accent/30" : "border-border/20 bg-muted/10 hover:border-border/40")}>
+              <p className="text-sm font-bold flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-accent" /> Ganhe no Processo</p>
+              <p className="text-[11px] text-muted-foreground/60">O afiliado ganha por etapa: conexão + 10 vídeos + 7 lives. R$ 134/vaga (afiliado leva R$ 110).</p>
+            </button>
+            {isProcess ? (
+              <div className="rounded-2xl border border-accent/20 bg-accent/[0.05] p-3 text-[11px] text-muted-foreground/70 leading-relaxed">
+                Você financia o esforço: R$ 20 quando o afiliado conecta, R$ 2 por vídeo (até 10) e R$ 10 por dia de live (até 7). Ele é pago conforme entrega cada etapa.
+              </div>
+            ) : isPermuta ? (
               <div className="space-y-2">
                 <Label className="text-xs flex items-center gap-1.5"><Gift className="h-3.5 w-3.5 text-accent" /> Produto que o influencer recebe *</Label>
                 <Input placeholder="Ex: 1 vestido à escolha, kit degustação..." value={form.physical_item} onChange={(e) => update("physical_item", e.target.value)} className="rounded-xl border-border/20" />
@@ -166,7 +177,12 @@ export function CampaignWizard({ form, update, onSubmit, loading, budget, fmt, i
                 <Label className="text-xs flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Vagas</Label>
                 <Input type="number" min="1" inputMode="numeric" value={form.slots} onChange={(e) => update("slots", e.target.value)} className="rounded-xl border-border/20" />
               </div>
-              {isPermuta ? (
+              {isProcess ? (
+                <div className="space-y-2">
+                  <Label className="text-xs">Custo por vaga</Label>
+                  <div className="rounded-xl border border-accent/20 bg-accent/[0.05] px-3 h-10 flex items-center text-sm text-accent font-semibold">R$ 134 / vaga</div>
+                </div>
+              ) : isPermuta ? (
                 <div className="space-y-2">
                   <Label className="text-xs">Taxa da plataforma</Label>
                   <div className="rounded-xl border border-border/20 bg-muted/10 px-3 h-10 flex items-center text-sm text-muted-foreground/80">R$ {PERMUTA_FEE} / vaga</div>
