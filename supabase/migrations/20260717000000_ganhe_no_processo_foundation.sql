@@ -41,9 +41,9 @@ BEGIN
     CREATE UNIQUE INDEX IF NOT EXISTS platform_credits_provider_ref_kind_uidx
       ON public.platform_credits(provider_ref, kind) WHERE provider_ref IS NOT NULL;
   ELSE
-    RAISE NOTICE 'platform_credits: % pares (provider_ref,kind) duplicados — criando índice NAO-unico. Limpar duplicatas REAIS e recriar como unique.', dup_count;
-    CREATE INDEX IF NOT EXISTS platform_credits_provider_ref_kind_uidx
-      ON public.platform_credits(provider_ref, kind) WHERE provider_ref IS NOT NULL;
+    -- ABORTA (não degrada pra não-único): um índice não-único faria o on_conflict=
+    -- (provider_ref,kind) do mp-webhook falhar 42P10 e travar TODO o funding silencioso.
+    RAISE EXCEPTION 'platform_credits: % pares (provider_ref,kind) duplicados. Limpe antes de criar o unique.', dup_count;
   END IF;
 END $$;
 

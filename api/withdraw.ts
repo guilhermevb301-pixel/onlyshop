@@ -8,6 +8,7 @@
 //
 // Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 // =============================================================================
+import { randomUUID } from "crypto";
 export const config = { maxDuration: 30 };
 
 const SB_URL = process.env.SUPABASE_URL;
@@ -56,7 +57,7 @@ export default async function handler(req: any, res: any) {
     if (amount > balance) return res.status(400).json({ error: `Saldo insuficiente (disponível R$ ${Math.round(balance * 100) / 100})` });
 
     // Registra o saque como pendente (sai do saldo na hora).
-    await sb("platform_credits", {
+    const ins = await sb("platform_credits", {
       method: "POST",
       headers: { Prefer: "return=minimal" },
       body: JSON.stringify([{
@@ -65,12 +66,19 @@ export default async function handler(req: any, res: any) {
         amount: -amount,
         status: "pending",
         provider: "mercadopago",
-        // ÚNICO por saque (o unique (provider_ref,kind) barraria 2 saques pra mesma
-        // chave). A chave PIX continua aqui pra plataforma pagar: split('|') = [saque,tipo,chave,ts].
-        provider_ref: `saque|${pixKeyType}|${pixKey}|${Date.now()}`,
+        // ÚNICO por saque via UUID (Date.now colide no mesmo ms → o unique
+        // (provider_ref,kind) engoliria o 2º saque). A chave PIX continua aqui pra
+        // a plataforma pagar: split('|') = [saque, tipo, chave, uuid].
+        provider_ref: `saque|${pixKeyType}|${pixKey}|${randomUUID()}`,
         created_at: new Date().toISOString(),
       }]),
     });
+    // Checa que gravou de verdade (antes retornava ok:true mesmo se falhasse → saque
+    // "aprovado" sem debitar o saldo).
+    if (!ins.ok) {
+      console.error("withdraw insert falhou:", (await ins.text()).slice(0, 140));
+      return res.status(500).json({ error: "Não foi possível registrar o saque agora" });
+    }
     return res.status(200).json({ ok: true });
   } catch (e) {
     console.error("withdraw:", e);
