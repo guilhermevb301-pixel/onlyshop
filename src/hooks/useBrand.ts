@@ -5,6 +5,7 @@ import {
   demo, demoId,
   type Campaign, type CampaignApplication,
   PLATFORM_FEE_PCT, computeBudget, computeSplit, computePermutaBudget,
+  computeProcessBudget, PROCESS_PHASES_DEFAULT,
 } from "@/lib/campaigns";
 
 // Marca do lojista. Demo grava em localStorage; real em brands (Supabase).
@@ -67,6 +68,8 @@ export interface CreateCampaignInput {
   territory_neighborhood?: string | null;
   territory_street?: string | null;
   auto_approve?: boolean; // aprova/paga automático ao postar (opt-in da marca)
+  campaign_kind?: Campaign["campaign_kind"]; // "process" = Ganhe no Processo
+  phases?: Campaign["phases"];
 }
 
 const DEMO_BRAND_KEY = "onlyshop_demo_brand";
@@ -225,12 +228,17 @@ export function useBrand() {
   const createCampaign = async (input: CreateCampaignInput): Promise<Campaign | null> => {
     if (!brand) return null;
     const rtype = input.reward_type ?? "per_video";
+    const isProcess = input.campaign_kind === "process";
     const isPermuta = rtype === "permuta";
-    // Permuta: influencer recebe o produto (reward_amount=0); marca paga só a taxa.
-    const reward = isPermuta ? 0 : input.reward_amount;
-    const { total } = isPermuta
-      ? computePermutaBudget(input.slots)
-      : computeBudget(input.slots, input.reward_amount);
+    const phases = input.phases ?? (isProcess ? PROCESS_PHASES_DEFAULT : undefined);
+    // Process: paga por etapa (reward_amount não usado). Permuta: influencer recebe
+    // o produto. Standard: reward por vídeo + 20% em cima.
+    const reward = isProcess || isPermuta ? 0 : input.reward_amount;
+    const { total } = isProcess
+      ? computeProcessBudget(input.slots, phases as any)
+      : isPermuta
+        ? computePermutaBudget(input.slots)
+        : computeBudget(input.slots, input.reward_amount);
     const base: Campaign = {
       id: demoId("camp"),
       brand_id: brand.id,
@@ -255,6 +263,8 @@ export function useBrand() {
       total_budget: total,
       funded: false, // pago só depois (CampaignPaymentStep)
       auto_approve: input.auto_approve ?? false,
+      campaign_kind: isProcess ? "process" : "standard",
+      phases: (isProcess ? phases : {}) as any,
       status: "active",
     };
 
@@ -289,6 +299,8 @@ export function useBrand() {
           total_budget: base.total_budget,
           funded: false,
           auto_approve: base.auto_approve,
+          campaign_kind: base.campaign_kind,
+          phases: base.phases,
           status: "active",
         } as any)
         .select()

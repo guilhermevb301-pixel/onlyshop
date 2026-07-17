@@ -24,6 +24,7 @@ interface Profile {
   avg_views?: number | null;
   whatsapp_business?: string | null;
   video_gallery?: string[] | null;
+  tiktok_url?: string | null;
 }
 
 interface UserRole {

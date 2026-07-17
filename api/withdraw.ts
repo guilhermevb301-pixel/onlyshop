@@ -65,7 +65,9 @@ export default async function handler(req: any, res: any) {
         amount: -amount,
         status: "pending",
         provider: "mercadopago",
-        provider_ref: `saque|${pixKeyType}|${pixKey}`,
+        // ÚNICO por saque (o unique (provider_ref,kind) barraria 2 saques pra mesma
+        // chave). A chave PIX continua aqui pra plataforma pagar: split('|') = [saque,tipo,chave,ts].
+        provider_ref: `saque|${pixKeyType}|${pixKey}|${Date.now()}`,
         created_at: new Date().toISOString(),
       }]),
     });

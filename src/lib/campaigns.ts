@@ -17,6 +17,15 @@ export type ApplicationStatus =
 export type CreditKind =
   | "topup" | "campaign_hold" | "payout" | "platform_fee" | "refund" | "withdrawal";
 
+// "Ganhe no Processo": a campanha paga o afiliado por ETAPA (conexão/vídeo/live),
+// com a taxa da plataforma EMBUTIDA em cada fase (não os 20% em cima).
+export type CampaignKind = "standard" | "process";
+export interface ProcessPhases {
+  connection: { brand: number; affiliate: number };
+  video: { amount: number; max: number };
+  live: { amount: number; max: number };
+}
+
 export interface Campaign {
   id: string;
   brand_id: string;
@@ -37,6 +46,8 @@ export interface Campaign {
   total_budget: number;
   funded: boolean;
   auto_approve?: boolean; // aprova/paga automático ao postar (opt-in da marca)
+  campaign_kind?: CampaignKind; // "process" = Ganhe no Processo (paga por etapa)
+  phases?: ProcessPhases | Record<string, never>;
   status: CampaignStatus;
   // Domínio geográfico (feature mapa-dominio)
   territory_scope?: TerritoryScope;
@@ -96,6 +107,10 @@ export interface CampaignApplication {
   distance_km?: number | null;
   created_at: string;
   updated_at: string;
+  // Progresso "Ganhe no Processo" (server-truth escrito pelos endpoints de etapa).
+  connection_paid_at?: string | null;
+  videos_paid?: number;
+  lives_paid?: number;
   // enriquecido no front (demo): dados da campanha pra exibir na lista
   campaign?: Partial<CampaignNear>;
   // enriquecido no lado da MARCA (N+1): perfil de quem aceitou a campanha
@@ -214,6 +229,30 @@ export function fmtKm(n?: number | null): string {
   const km = Number(n);
   if (km < 1) return `${Math.round(km * 1000)} m`;
   return `${km.toFixed(1)} km`;
+}
+
+// ── "Ganhe no Processo" ──────────────────────────────────────────────────────
+// Padrão do modelo do Biel (por vaga): conexão marca R$25→afiliado R$20; vídeo
+// R$2 × 10; live R$10 × 7. Marca investe R$134, afiliado recebe R$110 (fee embutido).
+export const PROCESS_PHASES_DEFAULT: ProcessPhases = {
+  connection: { brand: 25, affiliate: 20 },
+  video: { amount: 2, max: 10 },
+  live: { amount: 10, max: 7 },
+};
+// Custo TOTAL da marca por vaga (fee embutido) = brand da conexão + brand vídeos + brand lives.
+export function processCostPerSlot(phases: ProcessPhases = PROCESS_PHASES_DEFAULT): number {
+  const conn = phases.connection.brand;              // 25
+  const vids = 25;                                    // marca paga 25 pela fase de vídeos
+  const lives = phases.live.max * 12;                 // R$12/dia × 7 = 84
+  return conn + vids + lives;                          // 134
+}
+export function computeProcessBudget(slots: number, phases: ProcessPhases = PROCESS_PHASES_DEFAULT) {
+  const total = (slots || 0) * processCostPerSlot(phases);
+  return { base: 0, fee: 0, total };
+}
+// Teto que o afiliado recebe por vaga (o CAP dos payouts): 20 + 20 + 70 = 110.
+export function processAffiliateCap(phases: ProcessPhases = PROCESS_PHASES_DEFAULT): number {
+  return phases.connection.affiliate + phases.video.amount * phases.video.max + phases.live.amount * phases.live.max;
 }
 
 // Chat temporário (estilo Uber): só fica aberto ENQUANTO a campanha está ativa —
