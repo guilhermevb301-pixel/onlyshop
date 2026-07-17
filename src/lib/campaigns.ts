@@ -208,6 +208,14 @@ export function computePermutaBudget(slots: number, fee = PERMUTA_FEE) {
   return { base: 0, fee: total, total };
 }
 
+// Formata distância de forma humana (antes mostrava "8.89658581079915 km").
+export function fmtKm(n?: number | null): string {
+  if (n == null || Number.isNaN(Number(n))) return "";
+  const km = Number(n);
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  return `${km.toFixed(1)} km`;
+}
+
 // Chat temporário (estilo Uber): só fica aberto ENQUANTO a campanha está ativa —
 // da candidatura até a entrega. Depois de aprovada/paga/recusada, fecha. Regra
 // única compartilhada pelos dois lados (marca e influencer) pra não divergir.

@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCampaignApplications } from "@/hooks/useCampaignApplications";
 import { useAuth } from "@/hooks/useAuth";
-import { computeSplit } from "@/lib/campaigns";
+import { computeSplit, fmtKm } from "@/lib/campaigns";
 import type { CampaignNear } from "@/lib/campaigns";
 
 interface CampaignSheetProps {
@@ -98,7 +98,7 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
           </div>
           <SheetDescription className="sr-only">
             Detalhes da campanha {campaign.title} de {campaign.brand_name}: {brl(campaign.reward_amount)} por
-            vídeo, a {campaign.distance_km} km de você, com {left} vaga{left !== 1 ? "s" : ""} restante
+            vídeo, a {fmtKm(campaign.distance_km)} de você, com {left} vaga{left !== 1 ? "s" : ""} restante
             {left !== 1 ? "s" : ""}.
           </SheetDescription>
         </SheetHeader>
@@ -107,7 +107,7 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
         <div className="grid grid-cols-3 gap-2 mt-5 animate-slide-up opacity-0" style={step(1)}>
           <Info icon={<BadgeDollarSign className="h-4 w-4 text-accent" />} value={isPermuta ? "Permuta" : brl(campaign.reward_amount)} label={isPermuta ? "tipo" : "por vídeo"} />
           <Info icon={<Users className="h-4 w-4" />} value={`${left}`} label={`vaga${left !== 1 ? "s" : ""} restante${left !== 1 ? "s" : ""}`} />
-          <Info icon={<MapPin className="h-4 w-4 text-accent" />} value={`${campaign.distance_km} km`} label="de você" />
+          <Info icon={<MapPin className="h-4 w-4 text-accent" />} value={fmtKm(campaign.distance_km)} label="de você" />
         </div>
 
         {campaign.physical_item && (
@@ -187,7 +187,7 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
           )}
 
           <p className="text-center text-[10px] text-muted-foreground/40 mt-3 pb-1">
-            Sem compromisso de pagamento — você só grava se topar.
+            Sem compromisso de pagamento. Você só grava se topar.
           </p>
         </div>
       </SheetContent>

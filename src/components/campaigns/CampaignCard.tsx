@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Gift, Users, BadgeDollarSign, ArrowRight } from "lucide-react";
+import { fmtKm } from "@/lib/campaigns";
 import type { CampaignNear } from "@/lib/campaigns";
 
 interface CampaignCardProps {
@@ -32,7 +33,7 @@ export function CampaignCard({ c, onClick, ctaLabel, onCta, ctaDisabled, compact
             <p className="text-[11px] text-muted-foreground/70 truncate">{c.brand_name}</p>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[11px] text-muted-foreground/70">
               {c.distance_km != null && (
-                <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-accent" />{c.distance_km} km</span>
+                <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-accent" />{fmtKm(c.distance_km)}</span>
               )}
               <span className="flex items-center gap-1"><Users className="h-3 w-3" />{left} vaga{left !== 1 ? "s" : ""}</span>
               {c.physical_item && (

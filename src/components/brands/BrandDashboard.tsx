@@ -13,7 +13,7 @@ import { useChat } from "@/hooks/useChat";
 import { useNavigate } from "react-router-dom";
 import {
   Building2, CheckCircle2, Globe, MapPin, Megaphone, Wallet,
-  Users, ExternalLink, CircleCheck, BadgeDollarSign, X, User, Star, MessageSquare,
+  Users, ExternalLink, CircleCheck, BadgeDollarSign, X, User, Star, MessageSquare, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,7 @@ interface Props {
   onCreateCampaign: (data: any) => Promise<Campaign | null>;
   onFunded: (campaignId: string) => Promise<void>;
   onApprove: (app: CampaignApplication, reward: number) => Promise<void>;
+  onCancelCampaign?: (campaignId: string) => Promise<boolean>;
 }
 
 // Converte a Campaign (lojista) no formato CampaignNear que o CampaignCard consome.
@@ -52,7 +53,7 @@ function toNear(c: Campaign, brand: Brand): CampaignNear {
   };
 }
 
-export function BrandDashboard({ brand, campaigns, applications, onCreateCampaign, onFunded, onApprove }: Props) {
+export function BrandDashboard({ brand, campaigns, applications, onCreateCampaign, onFunded, onApprove, onCancelCampaign }: Props) {
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   // Overrides locais de status (reject) — useBrand não expõe reject, então refletimos aqui.
@@ -225,9 +226,31 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
                         <Wallet className="h-3 w-3" /> Aguardando pagamento
                       </Badge>
                     )}
-                    {!c.funded && (
-                      <ResumePaymentButton campaign={c} onFunded={onFunded} />
-                    )}
+                    <div className="flex items-center gap-2">
+                      {!c.funded && (
+                        <ResumePaymentButton campaign={c} onFunded={onFunded} />
+                      )}
+                      {onCancelCampaign && (
+                        <button
+                          type="button"
+                          aria-label="Excluir campanha"
+                          onClick={() => {
+                            const msg = c.funded
+                              ? `Excluir "${c.name}"? Ela sai do ar (não mexe em pagamentos já feitos).`
+                              : `Excluir "${c.name}"? Ela ainda não foi paga.`;
+                            if (window.confirm(msg)) {
+                              onCancelCampaign(c.id).then((ok) => {
+                                if (ok) toast.success("Campanha excluída");
+                                else toast.error("Não foi possível excluir agora");
+                              });
+                            }
+                          }}
+                          className="text-muted-foreground/40 hover:text-destructive transition-colors p-1 active:scale-90"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <CampaignCard c={toNear(c, brand)} />
                 </div>

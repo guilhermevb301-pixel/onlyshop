@@ -11,7 +11,7 @@ export default function BrandArea() {
   const { user, loading: authLoading } = useAuth();
   const {
     brand, campaigns, applications, loading,
-    createBrand, createCampaign, markCampaignFunded, approveApplication, refetch,
+    createBrand, createCampaign, markCampaignFunded, approveApplication, cancelCampaign, refetch,
   } = useBrand();
 
   if (authLoading || loading) {
@@ -58,6 +58,7 @@ export default function BrandArea() {
       onCreateCampaign={createCampaign}
       onFunded={markCampaignFunded}
       onApprove={approveApplication}
+      onCancelCampaign={cancelCampaign}
     />
   );
 }

@@ -1,5 +1,5 @@
 import { MapPin, BadgeDollarSign, Flame } from "lucide-react";
-import { computeSplit } from "@/lib/campaigns";
+import { computeSplit, fmtKm } from "@/lib/campaigns";
 import type { CampaignNear } from "@/lib/campaigns";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +53,7 @@ export function SocialProofBar({ campaigns }: SocialProofBarProps) {
           />
           <Stat
             icon={<MapPin className="h-3.5 w-3.5 text-muted-foreground/70" />}
-            value={nearest ? `${nearest.distance_km} km` : "—"}
+            value={nearest ? fmtKm(nearest.distance_km) : "—"}
             label="a mais perto"
           />
           <Stat

@@ -6,6 +6,7 @@ import { Calendar, ExternalLink, MessageCircle, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { fmtKm } from "@/lib/campaigns";
 import type { CampaignApplication } from "@/lib/campaigns";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -48,7 +49,7 @@ export function CampaignDeliverySheet({ application, open, onOpenChange }: {
             <p className="text-sm flex items-center gap-2 text-muted-foreground/70"><Calendar className="h-4 w-4 text-accent" /> Publicado em {posted}</p>
           )}
           {a.distance_km != null && (
-            <p className="text-sm flex items-center gap-2 text-muted-foreground/70"><MapPin className="h-4 w-4 text-accent" /> {a.distance_km} km</p>
+            <p className="text-sm flex items-center gap-2 text-muted-foreground/70"><MapPin className="h-4 w-4 text-accent" /> {fmtKm(a.distance_km)}</p>
           )}
 
           {links.length > 0 && (

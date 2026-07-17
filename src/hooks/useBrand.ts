@@ -377,11 +377,36 @@ export function useBrand() {
     }
   }, [user]);
 
+  // Exclui/encerra uma campanha. Não-paga → apaga; paga → cancela (não mexe no
+  // ledger). Pedido do Biel: "não existe a opção de excluir campanha".
+  const cancelCampaign = useCallback(async (campaignId: string): Promise<boolean> => {
+    const camp = campaigns.find((c) => c.id === campaignId);
+    if (demo.isOn() || !user) {
+      const all = demo.myCampaigns().filter((c) => c.id !== campaignId);
+      localStorage.setItem("onlyshop_demo_my_campaigns", JSON.stringify(all));
+      setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
+      return true;
+    }
+    try {
+      if (camp && !camp.funded) {
+        await supabase.from("campaigns" as any).delete().eq("id", campaignId);
+      } else {
+        // Paga: não apaga (há dinheiro/entregas ligadas) — só cancela e some do mapa.
+        await supabase.from("campaigns" as any).update({ status: "cancelled" } as any).eq("id", campaignId);
+      }
+      setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
+      return true;
+    } catch (e) {
+      console.error("cancelCampaign:", e);
+      return false;
+    }
+  }, [user, campaigns]);
+
   useEffect(() => { fetchBrand(); }, [fetchBrand]);
 
   return {
     brand, campaigns, applications, loading,
-    createBrand, createCampaign, markCampaignFunded, approveApplication,
+    createBrand, createCampaign, markCampaignFunded, approveApplication, cancelCampaign,
     refetch: fetchBrand,
   };
 }
