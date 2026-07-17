@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>OnlyShop | Ganhe no Processo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root { --mag:#ff2d78; --cyan:#12e0c8; --purple:#8b5cf6; --bg:#0a0a0f; --card:#141420; }
+  body { font-family:'Inter',sans-serif; color:#e8e8ee; background:var(--bg); line-height:1.55; }
+  .page { max-width:820px; margin:0 auto; padding:56px 60px; }
+  @page { size:A4; margin:0; }
+  h1 { font-size:40px; font-weight:900; letter-spacing:-1.2px; line-height:1.05; }
+  h2 { font-size:23px; font-weight:800; letter-spacing:-.5px; margin:38px 0 14px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.08); }
+  h3 { font-size:16px; font-weight:800; margin:20px 0 6px; }
+  p { color:#c5c5d2; font-size:14.5px; margin-bottom:12px; }
+  .grad { background:linear-gradient(100deg,var(--mag),var(--purple) 55%,var(--cyan)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .eyebrow { font-size:11px; font-weight:800; letter-spacing:3px; text-transform:uppercase; color:var(--cyan); margin-bottom:14px; }
+  .lead { font-size:17px; color:#e8e8ee; font-weight:600; }
+  .cover { min-height:100vh; display:flex; flex-direction:column; justify-content:center; page-break-after:always; background:radial-gradient(120% 80% at 20% 0%, rgba(255,45,120,.14), transparent 55%), radial-gradient(100% 70% at 90% 100%, rgba(18,224,200,.10), transparent 55%); }
+  .slogan { font-size:30px; font-weight:900; letter-spacing:-.8px; margin:28px 0 8px; line-height:1.1; }
+  .phase { background:var(--card); border:1px solid rgba(255,255,255,.07); border-radius:20px; padding:22px 24px; margin:14px 0; page-break-inside:avoid; }
+  .phase .tag { display:inline-block; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); background:rgba(18,224,200,.1); border:1px solid rgba(18,224,200,.25); border-radius:99px; padding:4px 12px; margin-bottom:10px; }
+  .phase h3 { font-size:19px; margin:0 0 4px; }
+  .money { display:flex; gap:14px; margin-top:14px; flex-wrap:wrap; }
+  .money div { flex:1; min-width:130px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:14px 16px; }
+  .money .big { font-size:26px; font-weight:900; letter-spacing:-.5px; }
+  .money .lbl { font-size:11px; color:#9a9aad; margin-top:2px; }
+  .cyan { color:var(--cyan); } .mag { color:var(--mag); }
+  table { width:100%; border-collapse:collapse; margin:14px 0; font-size:14px; }
+  th,td { text-align:left; padding:11px 14px; border-bottom:1px solid rgba(255,255,255,.07); }
+  th { color:#9a9aad; font-size:11px; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+  td.n { text-align:right; font-variant-numeric:tabular-nums; font-weight:700; }
+  .total-row td { border-top:2px solid rgba(18,224,200,.4); border-bottom:none; font-weight:900; font-size:15px; color:#fff; padding-top:14px; }
+  .callout { background:linear-gradient(135deg, rgba(255,45,120,.08), rgba(139,92,246,.05)); border:1px solid rgba(255,45,120,.2); border-radius:18px; padding:22px 26px; margin:20px 0; page-break-inside:avoid; }
+  .callout .q { font-size:20px; font-weight:900; letter-spacing:-.4px; margin-bottom:10px; }
+  ul { margin:6px 0 14px 4px; list-style:none; }
+  li { color:#c5c5d2; font-size:14px; margin-bottom:9px; padding-left:24px; position:relative; }
+  li:before { content:'→'; position:absolute; left:0; color:var(--cyan); font-weight:800; }
+  .ok:before { content:'✓'; color:var(--cyan); }
+  .soon:before { content:'○'; color:#9a9aad; }
+  .foot { margin-top:44px; padding-top:18px; border-top:1px solid rgba(255,255,255,.08); font-size:11px; color:#7a7a8a; }
+  .badge2 { display:inline-block; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; padding:3px 9px; border-radius:99px; margin-left:8px; }
+  .b-live { background:rgba(18,224,200,.12); color:var(--cyan); border:1px solid rgba(18,224,200,.3); }
+  .b-soon { background:rgba(255,255,255,.05); color:#9a9aad; border:1px solid rgba(255,255,255,.1); }
+  .pos { text-align:center; padding:26px; }
+  .pos .a { font-size:15px; color:#9a9aad; } .pos .b { font-size:22px; font-weight:900; letter-spacing:-.5px; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<!-- CAPA -->
+<section class="page cover">
+  <div class="eyebrow">OnlyShop · Proposta de Valor</div>
+  <h1>O afiliado não ganha só quando vende.<br><span class="grad">Ele ganha enquanto faz o trabalho.</span></h1>
+  <div class="slogan grad">Ganhe no processo. Venda no resultado.</div>
+  <p class="lead" style="max-width:560px; margin-top:14px;">O OnlyShop deixa de ser só uma ponte entre marcas e afiliados. Ele passa a <strong style="color:#fff">reconhecer, validar e remunerar o processo</strong>, cada etapa do trabalho do afiliado vale dinheiro.</p>
+  <div class="foot" style="margin-top:60px; border:none;">Documento para Biel Tex · sócios OnlyShop · 16/07/2026</div>
+</section>
+
+<!-- CONCEITO -->
+<section class="page">
+  <div class="eyebrow">O conceito</div>
+  <h1 style="font-size:30px">A grande mudança</h1>
+  <p style="margin-top:12px">Hoje, o afiliado pode procurar um produto, estudar a oferta, receber a amostra, gravar vídeos e fazer lives <strong style="color:#fff">durante dias sem vender nada</strong>. O trabalho foi feito. O conteúdo foi produzido. A live aconteceu. E, no modelo tradicional, ele não recebe nada por isso.</p>
+
+  <div class="callout">
+    <div class="q">O OnlyShop não diz “venda e talvez você ganhe”.</div>
+    <p style="margin:0; color:#e8e8ee; font-size:15px;">O OnlyShop diz: <strong style="color:#fff">“Faça o trabalho. Nós reconhecemos o seu esforço. E, se você vender, você ganha ainda mais.”</strong></p>
+  </div>
+
+  <p>O afiliado que já procuraria produtos, que já gravaria vídeos, que já faria lives, agora faz tudo isso <strong class="cyan">sendo remunerado pelo processo</strong>. Ele não depende exclusivamente da venda para ter retorno sobre o trabalho.</p>
+
+  <h2>Como funciona o modelo: 3 fases</h2>
+
+  <div class="phase">
+    <span class="tag">Fase 1 · Conexão</span>
+    <h3>Encontre e conecte-se com uma nova marca</h3>
+    <p style="margin:0">A empresa investe <strong class="cyan">R$ 25 por afiliado</strong> conectado e aprovado na campanha. O afiliado já começa recebendo por realizar o primeiro passo: encontrar uma oportunidade e se conectar com a marca.</p>
+    <div class="money">
+      <div><div class="big cyan">R$ 20</div><div class="lbl">vão para o afiliado</div></div>
+      <div><div class="big">R$ 5</div><div class="lbl">remuneração do OnlyShop</div></div>
+      <div><div class="big mag">5%</div><div class="lbl">da receita vai pro indicador que o trouxe</div></div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Fase 2 · Conteúdo</span>
+    <h3>Grave os primeiros 10 vídeos</h3>
+    <p style="margin:0">Após receber o produto e produzir <strong style="color:#fff">10 vídeos válidos</strong>, o afiliado recebe <strong class="cyan">R$ 2 por vídeo</strong>. A empresa investe novamente R$ 25. A marca não está só mandando amostra e torcendo, está <strong style="color:#fff">incentivando diretamente a produção de conteúdo</strong>.</p>
+    <div class="money">
+      <div><div class="big cyan">R$ 20</div><div class="lbl">para o afiliado (10 × R$ 2)</div></div>
+      <div><div class="big">R$ 25</div><div class="lbl">investimento da empresa</div></div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Fase 3 · Lives</span>
+    <h3>Faça as primeiras 7 lives</h3>
+    <p style="margin:0">Uma semana de lives: 7 dias, mínimo de 1 hora por dia, com comprovação. Por cada dia validado, o afiliado recebe <strong class="cyan">R$ 10</strong>.</p>
+    <div class="money">
+      <div><div class="big cyan">R$ 70</div><div class="lbl">para o afiliado (7 × R$ 10)</div></div>
+      <div><div class="big">R$ 84</div><div class="lbl">investimento da empresa (R$ 12/dia)</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTADO -->
+<section class="page">
+  <div class="eyebrow">O resultado do 1º ciclo</div>
+  <h1 style="font-size:30px">A conta que fecha</h1>
+  <p style="margin-top:12px">Para cada afiliado que realmente se compromete com a marca:</p>
+
+  <table>
+    <tr><th>Fase</th><th style="text-align:right">Empresa investe</th><th style="text-align:right">Afiliado recebe</th></tr>
+    <tr><td>Conexão</td><td class="n">R$ 25</td><td class="n cyan">R$ 20</td></tr>
+    <tr><td>10 vídeos</td><td class="n">R$ 25</td><td class="n cyan">R$ 20</td></tr>
+    <tr><td>7 lives</td><td class="n">R$ 84</td><td class="n cyan">R$ 70</td></tr>
+    <tr class="total-row"><td>Total do ciclo</td><td class="n">R$ 134</td><td class="n cyan">R$ 110</td></tr>
+  </table>
+  <p style="font-size:13px; color:#9a9aad">E isso acontece <strong style="color:#fff">antes</strong> de considerar as comissões geradas pelas vendas. Numa mesma live o afiliado pode divulgar 2, 3, 4, 5 produtos, não há limite.</p>
+
+  <h2>Por que a empresa ganha, o argumento lógico</h2>
+  <p>Hoje, no TikTok, a marca manda o produto e <strong style="color:#fff">torce</strong>. De 50 afiliados que recebem, 5 entregam e 45 somem. A marca perdeu o produto e teve alto risco.</p>
+
+  <div class="callout">
+    <div class="q mag">Você não paga para comprar uma divulgação.</div>
+    <p style="margin:0; color:#e8e8ee; font-size:15px;">Você investe para <strong style="color:#fff">colocar um afiliado em movimento</strong>, com garantia de entrega.</p>
+  </div>
+
+  <p>Para <strong style="color:#fff">1.000 afiliados</strong>, a marca investe R$ 134 mil e recebe, garantido:</p>
+  <div class="money">
+    <div><div class="big cyan">10.000</div><div class="lbl">vídeos do produto</div></div>
+    <div><div class="big cyan">7.000 h</div><div class="lbl">de live (7 lives × 1h × 1000)</div></div>
+    <div><div class="big">100×</div><div class="lbl">mais conteúdo que hoje</div></div>
+  </div>
+  <p style="margin-top:14px">Uma única live que estoura, um vídeo que viraliza, e o investimento já se paga. O crescimento contínuo é da empresa. <strong class="cyan">O OnlyShop só coloca a roda para girar.</strong></p>
+
+  <h2>Por que o afiliado ganha</h2>
+  <ul>
+    <li>Renda <strong style="color:#fff">no processo</strong>, não só na venda. Fez o vídeo, fez a live, já ganhou.</li>
+    <li>Dinheiro <strong style="color:#fff">rápido</strong>: aceitou e entregou, já pode sacar. Não espera 15 dias do TikTok.</li>
+    <li>O <strong style="color:#fff">microusuário</strong> tem vez: pode ter 30 seguidores, mas 2 mil contatos do bairro, grupos de WhatsApp, ser o síndico do prédio. O alcance real conta.</li>
+    <li>5 marcas por semana = ~R$ 550/semana só pelo processo. É pouco por marca, mas é <strong class="cyan">estável</strong>.</li>
+  </ul>
+</section>
+
+<!-- PROSPECTOR + SEGURANÇA -->
+<section class="page">
+  <div class="eyebrow">Uma nova profissão</div>
+  <h1 style="font-size:30px">O prospector / embaixador</h1>
+  <p style="margin-top:12px">Tem quem diga: “não é pra mim, não faço live, não gosto de aparecer, não tenho loja nem estoque.” Mesmo esse cara aproveita a onda: ele <strong style="color:#fff">traz empresas</strong>.</p>
+  <ul>
+    <li>Prospecta 3 empresas por dia (na rua, no Instagram, no WhatsApp) e cadastra no OnlyShop.</li>
+    <li>Cada empresa que ele traz vira <strong class="cyan">renda recorrente</strong> (5% da receita daquela conta, pra sempre).</li>
+    <li>Uma marca grande que ele trouxer, com 1.000 afiliados, paga ~R$ 132 mil/mês à plataforma. A fatia dele é significativa e recorrente.</li>
+  </ul>
+
+  <h2>A pergunta do pagamento, está seguro?</h2>
+  <p>Biel, você perguntou: “o split pega o dinheiro da conta e manda pro afiliado, tudo automatizado, tem risco de alguém burlar e sacar tudo?” Resposta direta: <strong class="cyan">não, o dinheiro fica protegido</strong>. Como funciona hoje:</p>
+  <ul>
+    <li class="ok"><strong style="color:#fff">A marca paga antes (pré-pago).</strong> O dinheiro fica retido na plataforma (Mercado Pago), não vai direto pro afiliado.</li>
+    <li class="ok"><strong style="color:#fff">O afiliado só recebe quando entrega.</strong> O crédito na carteira dele só é gerado quando a entrega é aprovada. Se não entregar, o valor volta pra campanha.</li>
+    <li class="ok"><strong style="color:#fff">O split roda no servidor</strong> (nunca no navegador), validando quem autoriza cada pagamento. Um afiliado não consegue se auto-pagar, só o dono da campanha aprova, ou o sistema aprova sozinho <em>apenas</em> se você ligou a “aprovação automática” E a campanha está paga.</li>
+    <li class="ok"><strong style="color:#fff">Cada pagamento é único (idempotente).</strong> Mesmo que o clique repita, o sistema não paga duas vezes, isso está testado ao vivo.</li>
+    <li class="ok"><strong style="color:#fff">O saque é validado no servidor</strong> contra o saldo real. Ninguém saca mais do que tem, nem entra na conta pra “esvaziar”.</li>
+  </ul>
+  <p style="font-size:13px; color:#9a9aad">Em resumo: a plataforma faz a <strong style="color:#fff">segurança do dinheiro</strong> (modelo Uber), a marca não paga por fora e o afiliado só recebe pelo que fez.</p>
+</section>
+
+<!-- POSICIONAMENTO + ROADMAP -->
+<section class="page">
+  <div class="eyebrow">Posicionamento</div>
+  <h1 style="font-size:30px">A mensagem final</h1>
+
+  <div class="pos phase" style="margin-top:18px">
+    <div class="a">No TikTok, você <strong style="color:#fff">procura</strong> um afiliado.</div>
+    <div class="b grad">No OnlyShop, você <strong>constrói</strong> um afiliado para a sua marca.</div>
+  </div>
+  <p style="text-align:center; color:#9a9aad; margin-top:6px">TikTok mostra quem <strong style="color:#fff">pode</strong> vender. OnlyShop mostra quem <strong style="color:#fff">está disposto a trabalhar</strong>, e o conecta, incentiva, acompanha e recompensa.</p>
+
+  <h2>Importante: não é “bônus”, é remuneração por execução</h2>
+  <p>Não vender isso como bônus, bônus parece brinde. O que estamos criando é um <strong class="cyan">modelo de remuneração por execução</strong>. Isso muda completamente a percepção do produto. Sugestão de categoria dentro do app: <strong style="color:#fff">“Recompensa por Processo”</strong>.</p>
+
+  <h2>O que já está no app · o que é roadmap</h2>
+  <h3>Já funcionando <span class="badge2 b-live">no ar</span></h3>
+  <ul>
+    <li class="ok">Permuta profissionalizada (marca paga a taxa por vaga), mapa localizado, chat marca↔afiliado.</li>
+    <li class="ok">Pagamento seguro: marca paga antes, split automático, saque validado, aprovação instantânea opcional.</li>
+    <li class="ok">Perfil / media-kit: alcance real, redes sociais, vídeos, “me contrate”. A marca vê quem é a pessoa.</li>
+    <li class="ok">Rede de indicação (5% recorrente) e gestão de time de afiliados pela marca.</li>
+  </ul>
+  <h3>Próximos passos para fechar o modelo <span class="badge2 b-soon">roadmap</span></h3>
+  <ul>
+    <li class="soon">As <strong style="color:#fff">3 fases de recompensa por processo</strong> (conexão → 10 vídeos → 7 lives) como um fluxo guiado, com o dinheiro liberando por etapa validada.</li>
+    <li class="soon"><strong style="color:#fff">Endereço + link do TikTok</strong> no cadastro do afiliado, pra marca enviar o produto e já ligar a afiliação no TikTok.</li>
+    <li class="soon"><strong style="color:#fff">Comprovante multi-rede</strong> (postou em WhatsApp, Instagram, Facebook, TikTok → ganha por etapa).</li>
+  </ul>
+
+  <div class="foot">
+    OnlyShop, Ganhe no processo. Venda no resultado. · onlyshopbrasil.com.br<br>
+    Documento estratégico para alinhamento dos sócios · 16/07/2026
+  </div>
+</section>
+
+</body>
+</html>
