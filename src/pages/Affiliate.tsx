@@ -20,11 +20,13 @@ import { ptBR } from "date-fns/locale";
 import { Link, useNavigate } from "react-router-dom";
 import { demo, demoId, isCampaignChatOpen, type ApplicationStatus, type CampaignApplication } from "@/lib/campaigns";
 
-// Status que entram na lista "Minhas campanhas" (filtra fora applied/rejected).
-const VISIBLE: ApplicationStatus[] = ["accepted", "delivered", "approved", "paid"];
+// Status que entram na lista "Minhas campanhas". "applied" = você se candidatou e a
+// marca ainda vai aprovar seu perfil (filtra fora só rejected).
+const VISIBLE: ApplicationStatus[] = ["applied", "accepted", "delivered", "approved", "paid"];
 
 // Aparência de cada status na timeline da candidatura.
 const STATUS_CFG: Record<string, { label: string; icon: typeof Clock; class: string }> = {
+  applied: { label: "Aguardando a marca", icon: Clock, class: "bg-muted/40 text-muted-foreground/80" },
   accepted: { label: "Aguardando entrega", icon: Hourglass, class: "bg-warning/15 text-warning" },
   delivered: { label: "Em análise", icon: Clock, class: "bg-accent/15 text-accent" },
   approved: { label: "Aprovado", icon: CheckCircle, class: "bg-primary/15 text-primary" },

@@ -46,6 +46,7 @@ export interface Campaign {
   total_budget: number;
   funded: boolean;
   auto_approve?: boolean; // aprova/paga automático ao postar (opt-in da marca)
+  auto_accept?: boolean;  // aceita todo candidato sem curadoria (default: marca aprova)
   campaign_kind?: CampaignKind; // "process" = Ganhe no Processo (paga por etapa)
   phases?: ProcessPhases | Record<string, never>;
   status: CampaignStatus;

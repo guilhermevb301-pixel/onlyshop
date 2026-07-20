@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import {
-  MapPin, Users, Gift, Clock, ClipboardList, ArrowRight, ArrowLeft, Loader2, Sparkles, Rocket, Flag, Zap,
+  MapPin, Users, Gift, Clock, ClipboardList, ArrowRight, ArrowLeft, Loader2, Sparkles, Rocket, Flag, Zap, UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -233,10 +233,19 @@ export function CampaignWizard({ form, update, onSubmit, loading, budget, fmt, i
                 <SelectContent>{DEADLINES.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            {/* Aprovação automática (opt-in) */}
+            {/* Curadoria do perfil: por padrão VOCÊ aprova quem entra */}
             <div className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.03] ring-1 ring-white/[0.06] px-3 py-2.5">
               <div className="min-w-0">
-                <p className="text-xs font-semibold flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-accent" /> Aprovar automaticamente</p>
+                <p className="text-xs font-semibold flex items-center gap-1.5"><UserCheck className="h-3.5 w-3.5 text-warning" /> Contratar todos automaticamente</p>
+                <p className="text-[10px] text-muted-foreground/55 mt-0.5">Desligado (recomendado): quem se candidata fica aguardando o SEU OK antes de virar contratação. Ligado: entra direto.</p>
+              </div>
+              <Switch checked={form.auto_accept} onCheckedChange={(v) => update("auto_accept", v)} />
+            </div>
+
+            {/* Aprovação automática da ENTREGA (opt-in) */}
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.03] ring-1 ring-white/[0.06] px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-accent" /> Aprovar entrega automaticamente</p>
                 <p className="text-[10px] text-muted-foreground/55 mt-0.5">O influencer é pago assim que posta o comprovante, sem você revisar. Ative se confia no time.</p>
               </div>
               <Switch checked={form.auto_approve} onCheckedChange={(v) => update("auto_approve", v)} />

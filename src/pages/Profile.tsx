@@ -35,11 +35,13 @@ import {
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-// Status visíveis no histórico do influencer (fora applied/rejected).
-const VISIBLE_APP = ["accepted", "delivered", "approved", "paid"] as const;
+// Status visíveis no histórico do influencer. "applied" = candidatou, a marca ainda
+// vai aprovar o perfil (filtra fora só rejected).
+const VISIBLE_APP = ["applied", "accepted", "delivered", "approved", "paid"] as const;
 
 // Aparência de cada status na timeline.
 const STATUS_CFG: Record<string, { label: string; icon: typeof Clock; class: string }> = {
+  applied: { label: "Aguardando a marca", icon: Clock, class: "bg-muted/40 text-muted-foreground/80" },
   accepted: { label: "Aguardando entrega", icon: Hourglass, class: "bg-warning/15 text-warning" },
   delivered: { label: "Em análise", icon: Clock, class: "bg-accent/15 text-accent" },
   approved: { label: "Aprovado", icon: CheckCircle, class: "bg-primary/15 text-primary" },

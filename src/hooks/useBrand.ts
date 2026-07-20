@@ -68,6 +68,7 @@ export interface CreateCampaignInput {
   territory_neighborhood?: string | null;
   territory_street?: string | null;
   auto_approve?: boolean; // aprova/paga automático ao postar (opt-in da marca)
+  auto_accept?: boolean;  // aceita todo candidato sem curadoria
   campaign_kind?: Campaign["campaign_kind"]; // "process" = Ganhe no Processo
   phases?: Campaign["phases"];
 }
@@ -263,6 +264,7 @@ export function useBrand() {
       total_budget: total,
       funded: false, // pago só depois (CampaignPaymentStep)
       auto_approve: input.auto_approve ?? false,
+      auto_accept: input.auto_accept ?? false,
       campaign_kind: isProcess ? "process" : "standard",
       phases: (isProcess ? phases : {}) as any,
       status: "active",
@@ -299,6 +301,7 @@ export function useBrand() {
           total_budget: base.total_budget,
           funded: false,
           auto_approve: base.auto_approve,
+          auto_accept: base.auto_accept,
           campaign_kind: base.campaign_kind,
           phases: base.phases,
           status: "active",
@@ -414,11 +417,60 @@ export function useBrand() {
     }
   }, [user, campaigns]);
 
+  // A marca aprova o PERFIL do candidato (vira contratação). No modelo "Ganhe no
+  // Processo", é a aprovação que libera a CONEXÃO (R$20) — não o aceite do influencer.
+  const approveApplicant = useCallback(async (app: CampaignApplication): Promise<boolean> => {
+    if (demo.isOn() || !user) {
+      demo.updateApp(app.id, { status: "accepted" });
+      setApplications((prev) => prev.map((a) => (a.id === app.id ? { ...a, status: "accepted" } : a)));
+      return true;
+    }
+    try {
+      const { error } = await supabase.from("campaign_applications" as any)
+        .update({ status: "accepted", updated_at: new Date().toISOString() } as any).eq("id", app.id);
+      if (error) throw error;
+      try {
+        const camp = campaigns.find((c) => c.id === app.campaign_id);
+        if (camp?.campaign_kind === "process") {
+          const { data: { session } } = await supabase.auth.getSession();
+          await fetch("/api/payout-process", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
+            body: JSON.stringify({ applicationId: app.id, phase: "connection" }),
+          });
+        }
+      } catch { /* conexão best-effort — não desfaz a aprovação */ }
+      setApplications((prev) => prev.map((a) => (a.id === app.id ? { ...a, status: "accepted" } : a)));
+      return true;
+    } catch (e) {
+      console.error("approveApplicant:", e);
+      return false;
+    }
+  }, [user, campaigns]);
+
+  const rejectApplicant = useCallback(async (appId: string): Promise<boolean> => {
+    if (demo.isOn() || !user) {
+      demo.updateApp(appId, { status: "rejected" });
+      setApplications((prev) => prev.map((a) => (a.id === appId ? { ...a, status: "rejected" } : a)));
+      return true;
+    }
+    try {
+      await supabase.from("campaign_applications" as any)
+        .update({ status: "rejected", updated_at: new Date().toISOString() } as any).eq("id", appId);
+      setApplications((prev) => prev.map((a) => (a.id === appId ? { ...a, status: "rejected" } : a)));
+      return true;
+    } catch (e) {
+      console.error("rejectApplicant:", e);
+      return false;
+    }
+  }, [user]);
+
   useEffect(() => { fetchBrand(); }, [fetchBrand]);
 
   return {
     brand, campaigns, applications, loading,
     createBrand, createCampaign, markCampaignFunded, approveApplication, cancelCampaign,
+    approveApplicant, rejectApplicant,
     refetch: fetchBrand,
   };
 }

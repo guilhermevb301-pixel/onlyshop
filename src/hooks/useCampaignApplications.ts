@@ -94,15 +94,26 @@ export function useCampaignApplications() {
     };
     if (demo.isOn() || !user) { demo.addApp(app); await refresh(); return true; }
     try {
+      // A MARCA aprova o perfil antes de virar contratação (pedido do Biel). Só entra
+      // direto como "accepted" se ela ligou auto_accept ("contratar todos").
+      let autoAccept = false;
+      let kind = "standard";
+      try {
+        const { data: camp } = await supabase.from("campaigns" as any).select("auto_accept, campaign_kind").eq("id", c.campaign_id).maybeSingle();
+        autoAccept = (camp as any)?.auto_accept === true;
+        kind = (camp as any)?.campaign_kind ?? "standard";
+      } catch { /* na dúvida, exige aprovação da marca */ }
+
       const { error } = await supabase.from("campaign_applications" as any).insert({
-        campaign_id: c.campaign_id, influencer_user_id: user.id, status: "accepted", distance_km: c.distance_km,
+        campaign_id: c.campaign_id, influencer_user_id: user.id,
+        status: autoAccept ? "accepted" : "applied", distance_km: c.distance_km,
       } as any);
       if (error) throw error;
-      // "Ganhe no Processo": paga a CONEXÃO (R$20) na hora do aceite. O servidor
-      // revalida tudo (funded, process, dono); se não for process/funded, no-op.
-      try {
-        const { data: camp } = await supabase.from("campaigns" as any).select("campaign_kind").eq("id", c.campaign_id).maybeSingle();
-        if ((camp as any)?.campaign_kind === "process") {
+
+      // "Ganhe no Processo": a CONEXÃO (R$20) só é paga quando o perfil está ACEITO.
+      // Se ficou como interesse ("applied"), o payout vem quando a marca aprovar.
+      if (autoAccept && kind === "process") {
+        try {
           const { data: appRow } = await supabase.from("campaign_applications" as any)
             .select("id").eq("campaign_id", c.campaign_id).eq("influencer_user_id", user.id)
             .order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -111,8 +122,8 @@ export function useCampaignApplications() {
             const { data: { session } } = await supabase.auth.getSession();
             await fetch("/api/payout-process", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` }, body: JSON.stringify({ applicationId: aid, phase: "connection" }) });
           }
-        }
-      } catch { /* conexão é best-effort, não bloqueia o aceite */ }
+        } catch { /* best-effort, não bloqueia */ }
+      }
       await refresh();
       return true;
     } catch {

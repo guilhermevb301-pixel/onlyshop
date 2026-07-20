@@ -76,6 +76,10 @@ export default async function handler(req: any, res: any) {
     let amount = 0;
     let ref = "";
     if (phase === "connection") {
+      // Só paga a conexão de perfil APROVADO pela marca — "applied" é só interesse.
+      if (app.status === "applied" || app.status === "rejected") {
+        return res.status(403).json({ error: "perfil ainda não aprovado pela marca" });
+      }
       amount = Number(phases.connection.affiliate);
       ref = `connect-${applicationId}`;
     } else if (phase === "video") {

@@ -47,6 +47,7 @@ const empty = {
   min_followers: "0",
   deadline_hours: "168",
   auto_approve: false,
+  auto_accept: false,
   campaign_kind: "standard" as "standard" | "process",
 };
 
@@ -117,6 +118,7 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
         territory_neighborhood: form.territory_neighborhood.trim() || null,
         territory_street: form.territory_street.trim() || null,
         auto_approve: form.auto_approve,
+        auto_accept: form.auto_accept,
         campaign_kind: form.campaign_kind,
         phases: form.campaign_kind === "process" ? PROCESS_PHASES_DEFAULT : undefined,
       });

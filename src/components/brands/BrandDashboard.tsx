@@ -13,7 +13,7 @@ import { useChat } from "@/hooks/useChat";
 import { useNavigate } from "react-router-dom";
 import {
   Building2, CheckCircle2, Globe, MapPin, Megaphone, Wallet,
-  Users, ExternalLink, CircleCheck, BadgeDollarSign, X, User, Star, MessageSquare, Trash2,
+  Users, ExternalLink, CircleCheck, BadgeDollarSign, X, User, Star, MessageSquare, Trash2, UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,8 @@ interface Props {
   onFunded: (campaignId: string) => Promise<void>;
   onApprove: (app: CampaignApplication, reward: number) => Promise<void>;
   onCancelCampaign?: (campaignId: string) => Promise<boolean>;
+  onApproveApplicant?: (app: CampaignApplication) => Promise<boolean>;
+  onRejectApplicant?: (appId: string) => Promise<boolean>;
 }
 
 // Converte a Campaign (lojista) no formato CampaignNear que o CampaignCard consome.
@@ -53,7 +55,7 @@ function toNear(c: Campaign, brand: Brand): CampaignNear {
   };
 }
 
-export function BrandDashboard({ brand, campaigns, applications, onCreateCampaign, onFunded, onApprove, onCancelCampaign }: Props) {
+export function BrandDashboard({ brand, campaigns, applications, onCreateCampaign, onFunded, onApprove, onCancelCampaign, onApproveApplicant, onRejectApplicant }: Props) {
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   // Overrides locais de status (reject) — useBrand não expõe reject, então refletimos aqui.
@@ -261,6 +263,46 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
 
         {/* CANDIDATURAS */}
         <TabsContent value="applications" className="mt-4 space-y-3">
+          {/* Curadoria: quem sinalizou interesse e aguarda o SEU OK (pedido do Biel).
+              Só vira contratação — e só paga — depois que você aprova o perfil. */}
+          {onApproveApplicant && applications.some((a) => statusOf(a) === "applied") && (
+            <div className="rounded-[1.5rem] bg-gradient-to-b from-warning/[0.1] to-transparent p-px animate-slide-up">
+              <div className="rounded-[calc(1.5rem-1px)] bg-card/80 ring-1 ring-inset ring-warning/10 p-4 space-y-2.5">
+                <div>
+                  <p className="text-sm font-bold flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-warning" /> Aguardando seu OK</p>
+                  <p className="text-[11px] text-muted-foreground/60 mt-0.5">Veja quem quer trabalhar com você. Só vira contratação (e pagamento) depois que você aprova.</p>
+                </div>
+                {applications.filter((a) => statusOf(a) === "applied").map((a) => (
+                  <div key={a.id} className="flex items-center gap-2 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-3">
+                    <button type="button" onClick={() => setProfileApp(a)} className="flex items-center gap-2.5 flex-1 min-w-0 text-left active:scale-[.99] transition-transform">
+                      <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/30 to-accent/10 ring-1 ring-white/[0.06] grid place-items-center shrink-0 overflow-hidden">
+                        {a.influencer?.avatar_url
+                          ? <img src={a.influencer.avatar_url} alt="" className="h-full w-full object-cover" />
+                          : <span className="text-xs font-bold">{(a.influencer?.display_name || a.influencer?.username || "?")[0]?.toUpperCase()}</span>}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate">{a.influencer?.display_name || a.influencer?.username || "Candidato"}</p>
+                        <p className="text-[10px] text-muted-foreground/55 truncate">{campaigns.find((c) => c.id === a.campaign_id)?.name ?? "Campanha"} · toque pra ver o perfil</p>
+                      </div>
+                    </button>
+                    <Button
+                      size="sm"
+                      onClick={async () => { const ok = await onApproveApplicant(a); ok ? toast.success("Contratado!", { description: "O afiliado já pode trabalhar." }) : toast.error("Não foi possível aprovar"); }}
+                      className="h-8 rounded-full px-3 text-xs bg-gradient-primary border-0 shrink-0"
+                    >
+                      Aprovar
+                    </Button>
+                    {onRejectApplicant && (
+                      <button type="button" aria-label="Recusar candidato" onClick={async () => { const ok = await onRejectApplicant(a.id); if (ok) toast.success("Candidato recusado"); }} className="text-muted-foreground/40 hover:text-destructive p-1 shrink-0">
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {applications.length === 0 ? (
             <div className="rounded-[1.5rem] border border-dashed border-border/40 bg-muted/[0.04] py-12 px-6 text-center animate-fade-in">
               <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/20 shadow-[var(--shadow-glow-cta)]">
