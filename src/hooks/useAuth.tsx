@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { setDemoRole } from "@/lib/onboarding";
 import { getStoredRef, clearStoredRef, resolveReferrer } from "@/lib/referral";
+import { saveAccount } from "@/lib/accounts";
 
 interface Profile {
   id: string;
@@ -62,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Fetch user profile and role
-  const fetchUserData = async (userId: string) => {
+  // Fetch user profile and role. `sess` (quando vem) alimenta a lista multi-conta.
+  const fetchUserData = async (userId: string, sess?: Session | null) => {
     try {
       // Profile e role EM PARALELO — antes eram dois await em série (~1,5s de tela
       // travada em conexão lenta, porque o app só renderiza depois disso). Agora o
@@ -84,6 +85,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (roleRes.data) {
         setUserRole(roleRes.data as UserRole);
       }
+
+      // Multi-conta: guarda esta conta na lista do dispositivo (pra alternar PJ/PF).
+      try {
+        if (sess?.access_token && sess?.refresh_token && sess.user?.email) {
+          const p = profileRes.data as any;
+          saveAccount({
+            user_id: userId,
+            email: sess.user.email,
+            name: p?.display_name ?? p?.username ?? null,
+            avatar_url: p?.avatar_url ?? null,
+            role: (roleRes.data as any)?.role ?? null,
+            access_token: sess.access_token,
+            refresh_token: sess.refresh_token,
+          });
+        }
+      } catch { /* multi-conta é conveniência, nunca quebra o login */ }
     } catch (error) {
       console.error("Error in fetchUserData:", error);
     }
@@ -105,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) await fetchUserData(session.user.id);
+      if (session?.user) await fetchUserData(session.user.id, session);
       setLoading(false);
     })();
 
@@ -119,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(true);
           // setTimeout evita o deadlock de chamar o supabase dentro do callback.
           setTimeout(async () => {
-            await fetchUserData(session.user.id);
+            await fetchUserData(session.user.id, session);
             setLoading(false);
           }, 0);
         } else {
