@@ -16,7 +16,6 @@
 // Env: MP_APP_CLIENT_ID (só p/ saber se o split está ligado), SUPABASE_URL,
 //      SUPABASE_SERVICE_ROLE_KEY, APP_URL.
 // =============================================================================
-import { getSellerToken } from "./_mp";
 export const config = { maxDuration: 30 };
 
 const SB_URL = process.env.SUPABASE_URL;
@@ -43,6 +42,60 @@ const one = async (path: string) => {
   const j = await r.json().catch(() => null);
   return Array.isArray(j) && j.length ? j[0] : null;
 };
+
+
+// -----------------------------------------------------------------------------
+// Token do afiliado, renovado se preciso.
+//
+// O access_token que o afiliado nos da via OAuth vale 180 dias. Sem renovar, o
+// pagamento dele para de funcionar SOZINHO, um afiliado por vez, na data em que
+// cada um conectou — e falha em silencio. Aqui a gente renova quando falta menos
+// de 30 dias. O MP ROTACIONA o refresh_token a cada renovacao: se o novo nao for
+// regravado, a proxima renovacao falha.
+//
+// (Duplicado em pay-affiliate.ts e mp-webhook.ts de proposito: cada function do
+// Vercel e um bundle isolado e import relativo entre elas nao resolve.)
+// -----------------------------------------------------------------------------
+const RENEW_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+async function getSellerToken(userId: string): Promise<string | null> {
+  const r = await sb(`affiliate_mp_accounts?user_id=eq.${encodeURIComponent(userId)}&select=access_token,refresh_token,expires_at&limit=1`);
+  const rows = await r.json().catch(() => null);
+  const acc = Array.isArray(rows) && rows.length ? rows[0] : null;
+  if (!acc?.access_token) return null;
+
+  const expMs = acc.expires_at ? Date.parse(acc.expires_at) : NaN;
+  const precisaRenovar = Number.isFinite(expMs) && expMs - Date.now() < RENEW_WINDOW_MS;
+  const cid = process.env.MP_APP_CLIENT_ID, csec = process.env.MP_APP_CLIENT_SECRET;
+  if (!precisaRenovar || !acc.refresh_token || !cid || !csec) return acc.access_token;
+
+  try {
+    const rr = await fetch("https://api.mercadopago.com/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ client_id: cid, client_secret: csec, grant_type: "refresh_token", refresh_token: acc.refresh_token }),
+    });
+    const tok = await rr.json();
+    if (!rr.ok || !tok?.access_token) {
+      console.error("mp refresh falhou:", rr.status, tok?.error || tok?.message || "sem detalhe");
+      return acc.access_token;
+    }
+    await sb(`affiliate_mp_accounts?user_id=eq.${encodeURIComponent(userId)}`, {
+      method: "PATCH", headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({
+        access_token: tok.access_token,
+        refresh_token: tok.refresh_token ?? undefined,
+        scope: tok.scope ?? undefined,
+        expires_at: tok.expires_in ? new Date(Date.now() + Number(tok.expires_in) * 1000).toISOString() : undefined,
+        refreshed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      }),
+    });
+    return tok.access_token as string;
+  } catch (e) {
+    console.error("mp refresh:", e);
+    return acc.access_token;
+  }
+}
 
 // Quanto a marca paga e quanto sobra pro afiliado — SEMPRE calculado aqui.
 function money(camp: any): { gross: number; fee: number; net: number } {
