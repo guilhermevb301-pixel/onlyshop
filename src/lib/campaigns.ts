@@ -15,7 +15,10 @@ export type CampaignStatus = "draft" | "active" | "paused" | "completed";
 export type ApplicationStatus =
   | "applied" | "accepted" | "delivered" | "approved" | "paid" | "rejected";
 export type CreditKind =
-  | "topup" | "campaign_hold" | "payout" | "platform_fee" | "refund" | "withdrawal";
+  | "topup" | "campaign_hold" | "payout" | "platform_fee" | "refund" | "withdrawal"
+  // split_payout = pago DIRETO na conta MP do afiliado. Informativo: aparece no
+  // extrato mas NAO soma no saldo sacavel (o dinheiro ja esta com ele).
+  | "split_payout";
 
 // "Ganhe no Processo": a campanha paga o afiliado por ETAPA (conexão/vídeo/live),
 // com a taxa da plataforma EMBUTIDA em cada fase (não os 20% em cima).
@@ -48,6 +51,9 @@ export interface Campaign {
   auto_approve?: boolean; // aprova/paga automático ao postar (opt-in da marca)
   auto_accept?: boolean;  // aceita todo candidato sem curadoria (default: marca aprova)
   campaign_kind?: CampaignKind; // "process" = Ganhe no Processo (paga por etapa)
+  // escrow = marca paga tudo antes (caixa proprio) | split = paga por creator
+  // aprovado, direto na conta dele. Uma campanha e um OU outro, nunca os dois.
+  pay_mode?: "escrow" | "split";
   phases?: ProcessPhases | Record<string, never>;
   status: CampaignStatus;
   // Domínio geográfico (feature mapa-dominio)
@@ -197,6 +203,17 @@ export interface Rating {
 }
 
 export const PLATFORM_FEE_PCT = 20;
+
+// SALDO SACAVEL — regra unica, usada pelo front e espelhada em api/withdraw.ts.
+// Fora do saldo: platform_fee (nao e do usuario), split_payout (o dinheiro ja
+// caiu direto na conta Mercado Pago dele; contar aqui seria pagar duas vezes) e
+// lancamentos que falharam.
+export function withdrawableBalance(credits: Array<{ kind?: string | null; amount: number | string; status?: string | null }>): number {
+  const total = (credits || [])
+    .filter((c) => c.kind !== "platform_fee" && c.kind !== "split_payout" && c.status !== "failed")
+    .reduce((s, c) => s + (Number(c.amount) || 0), 0);
+  return Math.round(total * 100) / 100;
+}
 
 // Custo de uma campanha pro lojista: base + fee da plataforma.
 export function computeBudget(slots: number, reward: number, feePct = PLATFORM_FEE_PCT) {

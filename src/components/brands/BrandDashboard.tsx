@@ -16,6 +16,7 @@ import {
   Users, ExternalLink, CircleCheck, BadgeDollarSign, X, User, Star, MessageSquare, Trash2, UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PayAffiliateCard } from "@/components/brands/PayAffiliateCard";
 import { cn } from "@/lib/utils";
 import {
   computeBudget, computeSplit, PLATFORM_FEE_PCT, demo, isCampaignChatOpen,
@@ -263,6 +264,9 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
 
         {/* CANDIDATURAS */}
         <TabsContent value="applications" className="mt-4 space-y-3">
+          {/* Split automático: paga a vaga direto na conta do creator. */}
+          <PayAffiliateCard applications={applications} campaigns={campaigns} />
+
           {/* Curadoria: quem sinalizou interesse e aguarda o SEU OK (pedido do Biel).
               Só vira contratação — e só paga — depois que você aprova o perfil. */}
           {onApproveApplicant && applications.some((a) => statusOf(a) === "applied") && (

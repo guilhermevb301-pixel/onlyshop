@@ -56,7 +56,7 @@ export default async function handler(req: any, res: any) {
     if (!["connection", "video", "live"].includes(phase)) return res.status(400).json({ error: "phase inválida" });
 
     // 2) Candidatura + campanha (N+1, sem embed inseguro — mas aqui service_role resolve o embed).
-    const rows = await (await sb(`campaign_applications?id=eq.${encodeURIComponent(applicationId)}&select=id,status,influencer_user_id,campaign_id,proofs,campaigns(campaign_kind,funded,auto_approve,phases,brands(user_id))`)).json();
+    const rows = await (await sb(`campaign_applications?id=eq.${encodeURIComponent(applicationId)}&select=id,status,influencer_user_id,campaign_id,proofs,campaigns(campaign_kind,funded,auto_approve,phases,pay_mode,brands(user_id))`)).json();
     const app = Array.isArray(rows) ? rows[0] : null;
     if (!app) return res.status(404).json({ error: "candidatura não encontrada" });
     const camp = app.campaigns;
@@ -64,6 +64,14 @@ export default async function handler(req: any, res: any) {
     // 3) GATE: só campanha de processo E financiada.
     if (camp?.campaign_kind !== "process") return res.status(400).json({ error: "campanha não é do tipo processo" });
     if (camp?.funded !== true) return res.status(403).json({ error: "campanha ainda não está paga" });
+
+    // 3.1) GATE ANTI-PAGAMENTO-DUPLO: campanha split paga DIRETO na conta do
+    // creator. O caixa antigo nao encosta nela. O gate e na CAMPANHA (nao na
+    // vaga) de proposito: se fosse na vaga, um checkout abandonado deixaria o
+    // afiliado travado pra sempre sem receber.
+    if (camp?.pay_mode === "split") {
+      return res.status(409).json({ error: "esta campanha paga direto na conta do creator (split)" });
+    }
 
     // 4) AUTORIZAÇÃO: dono OU o próprio influencer.
     const ownerId = camp?.brands?.user_id;

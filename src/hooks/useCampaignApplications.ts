@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  demo, demoId, computeSplit, type CampaignApplication, type CampaignNear,
-} from "@/lib/campaigns";
+  demo, demoId, computeSplit, type CampaignApplication, type CampaignNear, withdrawableBalance } from "@/lib/campaigns";
 
 // Candidaturas do influencer + saldo. Demo grava em localStorage; real no Supabase.
 export function useCampaignApplications() {
@@ -63,9 +62,9 @@ export function useCampaignApplications() {
       setApplications(mapped as unknown as CampaignApplication[]);
       const { data: credits } = await supabase
         .from("platform_credits" as any)
-        .select("amount")
+        .select("amount,kind,status")
         .eq("user_id", user.id);
-      setBalance(((credits as any[]) || []).reduce((s, c) => s + Number(c.amount || 0), 0));
+      setBalance(withdrawableBalance((credits as any[]) || []));
     } catch {
       setApplications([]);
       setBalance(0);

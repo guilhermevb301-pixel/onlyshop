@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { ConnectMercadoPagoCard } from "@/components/wallet/ConnectMercadoPagoCard";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +18,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { toast as notify } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
-import { demo, demoId, type CreditKind } from "@/lib/campaigns";
+import { demo, demoId, type CreditKind, withdrawableBalance } from "@/lib/campaigns";
 
 // Rótulo de cada lançamento do ledger de créditos (demo).
 const CREDIT_LABEL: Record<CreditKind, string> = {
@@ -30,6 +32,7 @@ const CREDIT_LABEL: Record<CreditKind, string> = {
   platform_fee: "Taxa da plataforma",
   refund: "Estorno",
   withdrawal: "Saque PIX",
+  split_payout: "Recebido direto no seu Mercado Pago",
 };
 
 const WITHDRAW_MIN = 10;
@@ -39,6 +42,7 @@ const round2 = (v: number) => Math.round((Number(v) || 0) * 100) / 100;
 
 interface WalletTransaction {
   id: string;
+  kind?: CreditKind;
   type: "commission" | "withdrawal" | "bonus" | "refund";
   amount: number;
   status: "pending" | "completed" | "failed" | "processing";
@@ -77,6 +81,16 @@ const DEMO_SEED_KEY = "onlyshop_demo_wallet_seeded";
 
 export default function Wallet() {
   const { user } = useAuth();
+
+  // Retorno do OAuth do Mercado Pago (?mp=ok|erro).
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const mp = p.get("mp");
+    if (!mp) return;
+    if (mp === "ok") notify.success("Mercado Pago conectado!", { description: "Seu dinheiro passa a cair direto na sua conta." });
+    else notify.error("Não deu pra conectar", { description: p.get("m") || "Tente de novo." });
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
   const { toast } = useToast();
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,6 +135,7 @@ export default function Wallet() {
   // A taxa da plataforma (20%) não pertence ao usuário — filtrada antes.
   const toTx = (c: any): WalletTransaction => ({
     id: c.id,
+    kind: c.kind as CreditKind,
     type:
       c.kind === "withdrawal" ? "withdrawal"
       : c.kind === "refund" ? "bonus"
@@ -158,9 +173,9 @@ export default function Wallet() {
   // Saldo: no demo usa o ledger de split (por user.id); no real, soma das concluídas.
   // Saldo = soma do ledger do usuário (payout entra +, saque sai −). Saque pendente
   // já reduz o disponível; só não conta o que falhou.
-  const balance = round2(
-    transactions.filter((t) => t.status !== "failed").reduce((sum, t) => sum + Number(t.amount), 0)
-  );
+  // Mesma regra do servidor (api/withdraw.ts): sem platform_fee, sem split_payout
+  // (ja caiu direto na conta MP dele) e sem lancamento que falhou.
+  const balance = withdrawableBalance(transactions);
 
   // Totais legíveis (válidos no demo e no real, lidos do mesmo ledger).
   const totalReceived = round2(
@@ -307,6 +322,9 @@ export default function Wallet() {
           <p className="text-xs text-muted-foreground/60">Saldo, extrato e saques via PIX</p>
         </div>
       </div>
+
+      {/* Receber automático: conectar o Mercado Pago (split direto na conta dele) */}
+      <ConnectMercadoPagoCard delay={20} />
 
       {/* Balance Card — double-bezel + glow de marca */}
       <div

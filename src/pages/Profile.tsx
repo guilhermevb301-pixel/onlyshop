@@ -29,8 +29,7 @@ import { ShippingAddressCard } from "@/components/profile/ShippingAddressCard";
 import { CampaignDeliverySheet } from "@/components/campaigns/CampaignDeliverySheet";
 import {
   demo, computeSplit, computeBudget,
-  type CampaignApplication, type Campaign,
-} from "@/lib/campaigns";
+  type CampaignApplication, type Campaign, withdrawableBalance } from "@/lib/campaigns";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -152,7 +151,7 @@ export default function Profile() {
       const myCampaigns = ((campsRes.data as unknown as Campaign[]) || []);
 
       setMetrics({
-        balance: credits.reduce((s, c) => s + Number(c.amount || 0), 0),
+        balance: withdrawableBalance(credits as any[]),
         deliveries: apps.filter((a) => a.status !== "accepted").length,
         campaignsTaken: apps.length,
         apps,

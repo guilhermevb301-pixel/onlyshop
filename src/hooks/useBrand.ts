@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { splitEnabled } from "@/lib/splitMode";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -230,6 +231,7 @@ export function useBrand() {
     if (!brand) return null;
     const rtype = input.reward_type ?? "per_video";
     const isProcess = input.campaign_kind === "process";
+    const usaSplit = await splitEnabled();
     const isPermuta = rtype === "permuta";
     const phases = input.phases ?? (isProcess ? PROCESS_PHASES_DEFAULT : undefined);
     // Process: paga por etapa (reward_amount não usado). Permuta: influencer recebe
@@ -262,7 +264,11 @@ export function useBrand() {
       territory_street: input.territory_street ?? null,
       platform_fee_pct: PLATFORM_FEE_PCT,
       total_budget: total,
-      funded: false, // pago só depois (CampaignPaymentStep)
+      // No split a marca não paga adiantado — ela paga POR CREATOR aprovado.
+      // Então a campanha já nasce visível (funded é o flag de visibilidade) e
+      // sem dinheiro retido. No escrow segue como sempre: paga antes de ir ao ar.
+      funded: usaSplit,
+      pay_mode: usaSplit ? "split" : "escrow",
       auto_approve: input.auto_approve ?? false,
       auto_accept: input.auto_accept ?? false,
       campaign_kind: isProcess ? "process" : "standard",
@@ -299,7 +305,8 @@ export function useBrand() {
           territory_street: base.territory_street,
           platform_fee_pct: base.platform_fee_pct,
           total_budget: base.total_budget,
-          funded: false,
+          funded: base.funded,       // split: já no ar (paga por creator aprovado)
+          pay_mode: usaSplit ? "split" : "escrow",
           auto_approve: base.auto_approve,
           auto_accept: base.auto_accept,
           campaign_kind: base.campaign_kind,

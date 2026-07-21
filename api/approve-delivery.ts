@@ -46,7 +46,7 @@ export default async function handler(req: any, res: any) {
 
     // 2) Busca a candidatura + reward + dono da campanha (pra autorizar).
     const appRes = await sb(
-      `campaign_applications?id=eq.${encodeURIComponent(applicationId)}&select=id,status,influencer_user_id,campaign_id,proofs,delivery_url,campaigns(reward_amount,auto_approve,funded,brands(user_id))`
+      `campaign_applications?id=eq.${encodeURIComponent(applicationId)}&select=id,status,influencer_user_id,campaign_id,proofs,delivery_url,campaigns(reward_amount,auto_approve,funded,pay_mode,brands(user_id))`
     );
     const rows = await appRes.json();
     const app = Array.isArray(rows) ? rows[0] : null;
@@ -68,6 +68,19 @@ export default async function handler(req: any, res: any) {
       hasProof;
     if (!isOwner && !isSelfAuto) {
       return res.status(403).json({ error: "não autorizado a aprovar esta entrega" });
+    }
+
+    // 2.1) GATE ANTI-PAGAMENTO-DUPLO: campanha split ja pagou o creator DIRETO na
+    // conta dele. Aprovar a entrega aqui creditaria de novo no caixa, sacavel por
+    // PIX — o creator receberia duas vezes pela mesma entrega.
+    if (app.campaigns?.pay_mode === "split") {
+      return res.status(409).json({ error: "esta campanha paga direto na conta do creator (split)" });
+    }
+
+    // 2.2) Sem dinheiro financiado nao ha o que liberar. A marca escreve `funded`
+    // pela RLS, entao isto nao e a trava final — mas fecha o caminho obvio.
+    if (app.campaigns?.funded !== true) {
+      return res.status(403).json({ error: "campanha ainda não está paga" });
     }
 
     // 3) Idempotência: já aprovado/pago? não credita de novo.

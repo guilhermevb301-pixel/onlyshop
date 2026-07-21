@@ -26,6 +26,7 @@ interface Profile {
   whatsapp_business?: string | null;
   video_gallery?: string[] | null;
   tiktok_url?: string | null;
+  mp_connected?: boolean | null;
 }
 
 interface UserRole {

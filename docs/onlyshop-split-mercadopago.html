@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>OnlyShop | Pagamento Automático com Mercado Pago</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root { --mag:#ff2d78; --cyan:#12e0c8; --purple:#8b5cf6; --bg:#0a0a0f; --card:#141420; }
+  body { font-family:'Inter',sans-serif; color:#e8e8ee; background:var(--bg); line-height:1.55; }
+  .page { max-width:820px; margin:0 auto; padding:56px 60px; page-break-after:always; }
+  .page:last-of-type { page-break-after:auto; }
+  @page { size:A4; margin:0; }
+  h1 { font-size:40px; font-weight:900; letter-spacing:-1.2px; line-height:1.05; }
+  h2 { font-size:23px; font-weight:800; letter-spacing:-.5px; margin:38px 0 14px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.08); }
+  h3 { font-size:16px; font-weight:800; margin:20px 0 6px; }
+  p { color:#c5c5d2; font-size:14.5px; margin-bottom:12px; }
+  .grad { background:linear-gradient(100deg,var(--mag),var(--purple) 55%,var(--cyan)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .eyebrow { font-size:11px; font-weight:800; letter-spacing:3px; text-transform:uppercase; color:var(--cyan); margin-bottom:14px; }
+  .lead { font-size:17px; color:#e8e8ee; font-weight:600; }
+  .cover { min-height:100vh; display:flex; flex-direction:column; justify-content:center; page-break-after:always; background:radial-gradient(120% 80% at 20% 0%, rgba(255,45,120,.14), transparent 55%), radial-gradient(100% 70% at 90% 100%, rgba(18,224,200,.10), transparent 55%); }
+  .slogan { font-size:30px; font-weight:900; letter-spacing:-.8px; margin:28px 0 8px; line-height:1.1; }
+  .phase { background:var(--card); border:1px solid rgba(255,255,255,.07); border-radius:20px; padding:22px 24px; margin:14px 0; page-break-inside:avoid; }
+  .phase .tag { display:inline-block; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); background:rgba(18,224,200,.1); border:1px solid rgba(18,224,200,.25); border-radius:99px; padding:4px 12px; margin-bottom:10px; }
+  .phase .tag.warn { color:var(--mag); background:rgba(255,45,120,.1); border-color:rgba(255,45,120,.3); }
+  .phase h3 { font-size:19px; margin:0 0 4px; }
+  .money { display:flex; gap:14px; margin-top:14px; flex-wrap:wrap; }
+  .money div { flex:1; min-width:130px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:14px 16px; }
+  .money .big { font-size:26px; font-weight:900; letter-spacing:-.5px; }
+  .money .lbl { font-size:11px; color:#9a9aad; margin-top:2px; }
+  .cyan { color:var(--cyan); } .mag { color:var(--mag); }
+  table { width:100%; border-collapse:collapse; margin:14px 0; font-size:14px; }
+  th,td { text-align:left; padding:11px 14px; border-bottom:1px solid rgba(255,255,255,.07); }
+  th { color:#9a9aad; font-size:11px; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+  td.n { text-align:right; font-variant-numeric:tabular-nums; font-weight:700; }
+  .total-row td { border-top:2px solid rgba(18,224,200,.4); border-bottom:none; font-weight:900; font-size:15px; color:#fff; padding-top:14px; }
+  .callout { background:linear-gradient(135deg, rgba(255,45,120,.08), rgba(139,92,246,.05)); border:1px solid rgba(255,45,120,.2); border-radius:18px; padding:22px 26px; margin:20px 0; page-break-inside:avoid; }
+  .callout .q { font-size:20px; font-weight:900; letter-spacing:-.4px; margin-bottom:10px; }
+  ul { margin:6px 0 14px 4px; list-style:none; }
+  li { color:#c5c5d2; font-size:14px; margin-bottom:9px; padding-left:24px; position:relative; }
+  li:before { content:'→'; position:absolute; left:0; color:var(--cyan); font-weight:800; }
+  .ok:before { content:'✓'; color:var(--cyan); }
+  .soon:before { content:'○'; color:#9a9aad; }
+  .foot { margin-top:44px; padding-top:18px; border-top:1px solid rgba(255,255,255,.08); font-size:11px; color:#7a7a8a; }
+  .step { display:flex; gap:16px; margin:0 0 6px; page-break-inside:avoid; }
+  .step .num { flex:0 0 34px; height:34px; border-radius:99px; background:linear-gradient(135deg,var(--mag),var(--purple)); display:grid; place-items:center; font-weight:900; font-size:15px; color:#fff; }
+  .step .body { flex:1; padding-bottom:16px; }
+  .step .body h3 { margin:5px 0 4px; }
+  code { font-family:ui-monospace,Menlo,monospace; font-size:12.5px; background:rgba(18,224,200,.08); border:1px solid rgba(18,224,200,.18); color:var(--cyan); border-radius:6px; padding:2px 7px; }
+  .code-block { display:block; padding:12px 14px; margin:8px 0; word-break:break-all; line-height:1.7; }
+  .pos { text-align:center; padding:26px; }
+  .pos .a { font-size:15px; color:#9a9aad; } .pos .b { font-size:22px; font-weight:900; letter-spacing:-.5px; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<!-- CAPA -->
+<section class="page cover">
+  <div class="eyebrow">OnlyShop / Pagamentos</div>
+  <h1>Pagamento <span class="grad">100% automático</span><br>com Mercado Pago</h1>
+  <div class="slogan">O creator recebe direto.<br>Ninguém repassa nada na mão.</div>
+  <p class="lead" style="max-width:560px">Como funciona, o que muda, o que a gente ganha e o que a gente abre mão. Mais o passo a passo pra ligar isso no ar.</p>
+  <div class="foot" style="margin-top:60px">Documento interno OnlyShop &middot; 21 de julho de 2026</div>
+</section>
+
+<!-- 1. O QUE MUDA -->
+<section class="page">
+  <div class="eyebrow">A mudança</div>
+  <h1 style="font-size:32px">De caixa próprio<br>pra <span class="grad">split automático</span></h1>
+
+  <p style="margin-top:18px">Hoje o dinheiro da campanha cai na conta Mercado Pago da OnlyShop, fica parado ali e o repasse pro creator sai na mão, via PIX. Isso trava dinheiro, gera trabalho manual e nos coloca no meio de toda cobrança.</p>
+  <p>Com o split, o pagamento nasce já dividido. A marca paga uma vez e o Mercado Pago manda a parte do creator direto pra conta dele e a nossa taxa direto pra nossa. Sem intermediário, sem espera, sem PIX manual.</p>
+
+  <div class="phase">
+    <span class="tag">Antes</span>
+    <h3>Caixa próprio (escrow)</h3>
+    <p style="margin:0">Marca paga a campanha inteira &rarr; dinheiro fica com a OnlyShop &rarr; creator entrega &rarr; a gente aprova &rarr; creator pede saque &rarr; alguém faz o PIX na mão.</p>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Agora</span>
+    <h3>Split automático</h3>
+    <p style="margin:0">Marca aprova o creator &rarr; paga aquela vaga &rarr; o Mercado Pago divide na hora: parte do creator cai na conta dele, nossa taxa cai na nossa. Acabou.</p>
+  </div>
+
+  <div class="money">
+    <div><div class="big">R$ 134</div><div class="lbl">a marca paga por vaga</div></div>
+    <div><div class="big cyan">R$ 110</div><div class="lbl">cai direto no creator</div></div>
+    <div><div class="big mag">R$ 24</div><div class="lbl">taxa OnlyShop, automática</div></div>
+  </div>
+  <p style="font-size:12.5px;color:#9a9aad;margin-top:8px">Valores do modelo Ganhe no Processo. Em campanha comum vale a mesma lógica: o creator recebe o valor cheio da recompensa e a taxa de 20% sai por cima, direto pra gente.</p>
+</section>
+
+<!-- 2. O QUE A GENTE ABRE MAO -->
+<section class="page">
+  <div class="eyebrow">Decisão consciente</div>
+  <h1 style="font-size:32px">O que a gente <span class="grad">abre mão</span></h1>
+
+  <div class="callout">
+    <div class="q">A garantia de entrega.</div>
+    <p style="margin:0">No modelo de caixa próprio, o dinheiro só saía depois que a entrega era aprovada. Se o creator sumisse, a marca era devolvida. No split, o dinheiro sai da marca e vai pro creator no momento do pagamento. O Mercado Pago não tem API pra puxar dinheiro de volta de uma conta.</p>
+  </div>
+
+  <p><strong style="color:#fff">Por que aceitamos:</strong> o custo do caixa próprio é alto demais. Cada repasse manual é risco operacional, e o creator esperar dias pra receber mata a experiência. Automático com risco é melhor que garantido e travado.</p>
+
+  <h3>Como a gente reduz o risco na prática</h3>
+  <ul>
+    <li class="ok"><strong style="color:#fff">Curadoria antes do dinheiro.</strong> A marca só paga depois de aprovar o perfil. Ninguém recebe sem passar pelo OK dela.</li>
+    <li class="ok"><strong style="color:#fff">Pagamento por vaga, não por campanha.</strong> Se um creator sumir, o prejuízo é daquela vaga, não da campanha inteira.</li>
+    <li class="ok"><strong style="color:#fff">Histórico na plataforma.</strong> Quem não entrega perde acesso às próximas campanhas. A reputação vira a garantia.</li>
+    <li class="soon"><strong style="color:#fff">Próximo passo possível:</strong> liberar em duas partes (metade na contratação, metade na entrega). Fica pra quando o volume justificar.</li>
+  </ul>
+
+  <h3>O que NÃO muda</h3>
+  <ul>
+    <li>A marca continua pagando com PIX, cartão ou boleto normalmente.</li>
+    <li>Nossa taxa continua saindo automática, sem depender de ninguém lembrar de cobrar.</li>
+    <li>Quem já tem campanha rodando no modelo antigo continua nele. Os dois convivem sem se misturar.</li>
+  </ul>
+</section>
+
+<!-- 3. PASSO A PASSO -->
+<section class="page">
+  <div class="eyebrow">Pra colocar no ar</div>
+  <h1 style="font-size:32px">O que eu preciso <span class="grad">de você</span></h1>
+  <p style="margin-top:14px">O código já está pronto e no ar. Ele só liga quando essas credenciais existirem. São 10 minutos.</p>
+
+  <div class="step">
+    <div class="num">1</div>
+    <div class="body">
+      <h3>Entre no painel de desenvolvedor</h3>
+      <p style="margin:0"><code>developers.mercadopago.com.br</code> e faça login com a conta Mercado Pago da OnlyShop. Precisa ser a conta que vai receber a nossa taxa.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">2</div>
+    <div class="body">
+      <h3>Crie uma aplicação</h3>
+      <p style="margin:0">Menu <strong style="color:#fff">Suas integrações</strong> &rarr; <strong style="color:#fff">Criar aplicação</strong>. Nome: <code>OnlyShop</code>. Quando perguntar o modelo de negócio, escolha <strong style="color:#fff">Marketplace</strong>. É ele que libera o split.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">3</div>
+    <div class="body">
+      <h3>Configure a URL de retorno</h3>
+      <p style="margin:0">Dentro da aplicação, em <strong style="color:#fff">Redirect URI</strong> (ou URL de redirecionamento), cole exatamente:</p>
+      <code class="code-block">https://onlyshopbrasil.com.br/api/mp-oauth-callback</code>
+      <p style="margin:0;font-size:13px;color:#9a9aad">Se estiver diferente de um caractere, a conexão do creator falha.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">4</div>
+    <div class="body">
+      <h3>Me mande as credenciais</h3>
+      <p style="margin:0">Na aba de credenciais da aplicação você vai ver <strong style="color:#fff">Client ID</strong> e <strong style="color:#fff">Client Secret</strong> de produção. São esses dois.</p>
+      <p style="margin:8px 0 0">Na aba de <strong style="color:#fff">Webhooks / Notificações</strong> tem também uma <strong style="color:#fff">chave secreta</strong>. Manda ela junto: é o que garante que só o Mercado Pago consegue avisar a gente que um pagamento entrou.</p>
+      <p style="margin:8px 0 0;font-size:13px;color:#9a9aad">Não mande no grupo nem em print. Manda em mensagem direta e apaga depois. O Client Secret dá acesso a cobrança em nome da OnlyShop.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">5</div>
+    <div class="body">
+      <h3>Eu ligo e a gente testa junto</h3>
+      <p style="margin:0">Coloco as credenciais no servidor, a gente faz um pagamento de teste de valor baixo com uma conta real e confere se caiu dividido certinho antes de abrir pra todo mundo.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. COMO FICA NA PRATICA -->
+<section class="page">
+  <div class="eyebrow">No dia a dia</div>
+  <h1 style="font-size:32px">Como fica <span class="grad">pra cada um</span></h1>
+
+  <div class="phase">
+    <span class="tag">Creator</span>
+    <h3>Conecta uma vez e esquece</h3>
+    <p style="margin:0 0 10px">Na Carteira aparece o botão <strong style="color:#fff">Conectar Mercado Pago</strong>. Ele clica, autoriza na tela do próprio Mercado Pago e pronto. A partir daí todo pagamento cai direto na conta dele.</p>
+    <p style="margin:0;font-size:13px;color:#9a9aad">Sem conta Mercado Pago conectada ele não recebe. Não tem pra onde mandar o dinheiro. A conta é gratuita e abre pelo app em poucos minutos.</p>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Marca</span>
+    <h3>Aprova e paga na mesma tela</h3>
+    <p style="margin:0">Na área de campanhas aparece <strong style="color:#fff">Pagar contratados</strong> com a lista de quem ela já aprovou. Ela clica em Pagar, escolhe PIX ou cartão, e acabou. O sistema já separa a nossa taxa sozinho.</p>
+  </div>
+
+  <div class="phase">
+    <span class="tag warn">OnlyShop</span>
+    <h3>Zero trabalho manual</h3>
+    <p style="margin:0">Não existe mais fila de saque, não existe mais PIX na mão, não existe mais dinheiro de terceiro parado na nossa conta. Nossa taxa entra automática em cada transação.</p>
+  </div>
+
+  <h2>Resumo do dinheiro por vaga</h2>
+  <table>
+    <tr><th>Etapa</th><th>Antes</th><th>Agora</th></tr>
+    <tr><td>Marca paga</td><td>Campanha inteira, antes de escolher</td><td>Vaga por vaga, depois de aprovar</td></tr>
+    <tr><td>Dinheiro fica</td><td>Na conta da OnlyShop</td><td>Direto na conta do creator</td></tr>
+    <tr><td>Creator recebe</td><td>Depois de aprovar e pedir saque</td><td>Na hora do pagamento</td></tr>
+    <tr><td>Nossa taxa</td><td>Manual, no fechamento</td><td>Automática, em cada pagamento</td></tr>
+    <tr class="total-row"><td>Garantia de entrega</td><td>Sim</td><td class="mag">Não</td></tr>
+  </table>
+
+  <div class="pos">
+    <div class="a">A gente trocou</div>
+    <div class="b">garantia parada <span class="grad">por velocidade que escala</span></div>
+  </div>
+
+  <div class="foot">OnlyShop &middot; Documento interno &middot; 21 de julho de 2026</div>
+</section>
+
+</body>
+</html>

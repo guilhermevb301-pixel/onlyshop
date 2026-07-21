@@ -8,9 +8,12 @@
 //
 // Env: MERCADOPAGO_ACCESS_TOKEN, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 // =============================================================================
+import { getSellerToken } from "./_mp";
+import { createHmac, timingSafeEqual } from "crypto";
 export const config = { maxDuration: 30 };
 
 const MP_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN;
+const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET;
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -28,15 +31,125 @@ function sb(path: string, opts: any = {}) {
 
 function safeJson(s: string) { try { return JSON.parse(s); } catch { return {}; } }
 
+// Assinatura do Mercado Pago (header x-signature: "ts=...,v1=...").
+// Manifesto: id:<data.id>;request-id:<x-request-id>;ts:<ts>;
+//
+// Só é exigida quando MP_WEBHOOK_SECRET existe — assim ligar a chave endurece o
+// endpoint sem quebrar nada enquanto ela não estiver configurada.
+function assinaturaValida(req: any, dataId: string): boolean {
+  if (!MP_WEBHOOK_SECRET) return true; // ainda não configurada
+  const header = String(req.headers?.["x-signature"] || "");
+  if (!header) return false;
+  let ts = "", v1 = "";
+  for (const parte of header.split(",")) {
+    const [k, v] = parte.trim().split("=");
+    if (k === "ts") ts = v; else if (k === "v1") v1 = v;
+  }
+  if (!ts || !v1) return false;
+  const requestId = String(req.headers?.["x-request-id"] || "");
+  const manifesto = `id:${String(dataId).toLowerCase()};request-id:${requestId};ts:${ts};`;
+  const esperado = createHmac("sha256", MP_WEBHOOK_SECRET).update(manifesto).digest("hex");
+  const a = Buffer.from(v1), b = Buffer.from(esperado);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+const one = async (path: string) => {
+  const r = await sb(path);
+  const j = await r.json().catch(() => null);
+  return Array.isArray(j) && j.length ? j[0] : null;
+};
+
+// -----------------------------------------------------------------------------
+// Confirmação de pagamento por SPLIT (dinheiro foi DIRETO pro afiliado).
+//
+// Não dá pra confiar no que chega na URL: a gente busca o pagamento na API do MP
+// com o token do afiliado e só aceita se for aprovado, se o external_reference
+// bater com esse split e se o valor for o combinado.
+//
+// O lançamento no ledger é kind='split_payout' — INFORMATIVO. Ele aparece no
+// extrato do afiliado mas NÃO vira saldo sacável (o dinheiro já está na conta
+// dele; virar saldo seria pagar duas vezes).
+// -----------------------------------------------------------------------------
+async function handleSplit(res: any, splitId: string, paymentId: string) {
+  const split = await one(`split_payments?id=eq.${encodeURIComponent(splitId)}&select=*&limit=1`);
+  if (!split) return res.status(200).json({ ok: true, no_split: true });
+  if (split.status === "paid") return res.status(200).json({ ok: true, already: true });
+
+  const sellerToken = await getSellerToken(String(split.affiliate_user_id));
+  if (!sellerToken) return res.status(200).json({ ok: false, no_token: true });
+
+  const pr = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`, {
+    headers: { Authorization: `Bearer ${sellerToken}` },
+  });
+  const pay = await pr.json();
+  if (!pr.ok) return res.status(200).json({ ok: false, mp: pay?.message || "falha ao consultar" });
+  if (pay?.status !== "approved") return res.status(200).json({ ok: true, status: pay?.status });
+  if (String(pay?.external_reference || "") !== `split:${splitId}`) {
+    return res.status(200).json({ ok: false, mismatch: true });
+  }
+  const paid = Number(pay?.transaction_amount || 0);
+  if (Math.abs(paid - Number(split.gross)) > 0.01) return res.status(200).json({ ok: false, amount_mismatch: true });
+
+  const now = new Date().toISOString();
+  // Marca pago (o UNIQUE em mp_payment_id impede confirmar o mesmo pagamento 2x).
+  const upd = await sb(`split_payments?id=eq.${encodeURIComponent(splitId)}&status=neq.paid`, {
+    method: "PATCH", headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ status: "paid", mp_payment_id: String(paymentId), paid_at: now }),
+  });
+  const rows = await upd.json().catch(() => []);
+  if (!upd.ok || !Array.isArray(rows) || rows.length === 0) {
+    return res.status(200).json({ ok: true, already: true }); // outra chamada ganhou a corrida
+  }
+
+  // Marca a candidatura como paga POR SPLIT (o payout-process do caixa antigo
+  // recusa qualquer candidatura em split).
+  //
+  // O `status` NÃO muda de propósito: no split a marca paga na contratação, ANTES
+  // da entrega. Mover pra 'paid' aqui faria a marca ver como entregue quem ainda
+  // não entregou, e travaria a aprovação da entrega depois. Pagamento e entrega
+  // são coisas separadas agora.
+  await sb(`campaign_applications?id=eq.${encodeURIComponent(split.application_id)}`, {
+    method: "PATCH", headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ pay_mode: "split" }),
+  });
+
+  // Extrato do afiliado (informativo, não soma saldo) + registro da nossa taxa.
+  await sb("platform_credits?on_conflict=provider_ref,kind", {
+    method: "POST",
+    headers: { Prefer: "resolution=ignore-duplicates,return=minimal" },
+    body: JSON.stringify([
+      { user_id: split.affiliate_user_id, kind: "split_payout", amount: Number(split.net), campaign_id: split.campaign_id, status: "completed", provider: "mercadopago", provider_ref: String(paymentId), created_at: now },
+      { user_id: split.brand_user_id, kind: "platform_fee", amount: Number(split.fee), campaign_id: split.campaign_id, status: "completed", provider: "mercadopago", provider_ref: String(paymentId), created_at: now },
+    ]),
+  });
+
+  return res.status(200).json({ ok: true, split: splitId, net: split.net });
+}
+
 export default async function handler(req: any, res: any) {
   try {
-    if (!MP_TOKEN || !SB_URL || !SB_KEY) return res.status(200).json({ ok: true, skipped: "env ausente" });
+    // O split NÃO usa MERCADOPAGO_ACCESS_TOKEN (usa o token do afiliado), então
+    // essa checagem não pode barrá-lo — senão o split parava de confirmar calado.
+    if (!SB_URL || !SB_KEY) return res.status(200).json({ ok: true, skipped: "env ausente" });
 
     const body = typeof req.body === "string" ? safeJson(req.body) : (req.body || {});
     const type = req.query?.type || req.query?.topic || body?.type;
     const paymentId = req.query?.["data.id"] || body?.data?.id || req.query?.id;
     if (type && String(type) !== "payment") return res.status(200).json({ ok: true, ignored: String(type) });
     if (!paymentId) return res.status(200).json({ ok: true, no_id: true });
+
+    // Só processa notificação assinada pelo Mercado Pago (quando a chave existe).
+    if (!assinaturaValida(req, String(paymentId))) {
+      console.error("mp-webhook: assinatura inválida");
+      return res.status(401).json({ ok: false, assinatura: "inválida" });
+    }
+
+    // SPLIT: o pagamento foi criado com o token do AFILIADO, então só o token dele
+    // consulta esse pagamento. O id do split vem na URL do webhook (?split=...).
+    const splitId = req.query?.split ? String(req.query.split) : "";
+    if (splitId) return await handleSplit(res, splitId, String(paymentId));
+
+    if (!MP_TOKEN) return res.status(200).json({ ok: true, skipped: "sem token da plataforma" });
 
     // Confirma o pagamento real no Mercado Pago.
     const pr = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
@@ -49,6 +162,9 @@ export default async function handler(req: any, res: any) {
     const brandUserId = pay.metadata?.brand_user_id || "";
     const amount = Number(pay.transaction_amount || pay.metadata?.amount || 0);
     if (!campaignId) return res.status(200).json({ ok: true, no_campaign: true });
+    // Notificação de split que chegou na URL global (sem ?split=): não é campanha.
+    // Sem isso, viraria um PATCH em campaigns com id "split:<uuid>" falhando calado.
+    if (String(campaignId).startsWith("split:")) return res.status(200).json({ ok: true, split_sem_rota: true });
 
     // Idempotência: já processei esse pagamento? então não duplica.
     const dupRes = await sb(`platform_credits?provider_ref=eq.${encodeURIComponent(String(paymentId))}&select=id&limit=1`);

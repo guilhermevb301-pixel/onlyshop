@@ -52,7 +52,10 @@ export default async function handler(req: any, res: any) {
     const cRes = await sb(`platform_credits?user_id=eq.${encodeURIComponent(userId)}&select=amount,kind,status`);
     const credits = await cRes.json();
     const balance = (Array.isArray(credits) ? credits : [])
-      .filter((c: any) => c.kind !== "platform_fee" && c.status !== "failed")
+      // split_payout NÃO entra no saldo: esse dinheiro já caiu direto na conta
+      // Mercado Pago do afiliado. Se contasse aqui, ele sacaria de novo via PIX
+      // e a gente pagaria duas vezes pela mesma entrega.
+      .filter((c: any) => c.kind !== "platform_fee" && c.kind !== "split_payout" && c.status !== "failed")
       .reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
     if (amount > balance) return res.status(400).json({ error: `Saldo insuficiente (disponível R$ ${Math.round(balance * 100) / 100})` });
 
