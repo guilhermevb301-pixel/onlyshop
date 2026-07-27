@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { splitEnabled } from "@/lib/splitMode";
+import { splitLive } from "@/lib/splitMode";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -231,7 +231,7 @@ export function useBrand() {
     if (!brand) return null;
     const rtype = input.reward_type ?? "per_video";
     const isProcess = input.campaign_kind === "process";
-    const usaSplit = await splitEnabled();
+    const usaSplit = await splitLive();
     const isPermuta = rtype === "permuta";
     const phases = input.phases ?? (isProcess ? PROCESS_PHASES_DEFAULT : undefined);
     // Process: paga por etapa (reward_amount não usado). Permuta: influencer recebe

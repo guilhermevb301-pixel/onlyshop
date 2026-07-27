@@ -42,9 +42,11 @@ export function PayAffiliateCard({
     return () => { alive = false; };
   }, [on, paying]);
 
-  // Contratados que ainda não foram pagos.
+  // Só campanhas SPLIT: em escrow a marca já pagou tudo na criação, então "Pagar"
+  // não faz sentido (e o servidor recusaria com 409). Contratados ainda não pagos.
+  const splitCampaignIds = new Set(campaigns.filter((c) => c.pay_mode === "split").map((c) => c.id));
   const pending = applications.filter(
-    (a) => (a.status === "accepted" || a.status === "approved") && !settled.has(a.id)
+    (a) => (a.status === "accepted" || a.status === "approved") && splitCampaignIds.has(a.campaign_id) && !settled.has(a.id)
   );
   if (!on || pending.length === 0) return null;
 

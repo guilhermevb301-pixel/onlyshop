@@ -21,7 +21,8 @@ export const config = { maxDuration: 30 };
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const APP_URL = process.env.APP_URL || "https://onlyshopbrasil.com.br";
-const SPLIT_ON = !!process.env.MP_APP_CLIENT_ID;
+const SPLIT_ON = !!process.env.MP_APP_CLIENT_ID;          // credenciais existem (dá pra conectar/pagar)
+const SPLIT_LIVE = process.env.MP_SPLIT_LIVE === "true";  // campanha NOVA nasce split (abre pra todo mundo)
 
 const round2 = (v: number) => Math.round((Number(v) || 0) * 100) / 100;
 
@@ -109,7 +110,7 @@ function money(camp: any): { gross: number; fee: number; net: number } {
 
 export default async function handler(req: any, res: any) {
   // GET = sonda de configuração (o front esconde a UI de split enquanto off).
-  if (req.method === "GET") return res.status(200).json({ configured: SPLIT_ON });
+  if (req.method === "GET") return res.status(200).json({ configured: SPLIT_ON, live: SPLIT_LIVE });
   if (req.method !== "POST") return res.status(405).json({ error: "use POST" });
   try {
     if (!SB_URL || !SB_KEY) return res.status(500).json({ error: "Supabase não configurado" });
