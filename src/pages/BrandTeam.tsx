@@ -15,7 +15,7 @@ import { LogIn } from "lucide-react";
 export default function BrandTeam() {
   const { user, loading: authLoading } = useAuth();
   const { brand, campaigns, loading, createBrand, refetch } = useBrand();
-  const { members, loading: teamLoading } = useBrandTeam(brand?.id ?? null, campaigns);
+  const { members, loading: teamLoading, refresh: refreshTeam } = useBrandTeam(brand?.id ?? null, campaigns);
   const { rewards, create, setStatus } = useTeamRewards(brand?.id ?? null);
 
   if (authLoading || loading) {
@@ -59,6 +59,7 @@ export default function BrandTeam() {
       loading={teamLoading}
       extraTop={<RewardsSection rewards={rewards} onCreate={create} onCancel={(id) => setStatus(id, "cancelled")} />}
       extraBottom={<TeamInviteCard code={brand.team_invite_code} />}
+      onMetaChange={refreshTeam}
     />
   );
 }

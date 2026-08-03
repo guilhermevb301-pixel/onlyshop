@@ -2,24 +2,54 @@ import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Globe, User, Instagram, Music2, Youtube, MessageCircle, Home } from "lucide-react";
+import { MapPin, Globe, User, Instagram, Music2, Youtube, MessageCircle, Home, Tag, StickyNote, Check, Loader2 } from "lucide-react";
 import type { CampaignApplication } from "@/lib/campaigns";
+import { TEAM_TAGS } from "@/lib/campaigns";
+import { saveAffiliateMeta } from "@/lib/brandAffiliateMeta";
+import { toast } from "sonner";
 
 interface Props {
   application: CampaignApplication;
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  // Presença de brandId liga o painel de GESTÃO (etiquetas + notas internas).
+  brandId?: string;
+  initialTags?: string[];
+  initialNotes?: string | null;
+  onMetaSaved?: () => void;
 }
 
 const fmtNum = (n: number) => Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 
 // Perfil read-only do influencer que aceitou a campanha — abre pelo card. Não
 // escreve nada, não toca em aprovação/pagamento. Busca a avaliação média ao abrir.
-export function InfluencerProfileSheet({ application, open, onOpenChange }: Props) {
+export function InfluencerProfileSheet({ application, open, onOpenChange, brandId, initialTags, initialNotes, onMetaSaved }: Props) {
   const inf = application.influencer;
   const uid = application.influencer_user_id;
   const [rating, setRating] = useState<{ avg: number; count: number } | null>(null);
   const [shipping, setShipping] = useState<any>(null);
+  // Gestão (CRM): etiquetas + nota interna da marca sobre este afiliado.
+  const [tags, setTags] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const dirty = brandId
+    ? JSON.stringify([...tags].sort()) !== JSON.stringify([...(initialTags || [])].sort()) || notes !== (initialNotes || "")
+    : false;
+
+  useEffect(() => {
+    if (open) { setTags(initialTags || []); setNotes(initialNotes || ""); }
+  }, [open, initialTags, initialNotes]);
+
+  const toggleTag = (t: string) => setTags((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
+
+  const saveMeta = async () => {
+    if (!brandId || !uid) return;
+    setSaving(true);
+    const ok = await saveAffiliateMeta(brandId, uid, { tags, notes: notes.trim() || null });
+    setSaving(false);
+    if (ok) { toast.success("Anotações salvas"); onMetaSaved?.(); }
+    else toast.error("Não foi possível salvar");
+  };
 
   useEffect(() => {
     if (!open || !uid) { setRating(null); setShipping(null); return; }
@@ -142,6 +172,54 @@ export function InfluencerProfileSheet({ application, open, onOpenChange }: Prop
           )}
 
           {!inf && <p className="text-sm text-muted-foreground/60 mt-4">Perfil ainda não disponível.</p>}
+
+          {/* GESTÃO — só a marca vê (etiquetas + nota interna). Aparece só no CRM. */}
+          {brandId && (
+            <div className="mt-5 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-4">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-semibold flex items-center gap-1.5 mb-3">
+                <Tag className="h-3 w-3 text-accent" /> Gestão · só você vê
+              </p>
+
+              <div className="flex flex-wrap gap-1.5">
+                {[...new Set([...TEAM_TAGS, ...tags])].map((t) => {
+                  const on = tags.includes(t);
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => toggleTag(t)}
+                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ring-1 transition-colors ${on ? "bg-accent/15 text-accent ring-accent/30" : "bg-white/[0.03] text-muted-foreground/60 ring-white/[0.08]"}`}
+                    >
+                      {on ? "✓ " : ""}{t}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-3">
+                <label className="text-[11px] text-muted-foreground/50 flex items-center gap-1.5 mb-1.5"><StickyNote className="h-3 w-3" /> Nota interna</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Ex.: responde rápido, prefere permuta, bom pra lançamento…"
+                  className="w-full rounded-xl bg-white/[0.03] ring-1 ring-white/[0.06] p-2.5 text-sm outline-none focus:ring-accent/30 placeholder:text-muted-foreground/35 resize-none"
+                />
+              </div>
+
+              {dirty && (
+                <button
+                  type="button"
+                  onClick={saveMeta}
+                  disabled={saving}
+                  className="mt-3 w-full h-10 rounded-xl bg-gradient-primary text-white text-sm font-semibold flex items-center justify-center gap-1.5 active:scale-[.98] transition-transform"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Salvar anotações
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>

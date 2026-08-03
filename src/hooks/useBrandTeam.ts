@@ -30,6 +30,18 @@ export function useBrandTeam(brandId: string | null, campaigns: Campaign[]) {
       const ids = [...new Set(apps.map((a) => a.influencer_user_id).filter(Boolean))];
       const pmap = new Map<string, any>();
       const rmap = new Map<string, { sum: number; count: number }>();
+      const meta = new Map<string, { tags: string[]; notes: string | null }>();
+      if (!demo.isOn() && ids.length) {
+        // Etiquetas + notas internas (privadas da marca).
+        try {
+          const { data: metas } = await supabase
+            .from("brand_affiliate_meta" as any)
+            .select("affiliate_user_id, tags, notes")
+            .eq("brand_id", brandId as string)
+            .in("affiliate_user_id", ids);
+          ((metas as any[]) || []).forEach((m) => meta.set(m.affiliate_user_id, { tags: m.tags || [], notes: m.notes ?? null }));
+        } catch { /* degrada sem etiquetas */ }
+      }
       if (!demo.isOn() && ids.length) {
         try {
           const { data: profs } = await supabase
@@ -57,17 +69,20 @@ export function useBrandTeam(brandId: string | null, campaigns: Campaign[]) {
         const delivered = ["delivered", "approved", "paid"].includes(a.status);
         const approved = ["approved", "paid"].includes(a.status);
         const act = a.posted_at || a.updated_at || a.created_at || null;
+        const joined = a.created_at || null;
 
         let m = byUser.get(uid);
         if (!m) {
           const rt = rmap.get(uid);
+          const mt = meta.get(uid);
           m = {
             user_id: uid,
             influencer: pmap.get(uid) || a.influencer || undefined,
             deliveries: 0, approved: 0, totalPaid: 0,
             avgRating: rt && rt.count ? rt.sum / rt.count : null,
             ratingCount: rt?.count ?? 0,
-            lastActivity: null, campaignsCount: 0,
+            lastActivity: null, joinedAt: null, campaignsCount: 0,
+            tags: mt?.tags ?? [], notes: mt?.notes ?? null,
             sampleApplication: { ...a, influencer: pmap.get(uid) || a.influencer },
           };
           byUser.set(uid, m);
@@ -75,6 +90,7 @@ export function useBrandTeam(brandId: string | null, campaigns: Campaign[]) {
         if (delivered) m.deliveries += 1;
         if (approved) { m.approved += 1; m.totalPaid += rewardMap.get(a.campaign_id) || 0; }
         if (act && (!m.lastActivity || act > m.lastActivity)) m.lastActivity = act;
+        if (joined && (!m.joinedAt || joined < m.joinedAt)) m.joinedAt = joined; // 1ª candidatura
 
         const set = campsByUser.get(uid) || new Set<string>();
         set.add(a.campaign_id);

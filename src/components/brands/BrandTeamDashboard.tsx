@@ -1,13 +1,14 @@
 import { useState, useMemo, type ReactNode } from "react";
 import type { Brand } from "@/hooks/useBrand";
-import type { TeamMember } from "@/lib/campaigns";
+import { type TeamMember, teamStatus, TEAM_STATUS_CFG, type TeamStatus } from "@/lib/campaigns";
 import { InfluencerProfileSheet } from "@/components/brands/InfluencerProfileSheet";
+import { TeamMetricsPanel } from "@/components/brands/TeamMetricsPanel";
 import { HelpTip } from "@/components/ui/help-tip";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Users2, Package, TrendingUp, Star, MapPin, Instagram, Music2, Clock, ArrowUpDown, Loader2, CheckCircle2,
+  Users2, Package, TrendingUp, Star, MapPin, Instagram, Music2, Clock, ArrowUpDown, Loader2, CheckCircle2, Search, Tag as TagIcon,
 } from "lucide-react";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -21,17 +22,46 @@ const SORTS: { k: Sort; label: string }[] = [
   { k: "avaliacao", label: "Avaliação" },
 ];
 
-// "Meu time" (Fase 2): a marca vê seu roster de afiliados + métricas de quem
-// trabalha mais. Tudo derivado de campaign_applications — nada de pagamento.
-export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBottom }: {
-  brand: Brand; members: TeamMember[]; loading: boolean; extraTop?: ReactNode; extraBottom?: ReactNode;
+type StatusFilter = "todos" | TeamStatus;
+const STATUS_FILTERS: { k: StatusFilter; label: string }[] = [
+  { k: "todos", label: "Todos" },
+  { k: "ativo", label: "Ativos" },
+  { k: "novo", label: "Novos" },
+  { k: "inativo", label: "Inativos" },
+];
+
+// "Meu time" / CRM: a marca vê o roster + saúde da base, busca, filtra por status
+// e etiqueta, e abre cada afiliado pra ver métricas, notas e tags. Nada de pagamento.
+export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBottom, onMetaChange }: {
+  brand: Brand; members: TeamMember[]; loading: boolean; extraTop?: ReactNode; extraBottom?: ReactNode; onMetaChange?: () => void;
 }) {
   const [sort, setSort] = useState<Sort>("ativos");
+  const [statusF, setStatusF] = useState<StatusFilter>("todos");
+  const [tagF, setTagF] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<TeamMember | null>(null);
 
-  const sorted = useMemo(() => {
-    const arr = [...members];
-    arr.sort((a, b) => {
+  // Todas as etiquetas em uso na base (pra virar chips de filtro).
+  const allTags = useMemo(() => {
+    const s = new Set<string>();
+    members.forEach((m) => m.tags?.forEach((t) => s.add(t)));
+    return [...s].sort();
+  }, [members]);
+
+  const view = useMemo(() => {
+    const now = Date.now();
+    const q = query.trim().toLowerCase();
+    let arr = members.filter((m) => {
+      if (statusF !== "todos" && teamStatus(m, now) !== statusF) return false;
+      if (tagF && !(m.tags || []).includes(tagF)) return false;
+      if (q) {
+        const inf = m.influencer;
+        const hay = [inf?.display_name, inf?.username, inf?.city, inf?.state, ...(inf?.niches || [])].filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    arr = [...arr].sort((a, b) => {
       switch (sort) {
         case "aprovadas": return b.approved - a.approved;
         case "pago": return b.totalPaid - a.totalPaid;
@@ -41,10 +71,7 @@ export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBot
       }
     });
     return arr;
-  }, [members, sort]);
-
-  const totalPaid = members.reduce((s, m) => s + m.totalPaid, 0);
-  const totalDeliveries = members.reduce((s, m) => s + m.deliveries, 0);
+  }, [members, sort, statusF, tagF, query]);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
@@ -55,20 +82,66 @@ export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBot
         </div>
         <div className="min-w-0">
           <span className="block text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 font-semibold flex items-center gap-1">
-            Meu time <HelpTip title="Meu time" body="Todo mundo que já topou uma campanha sua vira parte do seu time aqui. Veja quem trabalha mais, quanto já pagou e a avaliação de cada um." className="h-4 w-4" iconClassName="h-3 w-3" />
+            Meu time <HelpTip title="Meu time" body="Seu CRM de afiliados: quem já topou uma campanha sua vira parte do time. Acompanhe a saúde da base, filtre, etiquete e deixe notas internas de cada um." className="h-4 w-4" iconClassName="h-3 w-3" />
           </span>
           <h1 className="text-xl font-bold tracking-tight truncate">{brand.name}</h1>
         </div>
       </div>
 
-      {/* stats */}
-      <div className="grid grid-cols-3 gap-2.5 animate-slide-up">
-        <Stat icon={<Users2 className="h-4 w-4 text-accent" />} value={members.length} label="afiliados" />
-        <Stat icon={<Package className="h-4 w-4 text-primary" />} value={totalDeliveries} label="entregas" />
-        <Stat icon={<TrendingUp className="h-4 w-4 text-accent" />} value={brl(totalPaid)} label="pago" highlight />
-      </div>
+      {/* dashboard de saúde da base */}
+      <TeamMetricsPanel members={members} />
 
       {extraTop}
+
+      {/* busca */}
+      {members.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por nome, cidade ou nicho…"
+            className="w-full h-11 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] pl-10 pr-3 text-sm outline-none focus:ring-primary/30 placeholder:text-muted-foreground/40"
+          />
+        </div>
+      )}
+
+      {/* filtros de status */}
+      {members.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.k}
+              onClick={() => setStatusF(f.k)}
+              className={cn(
+                "shrink-0 text-xs px-3 py-1.5 rounded-full ring-1 transition-colors",
+                statusF === f.k ? "bg-primary/15 text-primary ring-primary/30" : "bg-white/[0.03] text-muted-foreground/60 ring-white/[0.06]"
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* filtros de etiqueta (só se houver) */}
+      {allTags.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
+          <TagIcon className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+          {allTags.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTagF(tagF === t ? null : t)}
+              className={cn(
+                "shrink-0 text-xs px-3 py-1.5 rounded-full ring-1 transition-colors",
+                tagF === t ? "bg-accent/15 text-accent ring-accent/30" : "bg-white/[0.03] text-muted-foreground/60 ring-white/[0.06]"
+              )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ordenação */}
       {members.length > 0 && (
@@ -102,28 +175,30 @@ export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBot
             Quem topar uma campanha sua aparece aqui com as métricas de trabalho. Crie campanhas ou convide afiliados pra montar seu time.
           </p>
         </div>
+      ) : view.length === 0 ? (
+        <div className="rounded-[1.25rem] bg-white/[0.03] ring-1 ring-white/[0.06] p-8 text-center">
+          <p className="text-sm font-semibold text-muted-foreground/70">Nenhum afiliado nesse filtro</p>
+          <p className="text-xs text-muted-foreground/50 mt-1">Ajuste a busca ou os filtros acima.</p>
+        </div>
       ) : (
         <div className="space-y-2.5">
-          {sorted.map((m) => <MemberCard key={m.user_id} m={m} onClick={() => setSelected(m)} />)}
+          {view.map((m) => <MemberCard key={m.user_id} m={m} onClick={() => setSelected(m)} />)}
         </div>
       )}
 
       {extraBottom}
 
       {selected && (
-        <InfluencerProfileSheet application={selected.sampleApplication} open={!!selected} onOpenChange={(o) => !o && setSelected(null)} />
+        <InfluencerProfileSheet
+          application={selected.sampleApplication}
+          open={!!selected}
+          onOpenChange={(o) => !o && setSelected(null)}
+          brandId={brand.id}
+          initialTags={selected.tags}
+          initialNotes={selected.notes}
+          onMetaSaved={onMetaChange}
+        />
       )}
-    </div>
-  );
-}
-
-function Stat({ icon, value, label, highlight }: { icon: ReactNode; value: ReactNode; label: string; highlight?: boolean }) {
-  return (
-    <div className={cn("rounded-2xl px-3 py-3 text-center ring-1", highlight ? "bg-accent/[0.07] ring-accent/20" : "bg-white/[0.03] ring-white/[0.06]")}>
-      <div className="flex items-center justify-center gap-1">{icon}
-        <span className={cn("tabular-nums font-black", highlight ? "text-base text-accent" : "text-lg text-foreground/90")}>{value}</span>
-      </div>
-      <p className="text-[10px] text-muted-foreground/60 mt-0.5">{label}</p>
     </div>
   );
 }
@@ -134,6 +209,8 @@ function MemberCard({ m, onClick }: { m: TeamMember; onClick: () => void }) {
   const initial = (name[0] || "?").toUpperCase();
   const local = inf?.city ? `${inf.city}${inf.state ? `, ${inf.state}` : ""}` : null;
   const last = m.lastActivity ? formatDistanceToNow(new Date(m.lastActivity), { addSuffix: true, locale: ptBR }) : null;
+  const status = teamStatus(m, Date.now());
+  const scfg = TEAM_STATUS_CFG[status];
 
   return (
     <button
@@ -146,7 +223,10 @@ function MemberCard({ m, onClick }: { m: TeamMember; onClick: () => void }) {
             {inf?.avatar_url ? <img src={inf.avatar_url} alt="" className="h-full w-full object-cover" /> : <span className="text-base font-bold text-white/90">{initial}</span>}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold truncate">{name}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-bold truncate">{name}</p>
+              <span className={cn("shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full ring-1", scfg.cls)}>{scfg.label}</span>
+            </div>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {local && <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/60"><MapPin className="h-2.5 w-2.5" /> {local}</span>}
               {inf?.instagram_username && <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/60"><Instagram className="h-2.5 w-2.5" /> {inf.instagram_username}</span>}
@@ -159,6 +239,16 @@ function MemberCard({ m, onClick }: { m: TeamMember; onClick: () => void }) {
             </span>
           )}
         </div>
+
+        {/* etiquetas da marca */}
+        {m.tags && m.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2.5">
+            {m.tags.map((t) => (
+              <span key={t} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent/12 text-accent ring-1 ring-accent/20">{t}</span>
+            ))}
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-2 mt-3">
           <Metric icon={<Package className="h-3 w-3" />} value={m.deliveries} label="entregas" />
           <Metric icon={<CheckCircle2 className="h-3 w-3" />} value={m.approved} label="aprovadas" />

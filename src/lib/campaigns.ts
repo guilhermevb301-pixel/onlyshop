@@ -174,9 +174,31 @@ export interface TeamMember {
   avgRating: number | null;
   ratingCount: number;
   lastActivity: string | null;
+  joinedAt: string | null;   // 1ª candidatura = quando entrou no time (CRM)
   campaignsCount: number;
+  tags: string[];            // etiquetas internas da marca (VIP/Top/Novo…)
+  notes: string | null;      // observação interna da marca
   sampleApplication: CampaignApplication; // pra abrir o InfluencerProfileSheet no clique
 }
+
+// Etiquetas sugeridas (a marca pode digitar outras). Cor por semântica.
+export const TEAM_TAGS = ["VIP", "Top Seller", "Novo", "Promessa", "Reativar"] as const;
+
+// Status de relacionamento — DERIVADO de datas reais (sem inventar).
+export type TeamStatus = "novo" | "ativo" | "inativo";
+export function teamStatus(m: { joinedAt: string | null; lastActivity: string | null }, nowMs: number): TeamStatus {
+  const DAY = 86_400_000;
+  const joined = m.joinedAt ? Date.parse(m.joinedAt) : 0;
+  const last = m.lastActivity ? Date.parse(m.lastActivity) : 0;
+  if (joined && nowMs - joined < 14 * DAY) return "novo";        // entrou faz < 2 semanas
+  if (last && nowMs - last < 30 * DAY) return "ativo";           // mexeu no último mês
+  return "inativo";
+}
+export const TEAM_STATUS_CFG: Record<TeamStatus, { label: string; cls: string }> = {
+  novo:    { label: "Novo",    cls: "bg-accent/12 text-accent ring-accent/25" },
+  ativo:   { label: "Ativo",   cls: "bg-emerald-500/12 text-emerald-400 ring-emerald-500/25" },
+  inativo: { label: "Inativo", cls: "bg-white/[0.05] text-muted-foreground/60 ring-white/10" },
+};
 
 export interface PlatformCredit {
   id: string;
