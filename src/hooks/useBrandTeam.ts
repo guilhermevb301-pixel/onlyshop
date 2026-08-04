@@ -30,16 +30,16 @@ export function useBrandTeam(brandId: string | null, campaigns: Campaign[]) {
       const ids = [...new Set(apps.map((a) => a.influencer_user_id).filter(Boolean))];
       const pmap = new Map<string, any>();
       const rmap = new Map<string, { sum: number; count: number }>();
-      const meta = new Map<string, { tags: string[]; notes: string | null }>();
+      const meta = new Map<string, { tags: string[]; notes: string | null; stage: string | null }>();
       if (!demo.isOn() && ids.length) {
         // Etiquetas + notas internas (privadas da marca).
         try {
           const { data: metas } = await supabase
             .from("brand_affiliate_meta" as any)
-            .select("affiliate_user_id, tags, notes")
+            .select("affiliate_user_id, tags, notes, stage")
             .eq("brand_id", brandId as string)
             .in("affiliate_user_id", ids);
-          ((metas as any[]) || []).forEach((m) => meta.set(m.affiliate_user_id, { tags: m.tags || [], notes: m.notes ?? null }));
+          ((metas as any[]) || []).forEach((m) => meta.set(m.affiliate_user_id, { tags: m.tags || [], notes: m.notes ?? null, stage: m.stage ?? null }));
         } catch { /* degrada sem etiquetas */ }
       }
       if (!demo.isOn() && ids.length) {
@@ -82,7 +82,7 @@ export function useBrandTeam(brandId: string | null, campaigns: Campaign[]) {
             avgRating: rt && rt.count ? rt.sum / rt.count : null,
             ratingCount: rt?.count ?? 0,
             lastActivity: null, joinedAt: null, campaignsCount: 0,
-            tags: mt?.tags ?? [], notes: mt?.notes ?? null,
+            tags: mt?.tags ?? [], notes: mt?.notes ?? null, stage: mt?.stage ?? null,
             sampleApplication: { ...a, influencer: pmap.get(uid) || a.influencer },
           };
           byUser.set(uid, m);

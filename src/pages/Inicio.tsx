@@ -5,6 +5,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { useCampaignsNear } from "@/hooks/useCampaignsNear";
 import { useCampaignApplications } from "@/hooks/useCampaignApplications";
 import { TeamRewardsBanner } from "@/components/feed/TeamRewardsBanner";
+import { AffiliateAnnouncementsFeed } from "@/components/feed/AffiliateAnnouncementsFeed";
 import type { CampaignNear } from "@/lib/campaigns";
 import {
   ArrowUpRight, MapPin, Wallet, Video, Sparkles, type LucideIcon,
@@ -125,6 +126,11 @@ export default function Inicio() {
             </Link>
           ))}
         </div>
+      </section>
+
+      {/* ===== Avisos das marcas do time (CRM broadcast) ===== */}
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+        <AffiliateAnnouncementsFeed />
       </section>
 
       {/* ===== Desafios dos times do afiliado (Fase 2) ===== */}

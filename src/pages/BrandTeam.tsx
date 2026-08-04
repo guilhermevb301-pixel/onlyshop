@@ -6,6 +6,10 @@ import { BrandRegistration } from "@/components/brands/BrandRegistration";
 import { BrandTeamDashboard } from "@/components/brands/BrandTeamDashboard";
 import { RewardsSection } from "@/components/brands/RewardsSection";
 import { TeamInviteCard } from "@/components/brands/TeamInviteCard";
+import { TeamBroadcastCard } from "@/components/brands/TeamBroadcastCard";
+import { TeamPlanCard } from "@/components/brands/TeamPlanCard";
+import { saveAffiliateMeta } from "@/lib/brandAffiliateMeta";
+import type { PipelineStage } from "@/lib/campaigns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -52,14 +56,32 @@ export default function BrandTeam() {
     return <BrandRegistration onRegister={createBrand} onDone={refetch} />;
   }
 
+  const moveStage = async (userId: string, stage: PipelineStage) => {
+    const ok = await saveAffiliateMeta(brand.id, userId, { stage });
+    if (ok) refreshTeam();
+  };
+
   return (
     <BrandTeamDashboard
       brand={brand}
       members={members}
       loading={teamLoading}
-      extraTop={<RewardsSection rewards={rewards} onCreate={create} onCancel={(id) => setStatus(id, "cancelled")} />}
+      extraTop={
+        <div className="space-y-4">
+          <TeamPlanCard
+            brandId={brand.id}
+            planTier={brand.plan_tier ?? "none"}
+            planStatus={brand.plan_status ?? "none"}
+            affiliateCount={members.length}
+            onChange={refetch}
+          />
+          <TeamBroadcastCard brandId={brand.id} />
+          <RewardsSection rewards={rewards} onCreate={create} onCancel={(id) => setStatus(id, "cancelled")} />
+        </div>
+      }
       extraBottom={<TeamInviteCard code={brand.team_invite_code} />}
       onMetaChange={refreshTeam}
+      onMoveStage={moveStage}
     />
   );
 }

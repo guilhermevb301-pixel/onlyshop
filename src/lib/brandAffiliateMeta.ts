@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 export async function saveAffiliateMeta(
   brandId: string,
   affiliateUserId: string,
-  patch: { tags?: string[]; notes?: string | null }
+  patch: { tags?: string[]; notes?: string | null; stage?: string | null }
 ): Promise<boolean> {
   try {
     const { error } = await supabase
@@ -16,6 +16,7 @@ export async function saveAffiliateMeta(
           affiliate_user_id: affiliateUserId,
           ...(patch.tags !== undefined ? { tags: patch.tags } : {}),
           ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+          ...(patch.stage !== undefined ? { stage: patch.stage } : {}),
           updated_at: new Date().toISOString(),
         } as any,
         { onConflict: "brand_id,affiliate_user_id" }

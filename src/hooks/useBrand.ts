@@ -26,6 +26,9 @@ export interface Brand {
   status: string;
   created_at: string;
   team_invite_code?: string | null; // Fase 2: link de convite do time
+  plan_tier?: string | null;        // CRM: plano de gestão (none/inicio/starter/pro/scale/custom)
+  plan_status?: string | null;      // none/trial/active/past_due/cancelled
+  plan_selected_at?: string | null;
 }
 
 // Re-exporta o contrato canônico — quem importa Campaign daqui pega o mesmo de @/lib/campaigns.

@@ -1,20 +1,24 @@
 import { useState, useMemo, type ReactNode } from "react";
 import type { Brand } from "@/hooks/useBrand";
-import { type TeamMember, teamStatus, TEAM_STATUS_CFG, type TeamStatus } from "@/lib/campaigns";
+import { type TeamMember, teamStatus, TEAM_STATUS_CFG, type TeamStatus, type PipelineStage } from "@/lib/campaigns";
+import { scoreMember } from "@/lib/affiliateScore";
 import { InfluencerProfileSheet } from "@/components/brands/InfluencerProfileSheet";
 import { TeamMetricsPanel } from "@/components/brands/TeamMetricsPanel";
+import { TeamRadar } from "@/components/brands/TeamRadar";
+import { TeamPipeline } from "@/components/brands/TeamPipeline";
 import { HelpTip } from "@/components/ui/help-tip";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Users2, Package, TrendingUp, Star, MapPin, Instagram, Music2, Clock, ArrowUpDown, Loader2, CheckCircle2, Search, Tag as TagIcon,
+  Users2, Package, TrendingUp, Star, MapPin, Instagram, Music2, Clock, ArrowUpDown, Loader2, CheckCircle2, Search, Tag as TagIcon, List, Columns3,
 } from "lucide-react";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-type Sort = "ativos" | "aprovadas" | "pago" | "recente" | "avaliacao";
+type Sort = "score" | "ativos" | "aprovadas" | "pago" | "recente" | "avaliacao";
 const SORTS: { k: Sort; label: string }[] = [
+  { k: "score", label: "Score IA" },
   { k: "ativos", label: "Mais ativos" },
   { k: "aprovadas", label: "Aprovadas" },
   { k: "pago", label: "Total pago" },
@@ -32,14 +36,16 @@ const STATUS_FILTERS: { k: StatusFilter; label: string }[] = [
 
 // "Meu time" / CRM: a marca vê o roster + saúde da base, busca, filtra por status
 // e etiqueta, e abre cada afiliado pra ver métricas, notas e tags. Nada de pagamento.
-export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBottom, onMetaChange }: {
-  brand: Brand; members: TeamMember[]; loading: boolean; extraTop?: ReactNode; extraBottom?: ReactNode; onMetaChange?: () => void;
+export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBottom, onMetaChange, onMoveStage }: {
+  brand: Brand; members: TeamMember[]; loading: boolean; extraTop?: ReactNode; extraBottom?: ReactNode;
+  onMetaChange?: () => void; onMoveStage?: (userId: string, stage: PipelineStage) => void;
 }) {
-  const [sort, setSort] = useState<Sort>("ativos");
+  const [sort, setSort] = useState<Sort>("score");
   const [statusF, setStatusF] = useState<StatusFilter>("todos");
   const [tagF, setTagF] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<TeamMember | null>(null);
+  const [mode, setMode] = useState<"lista" | "pipeline">("lista");
 
   // Todas as etiquetas em uso na base (pra virar chips de filtro).
   const allTags = useMemo(() => {
@@ -63,6 +69,7 @@ export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBot
     });
     arr = [...arr].sort((a, b) => {
       switch (sort) {
+        case "score": return scoreMember(b, now).score - scoreMember(a, now).score;
         case "aprovadas": return b.approved - a.approved;
         case "pago": return b.totalPaid - a.totalPaid;
         case "recente": return (b.lastActivity || "").localeCompare(a.lastActivity || "");
@@ -91,10 +98,36 @@ export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBot
       {/* dashboard de saúde da base */}
       <TeamMetricsPanel members={members} />
 
+      {/* radar da IA: destaques + sugestões de ação */}
+      <TeamRadar members={members} onSelect={setSelected} />
+
       {extraTop}
 
-      {/* busca */}
+      {/* alterna lista ↔ pipeline (funil) */}
       {members.length > 0 && (
+        <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] w-fit">
+          {([["lista", "Lista", List], ["pipeline", "Pipeline", Columns3]] as const).map(([k, label, Icon]) => (
+            <button
+              key={k}
+              onClick={() => setMode(k)}
+              className={cn(
+                "flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors",
+                mode === k ? "bg-primary/15 text-primary" : "text-muted-foreground/50"
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" /> {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* PIPELINE (funil arrasta/menu) */}
+      {mode === "pipeline" && members.length > 0 && onMoveStage && (
+        <TeamPipeline members={members} onMove={onMoveStage} onSelect={setSelected} />
+      )}
+
+      {/* busca */}
+      {mode === "lista" && members.length > 0 && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
           <input
@@ -107,7 +140,7 @@ export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBot
       )}
 
       {/* filtros de status */}
-      {members.length > 0 && (
+      {mode === "lista" && members.length > 0 && (
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
           {STATUS_FILTERS.map((f) => (
             <button
@@ -125,7 +158,7 @@ export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBot
       )}
 
       {/* filtros de etiqueta (só se houver) */}
-      {allTags.length > 0 && (
+      {mode === "lista" && allTags.length > 0 && (
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
           <TagIcon className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
           {allTags.map((t) => (
@@ -144,7 +177,7 @@ export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBot
       )}
 
       {/* ordenação */}
-      {members.length > 0 && (
+      {mode === "lista" && members.length > 0 && (
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
           <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
           {SORTS.map((s) => (
@@ -163,7 +196,7 @@ export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBot
       )}
 
       {/* lista */}
-      {loading ? (
+      {mode === "lista" && (loading ? (
         <div className="py-16 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground/30" /></div>
       ) : members.length === 0 ? (
         <div className="rounded-[1.25rem] bg-white/[0.03] ring-1 ring-white/[0.06] p-8 text-center">
@@ -184,7 +217,7 @@ export function BrandTeamDashboard({ brand, members, loading, extraTop, extraBot
         <div className="space-y-2.5">
           {view.map((m) => <MemberCard key={m.user_id} m={m} onClick={() => setSelected(m)} />)}
         </div>
-      )}
+      ))}
 
       {extraBottom}
 
@@ -209,8 +242,10 @@ function MemberCard({ m, onClick }: { m: TeamMember; onClick: () => void }) {
   const initial = (name[0] || "?").toUpperCase();
   const local = inf?.city ? `${inf.city}${inf.state ? `, ${inf.state}` : ""}` : null;
   const last = m.lastActivity ? formatDistanceToNow(new Date(m.lastActivity), { addSuffix: true, locale: ptBR }) : null;
-  const status = teamStatus(m, Date.now());
+  const now = Date.now();
+  const status = teamStatus(m, now);
   const scfg = TEAM_STATUS_CFG[status];
+  const sc = scoreMember(m, now);
 
   return (
     <button
@@ -223,9 +258,12 @@ function MemberCard({ m, onClick }: { m: TeamMember; onClick: () => void }) {
             {inf?.avatar_url ? <img src={inf.avatar_url} alt="" className="h-full w-full object-cover" /> : <span className="text-base font-bold text-white/90">{initial}</span>}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <p className="text-sm font-bold truncate">{name}</p>
               <span className={cn("shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full ring-1", scfg.cls)}>{scfg.label}</span>
+              <span className={cn("shrink-0 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ring-1", sc.cls)} title={sc.label}>
+                {sc.score}
+              </span>
             </div>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {local && <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/60"><MapPin className="h-2.5 w-2.5" /> {local}</span>}

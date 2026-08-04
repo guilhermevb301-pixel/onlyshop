@@ -178,8 +178,15 @@ export interface TeamMember {
   campaignsCount: number;
   tags: string[];            // etiquetas internas da marca (VIP/Top/Novo…)
   notes: string | null;      // observação interna da marca
+  stage: string | null;      // etapa no pipeline (null = deriva do status)
   sampleApplication: CampaignApplication; // pra abrir o InfluencerProfileSheet no clique
 }
+
+// Pipeline do CRM — etapas do funil de afiliados (o Biel pediu arrasta-e-solta).
+export const PIPELINE_STAGES = [
+  "Novo cadastro", "Em análise", "Aprovado", "Ativo", "Top afiliado", "Inativo",
+] as const;
+export type PipelineStage = (typeof PIPELINE_STAGES)[number];
 
 // Etiquetas sugeridas (a marca pode digitar outras). Cor por semântica.
 export const TEAM_TAGS = ["VIP", "Top Seller", "Novo", "Promessa", "Reativar"] as const;
