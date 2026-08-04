@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>OnlyShop | Status para Lançar</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root { --mag:#ff2d78; --cyan:#12e0c8; --purple:#8b5cf6; --bg:#0a0a0f; --card:#141420; }
+  body { font-family:'Inter',sans-serif; color:#e8e8ee; background:var(--bg); line-height:1.55; }
+  .page { max-width:820px; margin:0 auto; padding:52px 60px; page-break-after:always; }
+  .page:last-of-type { page-break-after:auto; }
+  @page { size:A4; margin:0; }
+  h1 { font-size:38px; font-weight:900; letter-spacing:-1.2px; line-height:1.05; }
+  h2 { font-size:15px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:var(--cyan); margin:0 0 16px; }
+  .grad { background:linear-gradient(100deg,var(--mag),var(--purple) 55%,var(--cyan)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .eyebrow { font-size:11px; font-weight:800; letter-spacing:3px; text-transform:uppercase; color:var(--cyan); margin-bottom:14px; }
+  .lead { font-size:16px; color:#c5c5d2; }
+  .cover { min-height:100vh; display:flex; flex-direction:column; justify-content:center; page-break-after:always; background:radial-gradient(120% 80% at 20% 0%, rgba(255,45,120,.14), transparent 55%), radial-gradient(100% 70% at 90% 100%, rgba(18,224,200,.10), transparent 55%); }
+  .slogan { font-size:26px; font-weight:900; letter-spacing:-.6px; margin:26px 0 10px; line-height:1.15; }
+  .pillar { background:var(--card); border:1px solid rgba(255,255,255,.07); border-radius:18px; padding:18px 20px; margin:12px 0; page-break-inside:avoid; }
+  .pillar h3 { font-size:17px; font-weight:800; display:flex; align-items:center; gap:10px; }
+  .pillar p { font-size:13.5px; color:#b8b8c6; margin-top:6px; }
+  .num { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,var(--mag),var(--purple)); display:inline-grid; place-items:center; font-weight:900; font-size:14px; color:#fff; flex-shrink:0; }
+  .badge { display:inline-block; font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; padding:3px 10px; border-radius:99px; }
+  .b-live { background:rgba(18,224,200,.12); color:var(--cyan); border:1px solid rgba(18,224,200,.3); }
+  .b-block { background:rgba(255,45,120,.12); color:var(--mag); border:1px solid rgba(255,45,120,.3); }
+  .b-after { background:rgba(139,92,246,.14); color:#b79dff; border:1px solid rgba(139,92,246,.3); }
+  .b-you { background:rgba(255,255,255,.06); color:#c9c9d6; border:1px solid rgba(255,255,255,.14); }
+  ul { list-style:none; margin:4px 0 0; }
+  li { font-size:13.5px; color:#c5c5d2; margin-bottom:7px; padding-left:24px; position:relative; }
+  li.ok:before { content:'✓'; position:absolute; left:0; color:var(--cyan); font-weight:900; }
+  li.dot:before { content:'→'; position:absolute; left:0; color:var(--purple); font-weight:800; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px; }
+  .gap { background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:15px; padding:12px 16px; margin:8px 0; page-break-inside:avoid; }
+  .gap .top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:5px; }
+  .gap h3 { font-size:15.5px; font-weight:800; }
+  .gap p { font-size:12.5px; color:#b8b8c6; margin:2px 0; }
+  .gap .need { font-size:12px; color:#e8e8ee; margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,.07); }
+  .gap .need b { color:var(--cyan); }
+  .foot { margin-top:40px; padding-top:16px; border-top:1px solid rgba(255,255,255,.08); font-size:11px; color:#7a7a8a; }
+  .callout { background:linear-gradient(135deg, rgba(18,224,200,.08), rgba(139,92,246,.05)); border:1px solid rgba(18,224,200,.2); border-radius:16px; padding:18px 22px; margin:16px 0; page-break-inside:avoid; }
+  .callout .q { font-size:17px; font-weight:900; margin-bottom:6px; }
+  .callout p { font-size:13.5px; color:#c5c5d2; }
+  .step { display:flex; gap:14px; align-items:flex-start; margin-bottom:12px; }
+  .step .body h3 { font-size:15px; font-weight:800; }
+  .step .body p { font-size:13px; color:#b8b8c6; margin-top:2px; }
+  .tl { font-size:11px; color:#7a7a8a; font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+</style>
+</head>
+<body>
+
+<!-- CAPA -->
+<section class="page cover">
+  <div class="eyebrow">OnlyShop / Status do produto</div>
+  <h1>O que está <span class="grad">pronto</span><br>e o que falta<br>pra <span class="grad">lançar</span></h1>
+  <p class="slogan">Os três pilares já estão de pé.<br>Falta pouco — e quase tudo é decisão, não código.</p>
+  <p class="lead" style="max-width:540px">Mapa honesto: o que já funciona no ar, o que trava o lançamento, e o que dá pra deixar pra depois sem segurar a largada.</p>
+  <div class="foot" style="margin-top:56px">Documento interno OnlyShop &middot; 4 de agosto de 2026 &middot; onlyshopbrasil.com.br</div>
+</section>
+
+<!-- 1. OS TRÊS PILARES -->
+<section class="page">
+  <h2>A visão, em pé</h2>
+  <h1 style="font-size:30px">Deixou de ser "achar afiliado".<br>Virou <span class="grad">ecossistema completo.</span></h1>
+  <p class="lead" style="margin-top:14px">O app hoje entrega os três pilares que a gente desenhou. Cada um já está no ar.</p>
+
+  <div class="pillar">
+    <h3><span class="num">1</span> Encontrar &middot; Marketplace <span class="badge b-live">no ar</span></h3>
+    <p>Mapa de creators por região, perfis com alcance, busca localizada, media-kit tipo Linktree (/i/código). A marca acha quem está perto e a fim.</p>
+  </div>
+  <div class="pillar">
+    <h3><span class="num">2</span> Contratar &middot; Campanhas <span class="badge b-live">no ar</span></h3>
+    <p>Três formatos: permuta, pagamento, e o "Ganhe no Processo" (paga por etapa). Curadoria (a marca aprova o perfil), entrega, aprovação e histórico.</p>
+  </div>
+  <div class="pillar">
+    <h3><span class="num">3</span> Gerir &middot; CRM de afiliados <span class="badge b-live">no ar</span></h3>
+    <p>Dashboard de saúde da base, IA de ranking com sugestões, pipeline (funil), etiquetas e notas internas, comunicação em massa. A dor das marcas grandes.</p>
+  </div>
+
+  <div class="callout">
+    <div class="q">Resumo em uma linha</div>
+    <p>Encontrar, contratar e gerir afiliados — os três já rodam. O que falta pra lançar não é construir os pilares, é fechar as pontas do pagamento e algumas decisões suas.</p>
+  </div>
+</section>
+
+<!-- 2. PRONTO E NO AR -->
+<section class="page">
+  <h2>Pronto e no ar</h2>
+  <h1 style="font-size:28px">O que já <span class="grad">funciona hoje</span></h1>
+
+  <div class="grid2">
+    <div class="pillar" style="margin:8px 0">
+      <h3 style="font-size:14px">Marketplace</h3>
+      <ul style="margin-top:8px">
+        <li class="ok">Mapa de creators por região</li>
+        <li class="ok">Perfil + alcance informado</li>
+        <li class="ok">Media-kit /i/código (Linktree)</li>
+        <li class="ok">Busca e domínio por território</li>
+      </ul>
+    </div>
+    <div class="pillar" style="margin:8px 0">
+      <h3 style="font-size:14px">Contratação</h3>
+      <ul style="margin-top:8px">
+        <li class="ok">Permuta, pago e Ganhe no Processo</li>
+        <li class="ok">Curadoria (marca aprova o perfil)</li>
+        <li class="ok">Entrega + aprovação + histórico</li>
+        <li class="ok">Anti-fraude no pagamento por etapa</li>
+      </ul>
+    </div>
+    <div class="pillar" style="margin:8px 0">
+      <h3 style="font-size:14px">CRM (gestão)</h3>
+      <ul style="margin-top:8px">
+        <li class="ok">Dashboard de saúde da base</li>
+        <li class="ok">IA de ranking + sugestões</li>
+        <li class="ok">Pipeline (funil) arrasta/menu</li>
+        <li class="ok">Etiquetas + notas privadas</li>
+        <li class="ok">Aviso em massa pro time</li>
+        <li class="ok">Convite por link</li>
+      </ul>
+    </div>
+    <div class="pillar" style="margin:8px 0">
+      <h3 style="font-size:14px">Pagamento &amp; base</h3>
+      <ul style="margin-top:8px">
+        <li class="ok">Split automático do Mercado Pago</li>
+        <li class="ok">Creator conecta o MP (testado)</li>
+        <li class="ok">Carteira, saque PIX, extrato</li>
+        <li class="ok">Multi-conta, chat, avaliações</li>
+        <li class="ok">App instalável (PWA) + LGPD</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout" style="border-color:rgba(18,224,200,.2)">
+    <div class="q" style="color:var(--cyan)">Split do Mercado Pago — 95% pronto</div>
+    <p>A conexão do creator já funciona ao vivo e o MP já aceita criar a cobrança com a nossa taxa embutida. Falta só um teste com dinheiro real pra ligar de vez (detalhe na próxima página).</p>
+  </div>
+</section>
+
+<!-- 3. O QUE FALTA PRA LANÇAR -->
+<section class="page">
+  <h2>O que falta</h2>
+  <h1 style="font-size:25px">Pra abrir <span class="grad">as portas</span></h1>
+  <p class="lead" style="margin:8px 0 2px;font-size:14px">Dividido pelo que importa: <span class="badge b-block">trava o lançamento</span> &nbsp; <span class="badge b-after">pode vir depois</span> &nbsp; <span class="badge b-you">decisão sua</span></p>
+
+  <div class="gap">
+    <div class="top"><h3>Fechar o split (pagamento automático)</h3><span class="badge b-block">trava</span></div>
+    <p>A conexão e a cobrança já foram testadas. Falta um pagamento real de R$1 pra validar a confirmação (o webhook) e então ligar pra todos.</p>
+    <p class="need"><b>Precisa:</b> 10 minutos — pagar R$1 numa campanha de teste comigo. Depois eu ligo com um comando.</p>
+  </div>
+
+  <div class="gap">
+    <div class="top"><h3>Limpeza pré-lançamento</h3><span class="badge b-block">trava</span></div>
+    <p>Ainda existem campanhas de exemplo ("Boutique Verão") no banco, que não podem aparecer pro público.</p>
+    <p class="need"><b>Precisa:</b> meu OK pra remover — 5 minutos. Faço na hora que você autorizar.</p>
+  </div>
+
+  <div class="gap">
+    <div class="top"><h3>Rotacionar as senhas coladas no chat</h3><span class="badge b-block">trava</span></div>
+    <p>Durante a montagem, algumas chaves (tokens do banco e do MP) foram coladas em conversa. Boa prática de segurança: trocar antes de abrir pro público.</p>
+    <p class="need"><b>Precisa:</b> gerar as chaves novas no painel e me passar — eu troco no sistema.</p>
+  </div>
+
+  <div class="gap">
+    <div class="top"><h3>Cobrança recorrente dos planos (o modelo novo)</h3><span class="badge b-after">depois</span> <span class="badge b-you">decisão sua</span></div>
+    <p>A tela de planos já existe e ativa um teste. O que falta é a cobrança automática de verdade da mensalidade. Dá pra lançar sem isso e cobrar os primeiros clientes na mão.</p>
+    <p class="need"><b>Precisa:</b> <b>você definir os preços</b> + eu integrar a assinatura do Mercado Pago. Vale passar o preço pelo Conselho.</p>
+  </div>
+
+  <div class="gap">
+    <div class="top"><h3>Vendas e GMV no dashboard</h3><span class="badge b-after">depois</span> <span class="badge b-you">decisão sua</span></div>
+    <p>O banco já tem o esqueleto de vendas pronto, só vazio. Não aparece porque hoje ninguém captura a venda — ela acontece na loja da marca, fora do app.</p>
+    <p class="need"><b>Precisa:</b> decidir <b>como a marca vende</b> (loja própria, Shopify, link) pra eu criar a ponte que registra a venda no afiliado. Não trava o lançamento.</p>
+  </div>
+
+  <div class="gap">
+    <div class="top"><h3>Assinatura do webhook do MP</h3><span class="badge b-after">depois</span></div>
+    <p>Endurecimento de segurança. O sistema já confirma cada pagamento direto na API do MP, então funciona sem — mas com a chave fica mais blindado.</p>
+    <p class="need"><b>Precisa:</b> a chave secreta do webhook no painel do MP. Já deixei o código pronto pra ligar sozinho quando ela existir.</p>
+  </div>
+</section>
+
+<!-- 4. SEQUÊNCIA -->
+<section class="page">
+  <h2>Como largar</h2>
+  <h1 style="font-size:28px">A sequência <span class="grad">pra abrir</span></h1>
+
+  <div style="margin-top:22px">
+    <p class="tl">Esta semana — destrava o lançamento</p>
+    <div style="margin:10px 0 22px">
+      <div class="step"><span class="num">1</span><div class="body"><h3>Teste do split (R$1)</h3><p>A gente valida o pagamento de ponta a ponta e eu ligo pra todos.</p></div></div>
+      <div class="step"><span class="num">2</span><div class="body"><h3>Limpar dados de exemplo + trocar as chaves</h3><p>Remover as campanhas de teste e rotacionar os segredos. Rápido.</p></div></div>
+      <div class="step"><span class="num">3</span><div class="body"><h3>Abrir</h3><p>Marketplace + contratação + CRM + pagamento automático, tudo no ar.</p></div></div>
+    </div>
+
+    <p class="tl">Logo depois — sem segurar a largada</p>
+    <div style="margin:10px 0">
+      <div class="step"><span class="num">4</span><div class="body"><h3>Preços dos planos + cobrança recorrente</h3><p>Você fecha os valores, eu ligo a mensalidade automática.</p></div></div>
+      <div class="step"><span class="num">5</span><div class="body"><h3>Ponte de vendas / GMV</h3><p>Quando decidirmos como capturar a venda, o dashboard ganha faturamento real.</p></div></div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="q">A real sobre "o que não dá"</div>
+    <p>Quase nada é impossível. As duas coisas que faltam de peso — cobrança recorrente e vendas/GMV — não são limite técnico: uma depende de <b>você definir o preço</b>, a outra de <b>definir como a venda é capturada</b>. Me diz e eu faço.</p>
+  </div>
+
+  <div class="foot">OnlyShop &middot; Status para lançar &middot; 4 de agosto de 2026</div>
+</section>
+
+</body>
+</html>
