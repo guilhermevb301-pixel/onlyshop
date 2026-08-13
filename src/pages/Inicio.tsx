@@ -4,6 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useCampaignsNear } from "@/hooks/useCampaignsNear";
 import { useCampaignApplications } from "@/hooks/useCampaignApplications";
+import { SetupGuide } from "@/components/onboarding/SetupGuide";
+import { creatorSetupSteps } from "@/lib/setupSteps";
 import { TeamRewardsBanner } from "@/components/feed/TeamRewardsBanner";
 import { AffiliateAnnouncementsFeed } from "@/components/feed/AffiliateAnnouncementsFeed";
 import type { CampaignNear } from "@/lib/campaigns";
@@ -53,7 +55,7 @@ export default function Inicio() {
 
   // Só dados reais — a home pode ficar vazia (mostra empty state) até existir campanha real.
   const { campaigns, loading } = useCampaignsNear(coords?.lat, coords?.lon);
-  const { balance } = useCampaignApplications();
+  const { balance, applications } = useCampaignApplications();
 
   const firstName = (profile?.display_name || user?.email?.split("@")[0] || "criador").split(" ")[0];
   // Só consideramos a contagem "real" quando a localização resolveu — evita flicker do número.
@@ -73,6 +75,13 @@ export default function Inicio() {
 
   return (
     <div className="space-y-12 lg:space-y-16">
+      {/* ===== Guia de primeiros passos (creator) ===== */}
+      {user && (
+        <div className="pt-2">
+          <SetupGuide storageKey={`onlyshop_setup_creator_${user.id}`} steps={creatorSetupSteps(profile, applications.length)} />
+        </div>
+      )}
+
       {/* ===== Hero ===== */}
       <section className="pt-2 lg:pt-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="flex flex-wrap items-center gap-2 mb-5">

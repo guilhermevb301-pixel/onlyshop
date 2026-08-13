@@ -15,17 +15,30 @@ export function TeamMetricsPanel({ members }: { members: TeamMember[] }) {
     const d = new Date();
     const mesAtual = d.getMonth(), anoAtual = d.getFullYear();
     let ativos = 0, novos = 0, inativos = 0, novosMes = 0, entregas = 0, pago = 0;
+
+    // Crescimento: novos afiliados nos últimos 6 meses (por mês de entrada).
+    const buckets: { label: string; key: string; n: number }[] = [];
+    const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+    for (let i = 5; i >= 0; i--) {
+      const dt = new Date(anoAtual, mesAtual - i, 1);
+      buckets.push({ label: MES[dt.getMonth()], key: `${dt.getFullYear()}-${dt.getMonth()}`, n: 0 });
+    }
+    const byKey = new Map(buckets.map((b) => [b.key, b]));
+
     for (const x of members) {
       const s = teamStatus(x, now);
       if (s === "ativo") ativos++; else if (s === "novo") novos++; else inativos++;
       if (x.joinedAt) {
         const j = new Date(x.joinedAt);
         if (j.getMonth() === mesAtual && j.getFullYear() === anoAtual) novosMes++;
+        const b = byKey.get(`${j.getFullYear()}-${j.getMonth()}`);
+        if (b) b.n++;
       }
       entregas += x.deliveries;
       pago += x.totalPaid;
     }
-    return { total: members.length, ativos, novos, inativos, novosMes, entregas, pago };
+    const maxBucket = Math.max(1, ...buckets.map((b) => b.n));
+    return { total: members.length, ativos, novos, inativos, novosMes, entregas, pago, buckets, maxBucket };
   }, [members]);
 
   if (m.total === 0) return null;
@@ -73,6 +86,29 @@ export function TeamMetricsPanel({ members }: { members: TeamMember[] }) {
           ))}
         </div>
       </div>
+
+      {/* Crescimento: novos afiliados por mês (6 meses) — barras simples, 1 cor */}
+      {m.buckets.some((b) => b.n > 0) && (
+        <div className="rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-3.5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">Novos afiliados por mês</span>
+            <span className="text-[11px] text-muted-foreground/40">últimos 6 meses</span>
+          </div>
+          <div className="flex items-end justify-between gap-2 h-20">
+            {m.buckets.map((b) => (
+              <div key={b.key} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+                <span className="text-[10px] font-bold tabular-nums text-muted-foreground/70 h-3">{b.n > 0 ? b.n : ""}</span>
+                <div
+                  className="w-full rounded-md bg-gradient-to-t from-primary/60 to-primary transition-[height] duration-500 ease-out"
+                  style={{ height: `${b.n === 0 ? 3 : Math.round((b.n / m.maxBucket) * 52) + 4}px` }}
+                  title={`${b.n} em ${b.label}`}
+                />
+                <span className="text-[9px] uppercase text-muted-foreground/40">{b.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

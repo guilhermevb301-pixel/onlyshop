@@ -3,6 +3,8 @@ import type { Brand, Campaign } from "@/hooks/useBrand";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SetupGuide } from "@/components/onboarding/SetupGuide";
+import { brandSetupSteps } from "@/lib/setupSteps";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CampaignCard } from "@/components/campaigns/CampaignCard";
 import { CreateCampaignSheet } from "./CreateCampaignSheet";
@@ -161,6 +163,16 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
           )}
         </div>
       </div>
+
+      {/* Guia de primeiros passos — some quando tudo configurado */}
+      <SetupGuide
+        storageKey={`onlyshop_setup_brand_${brand.id}`}
+        steps={brandSetupSteps(
+          brand,
+          campaigns,
+          new Set(applications.filter((a) => ["accepted", "delivered", "approved", "paid"].includes(statusOf(a))).map((a) => a.influencer_user_id)).size,
+        )}
+      />
 
       {/* Stats — double-bezel + fade-up stagger */}
       <div className="grid grid-cols-3 gap-2.5">
