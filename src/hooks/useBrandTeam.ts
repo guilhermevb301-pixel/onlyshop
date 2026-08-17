@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { demo, type Campaign, type TeamMember } from "@/lib/campaigns";
+import { demo, type Campaign, type TeamMember, PROCESS_PHASES_DEFAULT } from "@/lib/campaigns";
 
 // Roster do time da marca — DERIVADO de campaign_applications das campanhas dela
 // (RLS "app: brand owner" já garante só as suas). Agrega por influencer.
@@ -13,7 +13,7 @@ export function useBrandTeam(brandId: string | null, campaigns: Campaign[]) {
     setLoading(true);
     try {
       const campIds = campaigns.map((c) => c.id);
-      const rewardMap = new Map(campaigns.map((c) => [c.id, Number(c.reward_amount || 0)]));
+      const campMap = new Map(campaigns.map((c) => [c.id, c]));
 
       let apps: any[] = [];
       if (demo.isOn()) {
@@ -88,7 +88,18 @@ export function useBrandTeam(brandId: string | null, campaigns: Campaign[]) {
           byUser.set(uid, m);
         }
         if (delivered) m.deliveries += 1;
-        if (approved) { m.approved += 1; m.totalPaid += rewardMap.get(a.campaign_id) || 0; }
+        if (approved) m.approved += 1;
+        // Pago: campanha process paga por ETAPA (reward_amount é 0), então soma o
+        // que foi de fato pago (conexão + vídeos + lives). Standard soma o reward.
+        const camp = campMap.get(a.campaign_id);
+        if (camp?.campaign_kind === "process") {
+          const ph = (camp.phases && (camp.phases as any).connection ? camp.phases : PROCESS_PHASES_DEFAULT) as typeof PROCESS_PHASES_DEFAULT;
+          if (a.connection_paid_at) m.totalPaid += Number(ph.connection.affiliate);
+          m.totalPaid += Number(a.videos_paid || 0) * Number(ph.video.amount);
+          m.totalPaid += Number(a.lives_paid || 0) * Number(ph.live.amount);
+        } else if (approved) {
+          m.totalPaid += Number(camp?.reward_amount || 0);
+        }
         if (act && (!m.lastActivity || act > m.lastActivity)) m.lastActivity = act;
         if (joined && (!m.joinedAt || joined < m.joinedAt)) m.joinedAt = joined; // 1ª candidatura
 

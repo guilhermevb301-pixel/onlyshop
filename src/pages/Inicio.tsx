@@ -40,7 +40,7 @@ function brandHue(name?: string) {
 type Atalho = { to: string; icon: LucideIcon; title: string; desc: string };
 
 export default function Inicio() {
-  const { user, profile } = useAuth();
+  const { user, profile, userRole } = useAuth();
   const { requestBrowserLocation } = useGeolocation();
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
 
@@ -76,7 +76,7 @@ export default function Inicio() {
   return (
     <div className="space-y-12 lg:space-y-16">
       {/* ===== Guia de primeiros passos (creator) ===== */}
-      {user && (
+      {user && userRole?.role !== "brand" && (
         <div className="pt-2">
           <SetupGuide storageKey={`onlyshop_setup_creator_${user.id}`} steps={creatorSetupSteps(profile, applications.length)} />
         </div>
