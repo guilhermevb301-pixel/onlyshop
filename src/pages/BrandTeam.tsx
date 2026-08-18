@@ -9,6 +9,7 @@ import { TeamInviteCard } from "@/components/brands/TeamInviteCard";
 import { TeamBroadcastCard } from "@/components/brands/TeamBroadcastCard";
 import { TeamPlanCard } from "@/components/brands/TeamPlanCard";
 import { saveAffiliateMeta } from "@/lib/brandAffiliateMeta";
+import { toast } from "sonner";
 import type { PipelineStage } from "@/lib/campaigns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ export default function BrandTeam() {
   const moveStage = async (userId: string, stage: PipelineStage) => {
     const ok = await saveAffiliateMeta(brand.id, userId, { stage });
     if (ok) refreshTeam();
+    else toast.error("Não foi possível mover", { description: "Tente de novo." });
   };
 
   return (

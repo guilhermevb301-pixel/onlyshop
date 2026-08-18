@@ -115,7 +115,9 @@ export default function Onboarding() {
         // Influencer: nome de exibição + nichos (+ gênero/seguidores opcionais).
         const name = displayName.trim() || "Creator";
         try {
-          await updateProfile({ display_name: name });
+          // Salva nome + nichos no perfil REAL (antes só ia pro localStorage demo-morto,
+          // então o guia "Complete seu perfil" ficava cravado mesmo tendo preenchido).
+          await updateProfile({ display_name: name, ...(niches.length ? { niches } : {}) } as any);
         } catch {
           // demo — segue
         }

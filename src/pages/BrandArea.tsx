@@ -10,7 +10,7 @@ import { LogIn } from "lucide-react";
 export default function BrandArea() {
   const { user, loading: authLoading } = useAuth();
   const {
-    brand, campaigns, applications, loading,
+    brand, campaigns, applications, loading, rejectDelivery,
     createBrand, createCampaign, markCampaignFunded, approveApplication, cancelCampaign,
     approveApplicant, rejectApplicant, refetch,
   } = useBrand();
@@ -62,6 +62,7 @@ export default function BrandArea() {
       onCancelCampaign={cancelCampaign}
       onApproveApplicant={approveApplicant}
       onRejectApplicant={rejectApplicant}
+      onRejectDelivery={rejectDelivery}
     />
   );
 }

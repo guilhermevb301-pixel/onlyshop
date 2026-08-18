@@ -210,7 +210,7 @@ export default function PublicProfile() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card className="p-4 bg-card/40 backdrop-blur-2xl border-white/10">
             <Users className="w-5 h-5 text-primary mb-2" />
-            <p className="text-2xl font-bold">{profile.followers_count || 0}</p>
+            <p className="text-2xl font-bold tabular-nums">{Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(profile.followers_count || 0)}</p>
             <p className="text-xs text-muted-foreground">Seguidores</p>
           </Card>
           <Card className="p-4 bg-card/40 backdrop-blur-2xl border-white/10">

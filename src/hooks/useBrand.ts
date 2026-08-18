@@ -475,12 +475,25 @@ export function useBrand() {
     }
   }, [user]);
 
+  // Recusar uma ENTREGA (status delivered → rejected). Persiste de verdade (antes
+  // era só estado local que revertia no refresh).
+  const rejectDelivery = useCallback(async (appId: string): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const { error } = await supabase.from("campaign_applications" as any)
+        .update({ status: "rejected", updated_at: new Date().toISOString() } as any).eq("id", appId);
+      if (error) throw error;
+      setApplications((prev) => prev.map((a) => (a.id === appId ? { ...a, status: "rejected" } : a)));
+      return true;
+    } catch (e) { console.error("rejectDelivery:", e); return false; }
+  }, [user]);
+
   useEffect(() => { fetchBrand(); }, [fetchBrand]);
 
   return {
     brand, campaigns, applications, loading,
     createBrand, createCampaign, markCampaignFunded, approveApplication, cancelCampaign,
-    approveApplicant, rejectApplicant,
+    approveApplicant, rejectApplicant, rejectDelivery,
     refetch: fetchBrand,
   };
 }

@@ -28,6 +28,7 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
 
   // O total a pagar é o total_budget da campanha (já calculado certo pra paga ou permuta).
   const isPermuta = campaign.reward_type === "permuta";
+  const isProcess = campaign.campaign_kind === "process";
   const total = campaign.total_budget;
   const base = isPermuta ? 0 : campaign.slots * campaign.reward_amount;
   const fee = total - base;
@@ -128,6 +129,8 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
           <div className="mt-4 space-y-2 text-xs">
             {isPermuta ? (
               <Row label={`${campaign.slots} vagas · taxa da plataforma`} value={fmt(total)} />
+            ) : isProcess ? (
+              <Row label={`${campaign.slots} vaga${campaign.slots !== 1 ? "s" : ""} × R$ 134 · pago por etapa`} value={fmt(total)} />
             ) : (
               <>
                 <Row label={`${campaign.slots} influencers × ${fmt(campaign.reward_amount)}`} value={fmt(base)} />

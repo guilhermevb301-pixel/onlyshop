@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Gift, Users, BadgeDollarSign, ArrowRight } from "lucide-react";
 import { fmtKm } from "@/lib/campaigns";
+
+const brl0 = (n: number) => Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 import type { CampaignNear } from "@/lib/campaigns";
 
 interface CampaignCardProps {
@@ -43,7 +45,7 @@ export function CampaignCard({ c, onClick, ctaLabel, onCta, ctaDisabled, compact
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
             <Badge className="gap-1 bg-accent text-accent-foreground border-0 text-[11px]">
-              <BadgeDollarSign className="h-3 w-3" />{c.reward_type === "permuta" ? "Permuta" : `R$ ${c.reward_amount}`}
+              <BadgeDollarSign className="h-3 w-3" />{c.reward_type === "permuta" ? "Permuta" : brl0(c.reward_amount)}
             </Badge>
             <span className="text-[9px] text-muted-foreground/50">{c.reward_type === "permuta" ? "produto" : "por vídeo"}</span>
           </div>

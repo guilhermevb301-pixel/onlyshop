@@ -22,7 +22,10 @@ export function useOnboarding() {
   const needsOnboarding = useMemo(() => {
     if (isDemoSession()) return !isOnboarded() || !getDemoRole();
     if (!role) return true;
-    return !(profile as any)?.city;
+    // Cidade OU coordenadas (GPS pode resolver sem cidade) — senão o creator
+    // ficava preso num loop de onboarding quando o Nominatim não devolvia cidade.
+    const p = profile as any;
+    return !(p?.city || (p?.latitude != null && p?.longitude != null));
   }, [role, profile]);
 
   const chooseRole = useCallback(async (r: OnboardingRole) => {

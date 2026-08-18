@@ -54,8 +54,10 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
       if (ok) {
         setAccepted(true);
         toast.success("Você topou! 🎉", {
-          description: "Grave e poste, depois envie o link em Meus Ganhos.",
+          description: "A marca vai revisar seu perfil. Assim que aprovar, você grava e envia em Meus Ganhos.",
         });
+      } else {
+        toast.error("Não deu pra aceitar agora", { description: "Você já pode ter topado esta campanha. Confira em Meus Ganhos." });
       }
     } finally {
       setLoading(false);

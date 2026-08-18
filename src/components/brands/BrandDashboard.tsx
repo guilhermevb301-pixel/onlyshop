@@ -35,6 +35,7 @@ interface Props {
   onCancelCampaign?: (campaignId: string) => Promise<boolean>;
   onApproveApplicant?: (app: CampaignApplication) => Promise<boolean>;
   onRejectApplicant?: (appId: string) => Promise<boolean>;
+  onRejectDelivery?: (appId: string) => Promise<boolean>;
 }
 
 // Converte a Campaign (lojista) no formato CampaignNear que o CampaignCard consome.
@@ -58,7 +59,7 @@ function toNear(c: Campaign, brand: Brand): CampaignNear {
   };
 }
 
-export function BrandDashboard({ brand, campaigns, applications, onCreateCampaign, onFunded, onApprove, onCancelCampaign, onApproveApplicant, onRejectApplicant }: Props) {
+export function BrandDashboard({ brand, campaigns, applications, onCreateCampaign, onFunded, onApprove, onCancelCampaign, onApproveApplicant, onRejectApplicant, onRejectDelivery }: Props) {
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   // Overrides locais de status (reject) — useBrand não expõe reject, então refletimos aqui.
@@ -96,7 +97,7 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
     const live = campaigns.filter((c) => c.funded).length;
     const investing = campaigns
       .filter((c) => c.funded)
-      .reduce((s, c) => s + computeBudget(c.slots, c.reward_amount).total, 0);
+      .reduce((s, c) => s + Number(c.total_budget || 0), 0);
     const approved = applications.filter((a) => statusOf(a) === "approved" || statusOf(a) === "paid").length;
     return { live, investing, approved };
   }, [campaigns, applications, overrides]);
@@ -116,6 +117,8 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
       toast.success("Entrega aprovada!", {
         description: `${fmt(split.influencer)} liberados pro influencer · taxa ${fmt(split.platform)}.`,
       });
+    } catch {
+      toast.error("Não foi possível aprovar", { description: "Tente de novo em instantes." });
     } finally {
       setBusy((b) => ({ ...b, [app.id]: false }));
     }
@@ -125,7 +128,8 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
     if (busy[app.id] || statusOf(app) !== "delivered") return;
     setBusy((b) => ({ ...b, [app.id]: true }));
     try {
-      if (demo.isOn()) demo.updateApp(app.id, { status: "rejected" });
+      const ok = onRejectDelivery ? await onRejectDelivery(app.id) : true;
+      if (!ok) { toast.error("Não foi possível recusar", { description: "Tente de novo." }); return; }
       setOverrides((o) => ({ ...o, [app.id]: "rejected" }));
       toast("Entrega recusada", {
         description: "O influencer pode reenviar o vídeo corrigido.",
@@ -177,9 +181,9 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
       {/* Stats — double-bezel + fade-up stagger */}
       <div className="grid grid-cols-3 gap-2.5">
         {[
-          { icon: Megaphone, label: "Campanhas no ar", value: String(stats.live), color: "text-primary", glow: "from-primary/12" },
-          { icon: BadgeDollarSign, label: "Investido", value: fmt(stats.investing), color: "text-accent", glow: "from-accent/14", money: true },
-          { icon: CircleCheck, label: "Entregas aprovadas", value: String(stats.approved), color: "text-success", glow: "from-success/12" },
+          { icon: Megaphone, label: "Campanhas no ar", value: String(stats.live), color: "text-primary", bg: "bg-primary/10", glow: "from-primary/12" },
+          { icon: BadgeDollarSign, label: "Investido", value: fmt(stats.investing), color: "text-accent", bg: "bg-accent/10", glow: "from-accent/14", money: true },
+          { icon: CircleCheck, label: "Entregas aprovadas", value: String(stats.approved), color: "text-success", bg: "bg-success/10", glow: "from-success/12" },
         ].map((s, i) => (
           <div
             key={s.label}
@@ -187,7 +191,7 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
             style={{ animationDelay: `${i * 70}ms` }}
           >
             <div className="rounded-[calc(1.5rem-1px)] bg-card/60 backdrop-blur p-3 text-center ring-1 ring-white/[0.05] shadow-[var(--shadow-bezel-inset)]">
-              <span className={cn("mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-full", s.color, "bg-current/10")}>
+              <span className={cn("mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-full", s.color, s.bg)}>
                 <s.icon className={cn("h-4 w-4", s.color)} />
               </span>
               <p className={cn("text-base font-black leading-none tabular-nums truncate", s.money && "text-accent")}>{s.value}</p>
@@ -293,7 +297,7 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
                     <button type="button" onClick={() => setProfileApp(a)} className="flex items-center gap-2.5 flex-1 min-w-0 text-left active:scale-[.99] transition-transform">
                       <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/30 to-accent/10 ring-1 ring-white/[0.06] grid place-items-center shrink-0 overflow-hidden">
                         {a.influencer?.avatar_url
-                          ? <img src={a.influencer.avatar_url} alt="" className="h-full w-full object-cover" />
+                          ? <img src={a.influencer.avatar_url} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
                           : <span className="text-xs font-bold">{(a.influencer?.display_name || a.influencer?.username || "?")[0]?.toUpperCase()}</span>}
                       </div>
                       <div className="min-w-0">

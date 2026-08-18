@@ -197,7 +197,7 @@ export function CampaignWizard({ form, update, onSubmit, loading, budget, fmt, i
                 </div>
               )}
             </div>
-            <BudgetBox isPermuta={isPermuta} slotsN={slotsN} rewardN={rewardN} budget={budget} fmt={fmt} />
+            <BudgetBox isPermuta={isPermuta} isProcess={isProcess} slotsN={slotsN} rewardN={rewardN} budget={budget} fmt={fmt} />
           </div>
         )}
 
@@ -259,12 +259,12 @@ export function CampaignWizard({ form, update, onSubmit, loading, budget, fmt, i
             <StepHead icon={<Rocket className="h-4 w-4 text-accent" />} title="Revisar e publicar" sub="Confira e pague pra entrar no ar." />
             <div className="rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-4 space-y-2 text-sm">
               <Row label="Campanha" value={form.name || "—"} />
-              <Row label="Tipo" value={isPermuta ? "Permuta" : "Paga"} />
+              <Row label="Tipo" value={isPermuta ? "Permuta" : isProcess ? "Ganhe no Processo" : "Paga"} />
               <Row label="Vagas" value={String(slotsN)} />
-              <Row label={isPermuta ? "Produto" : "Por influencer"} value={isPermuta ? (form.physical_item || "—") : fmt(rewardN)} />
+              <Row label={isPermuta ? "Produto" : isProcess ? "Por vaga" : "Por influencer"} value={isPermuta ? (form.physical_item || "—") : isProcess ? "R$ 134 · afiliado leva R$ 110" : fmt(rewardN)} />
               {(form.target_city || form.target_state) && <Row label="Onde" value={`${form.target_city}${form.target_state ? ` / ${form.target_state}` : ""}`} />}
             </div>
-            <BudgetBox isPermuta={isPermuta} slotsN={slotsN} rewardN={rewardN} budget={budget} fmt={fmt} highlight />
+            <BudgetBox isPermuta={isPermuta} isProcess={isProcess} slotsN={slotsN} rewardN={rewardN} budget={budget} fmt={fmt} highlight />
           </div>
         )}
       </div>
@@ -311,12 +311,17 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function BudgetBox({ isPermuta, slotsN, rewardN, budget, fmt, highlight }: {
-  isPermuta: boolean; slotsN: number; rewardN: number; budget: { base: number; fee: number; total: number }; fmt: (v: number) => string; highlight?: boolean;
+function BudgetBox({ isPermuta, isProcess, slotsN, rewardN, budget, fmt, highlight }: {
+  isPermuta: boolean; isProcess?: boolean; slotsN: number; rewardN: number; budget: { base: number; fee: number; total: number }; fmt: (v: number) => string; highlight?: boolean;
 }) {
   return (
     <div className={cn("rounded-2xl border p-4", highlight ? "border-accent/30 bg-accent/[0.06]" : budget.total > 0 ? "border-primary/30 bg-primary/[0.06]" : "border-border/20 bg-muted/10")}>
-      {isPermuta ? (
+      {isProcess ? (
+        <>
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground/60"><span>{slotsN} vaga{slotsN !== 1 ? "s" : ""} × R$ 134</span><span>{fmt(budget.total)}</span></div>
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground/40 mt-1"><span>afiliado recebe até R$ 110/vaga · por etapa</span></div>
+        </>
+      ) : isPermuta ? (
         <div className="flex items-center justify-between text-[11px] text-muted-foreground/60">
           <span>{slotsN} vagas × {fmt(PERMUTA_FEE)} (taxa)</span><span>{fmt(budget.total)}</span>
         </div>
