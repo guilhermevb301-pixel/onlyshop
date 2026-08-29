@@ -58,6 +58,11 @@ function verifyState(state: string, secret: string, nonceCookie: string): { user
 }
 
 // Página de erro visível (à prova de print) — nunca vaza token.
+// Escapa qualquer texto antes de ir pro HTML — `motivo`/`dica` podem carregar
+// input do provider (ex.: ?error=<script>), então nunca interpolar cru (XSS refletido).
+const esc = (s: string) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+
 function errorPage(res: any, motivo: string, dica: string) {
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -67,9 +72,14 @@ function errorPage(res: any, motivo: string, dica: string) {
 .d{color:#c5c5d2;font-size:14px;line-height:1.5}.code{display:inline-block;margin-top:16px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#ff2d78;background:rgba(255,45,120,.1);border:1px solid rgba(255,45,120,.25);border-radius:8px;padding:6px 12px}
 .b{display:inline-block;margin-top:22px;background:linear-gradient(135deg,#ff2d78,#8b5cf6);color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 22px;border-radius:99px}</style></head>
 <body><div class="c"><div class="i">🔌</div><div class="t">Não deu pra conectar o Mercado Pago</div>
-<div class="d">${dica}</div><div class="code">motivo: ${motivo}</div><br>
+<div class="d">${esc(dica)}</div><div class="code">motivo: ${esc(motivo)}</div><br>
 <a class="b" href="${APP_URL}/wallet">Voltar e tentar de novo</a></div></body></html>`;
+  // Página de erro NÃO carrega nada externo nem roda script — CSP estrita mata
+  // qualquer XSS que passe do escape, e no-store impede cache do callback.
   res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'");
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
   return res.status(200).send(html);
 }
 
