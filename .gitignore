@@ -30,3 +30,6 @@ supabase/functions/.env
 
 # variáveis públicas do front — fora do git (hygiene)
 .env
+
+# snapshots de dados de produção — jamais commitar
+backups/
