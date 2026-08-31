@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 interface PublicProfileData {
   user_id: string; username: string; display_name: string; avatar_url: string;
   bio: string; city: string; state: string; niches: string[]; categories: string[];
-  followers_count: number; total_sales: number; total_revenue: number;
+  followers_count: number; total_sales: number;
   conversion_rate: number; performance_score: number;
 }
 interface UserLevel { total_xp: number; level: string; }
@@ -41,7 +41,10 @@ export default function PublicProfile() {
 
   const load = async () => {
     setLoading(true);
-    const { data: p } = await supabase.from("profiles").select("*").eq("username", username!).maybeSingle();
+    const { data: p } = await supabase.from("profiles")
+      // Só colunas de vitrine — nunca coordenada, endereço, receita ou indicação.
+      .select("user_id, username, display_name, avatar_url, bio, city, state, niches, categories, followers_count, total_sales, conversion_rate, performance_score")
+      .eq("username", username!).maybeSingle();
     if (!p) { setLoading(false); return; }
     setProfile(p as PublicProfileData);
 

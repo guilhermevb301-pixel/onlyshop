@@ -177,7 +177,7 @@ export default function Admin() {
   const fetchUsers = async () => {
     try {
       const { data: profiles, error: profilesError } = await supabase
-        .from("profiles").select("*").order("created_at", { ascending: false });
+        .from("profiles").select("id, user_id, username, display_name, avatar_url, created_at").order("created_at", { ascending: false });
       if (profilesError) throw profilesError;
 
       const { data: roles, error: rolesError } = await supabase

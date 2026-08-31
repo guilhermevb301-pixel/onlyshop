@@ -71,7 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // travada em conexão lenta, porque o app só renderiza depois disso). Agora o
       // tempo é o da query mais lenta, não a soma.
       const [profileRes, roleRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", userId).single(),
+        // Próprio perfil via RPC SECURITY DEFINER: as colunas sensíveis de profiles
+        // (coordenada, endereço, receita, indicação) não são mais legíveis direto
+        // pelo cliente — mas o DONO continua vendo a própria linha inteira.
+        supabase.rpc("get_my_profile" as any).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", userId).single(),
       ]);
 
