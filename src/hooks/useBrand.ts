@@ -215,13 +215,17 @@ export function useBrand() {
     }
     try {
       const { data, error } = await supabase
-        .from("brands")
-        .insert({ ...input, user_id: user.id } as any)
-        .select()
-        .single();
+        .rpc("create_my_brand" as never, {
+          _name: input.name,
+          _slug: input.slug,
+          _description: input.description ?? null,
+          _logo_url: input.logo_url ?? null,
+          _website: input.website ?? null,
+        } as never);
       if (error) throw error;
-      setBrand(data as Brand);
-      return data as Brand;
+      const created = (Array.isArray(data) ? data[0] : data) as Brand;
+      setBrand(created);
+      return created;
     } catch (e) {
       console.error("createBrand:", e);
       throw e;
@@ -284,41 +288,16 @@ export function useBrand() {
       return base;
     }
     try {
-      const { data, error } = await supabase
-        .from("campaigns" as any)
-        .insert({
-          brand_id: brand.id,
-          name: base.name,
-          description: base.description,
-          briefing: base.briefing,
-          reward_type: base.reward_type,
-          reward_amount: base.reward_amount,
-          slots: base.slots,
-          slots_filled: 0,
-          target_city: base.target_city,
-          target_state: base.target_state,
-          target_gender: base.target_gender,
-          min_followers: base.min_followers,
-          deadline_hours: base.deadline_hours,
-          physical_item: base.physical_item,
-          territory_scope: base.territory_scope,
-          territory_name: base.territory_name,
-          territory_neighborhood: base.territory_neighborhood,
-          territory_street: base.territory_street,
-          platform_fee_pct: base.platform_fee_pct,
-          total_budget: base.total_budget,
-          funded: base.funded,       // split: já no ar (paga por creator aprovado)
-          pay_mode: usaSplit ? "split" : "escrow",
-          auto_approve: base.auto_approve,
-          auto_accept: base.auto_accept,
-          campaign_kind: base.campaign_kind,
-          phases: base.phases,
-          status: "active",
-        } as any)
-        .select()
-        .single();
-      if (error) throw error;
-      const created = data as unknown as Campaign;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Faça login novamente para criar a campanha.");
+      const response = await fetch("/api/create-campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify(input),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || "Não foi possível criar a campanha.");
+      const created = data as Campaign;
       setCampaigns((prev) => [created, ...prev]);
       return created;
     } catch (e) {
@@ -329,20 +308,11 @@ export function useBrand() {
 
   // Marca a campanha como paga/ativa (chamado pelo CampaignPaymentStep).
   const markCampaignFunded = useCallback(async (campaignId: string) => {
-    setCampaigns((prev) => prev.map((c) => (c.id === campaignId ? { ...c, funded: true } : c)));
     if (demo.isOn() || !user) {
+      setCampaigns((prev) => prev.map((c) => (c.id === campaignId ? { ...c, funded: true } : c)));
       // Persiste no localStorage de campanhas demo.
       const all = demo.myCampaigns().map((c) => (c.id === campaignId ? { ...c, funded: true } : c));
       localStorage.setItem("onlyshop_demo_my_campaigns", JSON.stringify(all));
-      return;
-    }
-    try {
-      await supabase
-        .from("campaigns" as any)
-        .update({ funded: true } as any)
-        .eq("id", campaignId);
-    } catch (e) {
-      console.error("markCampaignFunded:", e);
     }
   }, [user]);
 
@@ -352,7 +322,7 @@ export function useBrand() {
       demo.updateApp(app.id, { status: "approved" });
       const split = computeSplit(reward);
       const now = new Date().toISOString();
-      // Payout 80% pro influencer.
+      // Payout integral do prêmio para o influencer.
       demo.addCredit({
         id: demoId("cr"),
         user_id: app.influencer_user_id,
@@ -401,8 +371,7 @@ export function useBrand() {
     }
   }, [user]);
 
-  // Exclui/encerra uma campanha. Não-paga → apaga; paga → cancela (não mexe no
-  // ledger). Pedido do Biel: "não existe a opção de excluir campanha".
+  // Campanha paga nunca é cancelada no navegador: isso exige estorno contábil.
   const cancelCampaign = useCallback(async (campaignId: string): Promise<boolean> => {
     const camp = campaigns.find((c) => c.id === campaignId);
     if (demo.isOn() || !user) {
@@ -412,11 +381,16 @@ export function useBrand() {
       return true;
     }
     try {
-      if (camp && !camp.funded) {
-        await supabase.from("campaigns" as any).delete().eq("id", campaignId);
-      } else {
-        // Paga: não apaga (há dinheiro/entregas ligadas) — só cancela e some do mapa.
-        await supabase.from("campaigns" as any).update({ status: "cancelled" } as any).eq("id", campaignId);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Faça login novamente.");
+      const response = await fetch("/api/cancel-campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ campaignId }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "não foi possível cancelar");
       }
       setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
       return true;

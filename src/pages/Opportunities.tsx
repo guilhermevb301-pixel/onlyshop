@@ -137,7 +137,7 @@ export default function Opportunities() {
   };
 
   const filtered = useMemo(() => {
-    let result = products.filter(p => {
+    const result = products.filter(p => {
       const ms = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.description?.toLowerCase().includes(search.toLowerCase());
       const mc = category === "Todos" || p.category === category;
       return ms && mc;

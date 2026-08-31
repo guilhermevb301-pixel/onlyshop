@@ -3,7 +3,7 @@ import { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { setDemoRole } from "@/lib/onboarding";
-import { getStoredRef, clearStoredRef, resolveReferrer } from "@/lib/referral";
+import { getStoredRef, clearStoredRef } from "@/lib/referral";
 import { saveAccount } from "@/lib/accounts";
 
 interface Profile {
@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Multi-conta: guarda esta conta na lista do dispositivo (pra alternar PJ/PF).
       try {
-        if (sess?.access_token && sess?.refresh_token && sess.user?.email) {
+        if (sess?.user?.email) {
           const p = profileRes.data as any;
           saveAccount({
             user_id: userId,
@@ -100,8 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: p?.display_name ?? p?.username ?? null,
             avatar_url: p?.avatar_url ?? null,
             role: (roleRes.data as any)?.role ?? null,
-            access_token: sess.access_token,
-            refresh_token: sess.refresh_token,
           });
         }
       } catch { /* multi-conta é conveniência, nunca quebra o login */ }
@@ -157,42 +155,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, username?: string) => {
     setLoading(true);
     try {
+      const referralCode = getStoredRef();
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: window.location.origin,
+          data: {
+            username: username?.trim() || undefined,
+            referral_code: referralCode || undefined,
+          },
         },
       });
 
       if (error) throw error;
 
-      // Update username if provided
-      if (data.user && username) {
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({ username })
-          .eq("user_id", data.user.id);
-
-        if (updateError) {
-          console.error("Error updating username:", updateError);
-        }
-      }
-
-      // Rede de indicação: se a pessoa veio por um link /i/CODIGO, marca quem a trouxe.
-      try {
-        const ref = getStoredRef();
-        if (ref && data.user) {
-          const referrerId = await resolveReferrer(ref);
-          if (referrerId && referrerId !== data.user.id) {
-            await supabase
-              .from("profiles")
-              .update({ referred_by: referrerId } as any)
-              .eq("user_id", data.user.id);
-          }
-          clearStoredRef();
-        }
-      } catch { /* ignora — não bloqueia o cadastro */ }
+      // O trigger handle_new_user consome os metadados mesmo se a confirmação de
+      // email significar que ainda não existe sessão no navegador.
+      if (data.user) clearStoredRef();
 
       toast({
         title: "Conta criada!",
@@ -275,14 +255,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (!user) return;
     try {
-      const { error } = await supabase
-        .from("user_roles")
-        .upsert({ user_id: user.id, role } as any, { onConflict: "user_id" });
+      const { error } = await supabase.rpc("set_my_role" as never, { _role: role } as never);
       if (error) throw error;
     } catch (e) {
       console.error("setRole:", e);
+      throw e;
     }
-    setUserRole({ role }); // otimista (real valida após deploy do Supabase)
+    setUserRole({ role });
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {

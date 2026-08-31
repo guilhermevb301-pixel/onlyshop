@@ -1,4 +1,7 @@
 // =============================================================================
+import { authenticateRequest } from "./_lib/auth";
+import { apiErrorResponse } from "./_lib/supabase";
+import { claimApiUsage } from "./_lib/usage";
 // /api/trends — Em Alta no TikTok (Vercel Serverless Function)
 //
 // Puxa o que está bombando no TikTok (Creative Center) via Apify — sem cookie,
@@ -78,23 +81,11 @@ function normProducts(items: any[]) {
 }
 
 
-const _SB_URL = process.env.SUPABASE_URL;
-const _SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-// Endpoint PAGO (provedor externo cobra por chamada). Sem exigir login, qualquer
-// um na internet dispara e queima o crédito da conta. Falha fechado de propósito.
-async function exigeLogin(req: any, res: any): Promise<boolean> {
-  const token = String(req.headers?.authorization || "").replace(/^Bearer\s+/i, "");
-  if (!token || !_SB_URL || !_SB_KEY) { res.status(401).json({ error: "faça login para usar" }); return false; }
-  try {
-    const u = await (await fetch(`${_SB_URL}/auth/v1/user`, { headers: { apikey: _SB_KEY, Authorization: `Bearer ${token}` } })).json();
-    if (!u?.id) { res.status(401).json({ error: "sessão inválida" }); return false; }
-    return true;
-  } catch { res.status(401).json({ error: "não foi possível validar a sessão" }); return false; }
-}
-
 export default async function handler(req: any, res: any) {
-  if (!(await exigeLogin(req, res))) return;
   try {
+    if (req.method !== "GET") return res.status(405).json({ error: "use GET" });
+    await authenticateRequest(req);
+    await claimApiUsage(req, "tiktok_trends");
     const q = req.query || {};
     const type: TrendType = (["products", "hashtags", "creatives"].includes(q.type) ? q.type : "products");
     const country = String(q.country || "BR").toUpperCase();
@@ -127,6 +118,6 @@ export default async function handler(req: any, res: any) {
     res.setHeader("Cache-Control", "public, s-maxage=21600, stale-while-revalidate=86400");
     return res.status(200).json({ items, demo: items.length === 0, source: "apify", type, country, period });
   } catch (err) {
-    return res.status(200).json({ items: [], demo: true, error: err instanceof Error ? err.message : String(err) });
+    return apiErrorResponse(err, res);
   }
 }

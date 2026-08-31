@@ -1,5 +1,5 @@
 // Conexão com o TikTok (OAuth Login Kit) — fala com a edge function tiktok-auth
-// e guarda o token de cada usuário em tiktok_connections.
+// O token fica exclusivamente no servidor; o browser recebe apenas metadados.
 import { supabase } from "@/integrations/supabase/client";
 
 // Tem que bater EXATAMENTE com a Redirect URI registrada no app do TikTok.
@@ -11,16 +11,13 @@ export type TikTokConnection = {
   display_name: string | null;
   avatar_url: string | null;
   followers_count: number;
-  access_token: string | null;
 };
 
 export async function getTikTokConnection(userId: string): Promise<TikTokConnection | null> {
-  const { data } = await supabase
-    .from("tiktok_connections")
-    .select("tiktok_username, display_name, avatar_url, followers_count, access_token")
-    .eq("user_id", userId)
-    .maybeSingle();
-  return (data as TikTokConnection) || null;
+  if (!userId) return null;
+  const { data, error } = await supabase.rpc("get_my_tiktok_connection" as never);
+  if (error) throw error;
+  return ((Array.isArray(data) ? data[0] : data) as TikTokConnection) || null;
 }
 
 // 1) Inicia o OAuth: pega a URL de autorização do TikTok e redireciona pra lá.
@@ -37,6 +34,7 @@ export async function startTikTokConnect(): Promise<void> {
 
 // 2) No /tiktok/callback: troca o code por token e salva a conexão.
 export async function finishTikTokConnect(code: string, state: string, userId: string): Promise<TikTokConnection> {
+  if (!userId) throw new Error("Sessão inválida.");
   const expected = localStorage.getItem(STATE_KEY);
   if (expected && state && expected !== state) {
     throw new Error("Verificação de segurança falhou (CSRF). Tenta conectar de novo.");
@@ -47,30 +45,8 @@ export async function finishTikTokConnect(code: string, state: string, userId: s
   if (error || !data?.success) {
     throw new Error(data?.error || error?.message || "Falha ao conectar com o TikTok.");
   }
-  const t = data.tokens, u = data.user;
-  const expiresAt = new Date(Date.now() + (t.expires_in ?? 0) * 1000).toISOString();
-  await supabase.from("tiktok_connections").upsert(
-    {
-      user_id: userId,
-      tiktok_user_id: u.tiktok_user_id,
-      tiktok_username: u.tiktok_username,
-      display_name: u.display_name,
-      avatar_url: u.avatar_url,
-      access_token: t.access_token,
-      refresh_token: t.refresh_token,
-      token_expires_at: expiresAt,
-      scopes: (t.scope || "").split(",").filter(Boolean),
-      followers_count: u.followers_count ?? 0,
-      following_count: u.following_count ?? 0,
-      likes_count: u.likes_count ?? 0,
-      video_count: u.video_count ?? 0,
-      is_verified: !!u.is_verified,
-      last_synced_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" }
-  );
   localStorage.removeItem(STATE_KEY);
-  return u as TikTokConnection;
+  return data.user as TikTokConnection;
 }
 
 export async function disconnectTikTok(userId: string): Promise<void> {
@@ -78,9 +54,9 @@ export async function disconnectTikTok(userId: string): Promise<void> {
 }
 
 // Posta um vídeo (MP4 público) no TikTok do usuário conectado.
-export async function postToTikTok(accessToken: string, videoUrl: string, caption: string) {
+export async function postToTikTok(videoUrl: string, caption: string) {
   const { data, error } = await supabase.functions.invoke("tiktok-post", {
-    body: { action: "publish_video", access_token: accessToken, video_url: videoUrl, caption },
+    body: { action: "publish_video", video_url: videoUrl, caption },
   });
   if (error || !data?.success) {
     throw new Error(data?.error || error?.message || "Falha ao postar no TikTok.");

@@ -14,6 +14,7 @@ dist-ssr
 
 # Secrets — NUNCA commitar chaves de API (fal.ai, etc.)
 supabase/functions/.env
+supabase/.temp/
 .env.fal
 
 # Editor directories and files

@@ -33,10 +33,8 @@ function safeJson(s: string) { try { return JSON.parse(s); } catch { return {}; 
 // Assinatura do Mercado Pago (header x-signature: "ts=...,v1=...").
 // Manifesto: id:<data.id>;request-id:<x-request-id>;ts:<ts>;
 //
-// Só é exigida quando MP_WEBHOOK_SECRET existe — assim ligar a chave endurece o
-// endpoint sem quebrar nada enquanto ela não estiver configurada.
 function assinaturaValida(req: any, dataId: string): boolean {
-  if (!MP_WEBHOOK_SECRET) return true; // ainda não configurada
+  if (!MP_WEBHOOK_SECRET) return false;
   const header = String(req.headers?.["x-signature"] || "");
   if (!header) return false;
   let ts = "", v1 = "";
@@ -143,47 +141,21 @@ async function handleSplit(res: any, splitId: string, paymentId: string) {
   const paid = Number(pay?.transaction_amount || 0);
   if (Math.abs(paid - Number(split.gross)) > 0.01) return res.status(200).json({ ok: false, amount_mismatch: true });
 
-  const now = new Date().toISOString();
-  // Marca pago (o UNIQUE em mp_payment_id impede confirmar o mesmo pagamento 2x).
-  const upd = await sb(`split_payments?id=eq.${encodeURIComponent(splitId)}&status=neq.paid`, {
-    method: "PATCH", headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ status: "paid", mp_payment_id: String(paymentId), paid_at: now }),
-  });
-  const rows = await upd.json().catch(() => []);
-  if (!upd.ok || !Array.isArray(rows) || rows.length === 0) {
-    return res.status(200).json({ ok: true, already: true }); // outra chamada ganhou a corrida
-  }
-
-  // Marca a candidatura como paga POR SPLIT (o payout-process do caixa antigo
-  // recusa qualquer candidatura em split).
-  //
-  // O `status` NÃO muda de propósito: no split a marca paga na contratação, ANTES
-  // da entrega. Mover pra 'paid' aqui faria a marca ver como entregue quem ainda
-  // não entregou, e travaria a aprovação da entrega depois. Pagamento e entrega
-  // são coisas separadas agora.
-  await sb(`campaign_applications?id=eq.${encodeURIComponent(split.application_id)}`, {
-    method: "PATCH", headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ pay_mode: "split" }),
-  });
-
-  // Extrato do afiliado (informativo, não soma saldo) + registro da nossa taxa.
-  await sb("platform_credits?on_conflict=provider_ref,kind", {
+  const rpc = await sb("rpc/confirm_split_payment_atomic", {
     method: "POST",
-    headers: { Prefer: "resolution=ignore-duplicates,return=minimal" },
-    body: JSON.stringify([
-      { user_id: split.affiliate_user_id, kind: "split_payout", amount: Number(split.net), campaign_id: split.campaign_id, status: "completed", provider: "mercadopago", provider_ref: String(paymentId), created_at: now },
-      { user_id: split.brand_user_id, kind: "platform_fee", amount: Number(split.fee), campaign_id: split.campaign_id, status: "completed", provider: "mercadopago", provider_ref: String(paymentId), created_at: now },
-    ]),
+    body: JSON.stringify({ _split_id: splitId, _payment_id: String(paymentId) }),
   });
-
-  return res.status(200).json({ ok: true, split: splitId, net: split.net });
+  if (!rpc.ok) throw new Error(`confirm_split_payment_atomic: ${rpc.status}`);
+  const result = await rpc.json();
+  if (result?.result === "already") return res.status(200).json({ ok: true, already: true });
+  if (result?.result !== "ok") return res.status(200).json({ ok: false, review: result?.result || "unknown" });
+  return res.status(200).json({ ok: true, split: splitId, net: result.net });
 }
 
 export default async function handler(req: any, res: any) {
   try {
-    // O split NÃO usa MERCADOPAGO_ACCESS_TOKEN (usa o token do afiliado), então
-    // essa checagem não pode barrá-lo — senão o split parava de confirmar calado.
-    if (!SB_URL || !SB_KEY) return res.status(200).json({ ok: true, skipped: "env ausente" });
+    if (!SB_URL || !SB_KEY) return res.status(503).json({ error: "Supabase não configurado" });
+    if (!MP_WEBHOOK_SECRET) return res.status(503).json({ error: "Webhook Mercado Pago não configurado" });
 
     const body = typeof req.body === "string" ? safeJson(req.body) : (req.body || {});
     const type = req.query?.type || req.query?.topic || body?.type;
@@ -191,7 +163,7 @@ export default async function handler(req: any, res: any) {
     if (type && String(type) !== "payment") return res.status(200).json({ ok: true, ignored: String(type) });
     if (!paymentId) return res.status(200).json({ ok: true, no_id: true });
 
-    // Só processa notificação assinada pelo Mercado Pago (quando a chave existe).
+    // Só processa notificação assinada pelo Mercado Pago.
     if (!assinaturaValida(req, String(paymentId))) {
       console.error("mp-webhook: assinatura inválida");
       return res.status(401).json({ ok: false, assinatura: "inválida" });
@@ -202,51 +174,35 @@ export default async function handler(req: any, res: any) {
     const splitId = req.query?.split ? String(req.query.split) : "";
     if (splitId) return await handleSplit(res, splitId, String(paymentId));
 
-    if (!MP_TOKEN) return res.status(200).json({ ok: true, skipped: "sem token da plataforma" });
+    if (!MP_TOKEN) return res.status(503).json({ error: "Mercado Pago não configurado" });
 
     // Confirma o pagamento real no Mercado Pago.
     const pr = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
       headers: { Authorization: `Bearer ${MP_TOKEN}` },
     });
     const pay = await pr.json();
+    if (!pr.ok) throw new Error(`Mercado Pago payment lookup: ${pr.status}`);
     if (pay?.status !== "approved") return res.status(200).json({ ok: true, status: pay?.status });
 
-    const campaignId = pay.external_reference || pay.metadata?.campaign_id;
-    const brandUserId = pay.metadata?.brand_user_id || "";
     const amount = Number(pay.transaction_amount || pay.metadata?.amount || 0);
-    if (!campaignId) return res.status(200).json({ ok: true, no_campaign: true });
-    // Notificação de split que chegou na URL global (sem ?split=): não é campanha.
-    // Sem isso, viraria um PATCH em campaigns com id "split:<uuid>" falhando calado.
-    if (String(campaignId).startsWith("split:")) return res.status(200).json({ ok: true, split_sem_rota: true });
-
-    // Idempotência: já processei esse pagamento? então não duplica.
-    const dupRes = await sb(`platform_credits?provider_ref=eq.${encodeURIComponent(String(paymentId))}&select=id&limit=1`);
-    const dup = await dupRes.json();
-    if (Array.isArray(dup) && dup.length) return res.status(200).json({ ok: true, already: true });
-
-    // 1) Campanha paga -> no ar.
-    await sb(`campaigns?id=eq.${encodeURIComponent(String(campaignId))}`, {
-      method: "PATCH",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify({ funded: true, status: "active" }),
-    });
-
-    // 2) Registra o dinheiro entrando + reservado pra campanha (na conta do lojista).
-    if (brandUserId && amount > 0) {
-      const now = new Date().toISOString();
-      await sb("platform_credits?on_conflict=provider_ref,kind", {
-        method: "POST",
-        headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, // idempotente (não duplica se o MP reenviar)
-        body: JSON.stringify([
-          { user_id: brandUserId, kind: "topup", amount, campaign_id: campaignId, status: "completed", provider: "mercadopago", provider_ref: String(paymentId), created_at: now },
-          { user_id: brandUserId, kind: "campaign_hold", amount: -amount, campaign_id: campaignId, status: "completed", provider: "mercadopago", provider_ref: String(paymentId), created_at: now },
-        ]),
-      });
+    const reference = String(pay.external_reference || "");
+    const match = reference.match(/^funding:([0-9a-f-]{36})$/i);
+    if (!match?.[1]) return res.status(200).json({ ok: false, review: "invalid_reference" });
+    const fundingId = match[1];
+    if (pay.metadata?.funding_id && String(pay.metadata.funding_id) !== fundingId) {
+      return res.status(200).json({ ok: false, review: "metadata_mismatch" });
     }
-    return res.status(200).json({ ok: true, funded: campaignId });
+    const rpc = await sb("rpc/confirm_campaign_funding", {
+      method: "POST",
+      body: JSON.stringify({ _funding_id: fundingId, _payment_id: String(paymentId), _paid_amount: amount }),
+    });
+    if (!rpc.ok) throw new Error(`confirm_campaign_funding: ${rpc.status}`);
+    const result = await rpc.json();
+    if (result === "ok") return res.status(200).json({ ok: true, funding: fundingId });
+    if (result === "already") return res.status(200).json({ ok: true, already: true });
+    return res.status(200).json({ ok: false, review: result });
   } catch (e) {
-    // Sempre 200 (senão o MP reenvia em loop). Loga o erro.
     console.error("mp-webhook:", e);
-    return res.status(200).json({ ok: false, error: e instanceof Error ? e.message : "erro" });
+    return res.status(500).json({ ok: false, error: "falha transitória ao processar webhook" });
   }
 }

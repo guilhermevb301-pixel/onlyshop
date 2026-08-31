@@ -39,6 +39,8 @@ const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const MediaKit = lazy(() => import("./pages/MediaKit"));
 const Rede = lazy(() => import("./pages/Rede"));
 const Chat = lazy(() => import("./pages/Chat"));
+const TikTokCallback = lazy(() => import("./pages/TikTokCallback"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const queryClient = new QueryClient();
 
@@ -63,6 +65,7 @@ const App = () => (
               {/* Public routes */}
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/install" element={<Install />} />
               <Route path="/terms" element={<Terms />} />
@@ -70,6 +73,7 @@ const App = () => (
               <Route path="/r/:code" element={<RedirectLink />} />
               <Route path="/i/:code" element={<MediaKit />} />
               <Route path="/time/entrar/:code" element={<TeamJoin />} />
+              <Route path="/tiktok/callback" element={<TikTokCallback />} />
 
               {/* App routes with layout */}
               <Route element={<AppLayout />}>

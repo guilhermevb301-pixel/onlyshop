@@ -307,7 +307,7 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
                     </button>
                     <Button
                       size="sm"
-                      onClick={async () => { const ok = await onApproveApplicant(a); ok ? toast.success("Contratado!", { description: "O afiliado já pode trabalhar." }) : toast.error("Não foi possível aprovar"); }}
+                      onClick={async () => { const ok = await onApproveApplicant(a); if (ok) toast.success("Contratado!", { description: "O afiliado já pode trabalhar." }); else toast.error("Não foi possível aprovar"); }}
                       className="h-8 rounded-full px-3 text-xs bg-gradient-primary border-0 shrink-0"
                     >
                       Aprovar

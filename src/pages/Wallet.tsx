@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { ConnectMercadoPagoCard } from "@/components/wallet/ConnectMercadoPagoCard";
 import { supabase } from "@/integrations/supabase/client";
+import { buildWithdrawalRequest } from "@/lib/secureRequests";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -241,11 +242,11 @@ export default function Wallet() {
       // Saque server-side: valida saldo no banco + registra o pedido (pendente)
       // no ledger. O repasse PIX é processado pela plataforma.
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch("/api/withdraw", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
-        body: JSON.stringify({ amount, pixKey, pixKeyType }),
-      });
+      if (!session?.access_token) throw new Error("Faça login novamente para sacar.");
+      const res = await fetch(
+        "/api/withdraw",
+        buildWithdrawalRequest({ amount, pixKey, pixKeyType }, session.access_token, crypto.randomUUID()),
+      );
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.error || "falha ao solicitar saque");

@@ -152,7 +152,7 @@ function InitialAvatar({
 /* ─── Data (MVP "Conecta localizado") ─── */
 const stats = [
   { value: "Sorocaba/SP", label: "Primeira praça", icon: MapPin, money: false },
-  { value: "80%", label: "Você fica com", icon: Wallet, money: true },
+  { value: "100%", label: "Do prêmio é seu", icon: Wallet, money: true },
   { value: "PIX", label: "Saque na hora", icon: Banknote, money: true },
   { value: "Grátis", label: "Pra creator", icon: Sparkles, money: false },
 ];
@@ -174,7 +174,7 @@ const pillars = [
   {
     icon: Wallet,
     title: "Split 80/20 com saque PIX",
-    desc: "Você fica com 80% do prêmio, a OnlyShop com 20%. Caiu a aprovação, sacou no PIX.",
+    desc: "Você recebe 100% do prêmio. A taxa de 20% é cobrada da marca por cima. Aprovou, sacou no PIX.",
     accent: MAGENTA_SOFT,
   },
 ];
@@ -190,7 +190,7 @@ const faqs = [
   { q: "Preciso ter muitos seguidores?", a: "Não. As campanhas são por entrega de vídeo, não por número de seguidores. Se você grava um vídeo honesto do produto, você pode pegar a vaga." },
   { q: "Quanto custa pra usar?", a: "Pro creator é grátis, você só ganha. O lojista paga o prêmio das vagas que abrir + 20% de taxa da plataforma. Sem mensalidade pra ninguém." },
   { q: "Como recebo o dinheiro?", a: "Quando a marca aprova seu vídeo, o valor cai no seu saldo. Você saca via PIX direto pela carteira do app." },
-  { q: "Qual o split?", a: "Você (creator) fica com 80% do prêmio da vaga; a OnlyShop fica com 20%. Tudo transparente, mostrado antes de você aceitar." },
+  { q: "Qual o split?", a: "Você (creator) recebe 100% do prêmio anunciado. A marca paga mais 20% de taxa para a OnlyShop, sem desconto no seu ganho." },
   { q: "Funciona na minha cidade?", a: "Estamos começando por Sorocaba/SP e expandindo praça por praça. Crie sua conta e o mapa já mostra o que tem perto de você." },
   { q: "E se eu sou lojista?", a: "Você abre uma campanha, define o prêmio por vídeo e quantas vagas quer. Só paga pelas entregas aprovadas. Quem não entrega, não custa." },
   { q: "Funciona no celular?", a: "Sim. O app roda no navegador e instala como app nativo (PWA) direto no seu celular." },
@@ -420,7 +420,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-4 sm:px-5">
           <div className="flex items-center justify-center gap-6 sm:gap-12 flex-wrap text-[11px] text-white/45">
             <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3" style={{ color: MAGENTA }} /><span className="font-bold text-white/75">Sorocaba/SP</span> primeira praça</div>
-            <div className="flex items-center gap-1.5"><Wallet className="h-3 w-3" style={{ color: CYAN }} /><span className="font-bold" style={{ color: CYAN }}>80%</span> pro creator</div>
+            <div className="flex items-center gap-1.5"><Wallet className="h-3 w-3" style={{ color: CYAN }} /><span className="font-bold" style={{ color: CYAN }}>100%</span> do prêmio pro creator</div>
             <div className="flex items-center gap-1.5"><Banknote className="h-3 w-3" style={{ color: CYAN }} /><span className="font-bold text-white/75">PIX</span> na aprovação</div>
             <div className="flex items-center gap-1.5"><Clock className="h-3 w-3 text-white/35" /><span className="font-bold text-white/75">&lt;1min</span> cadastro</div>
           </div>
@@ -437,7 +437,7 @@ export default function Landing() {
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(346,100%,58%)] to-[hsl(174,100%,47%)]">vaga, vídeo, PIX</span>
             </h2>
             <p className="mt-3 text-sm text-white/55 max-w-xl mx-auto">
-              Um marketplace de campanhas localizadas. A loja paga pela entrega aprovada, você fica com 80% e saca no PIX.
+              Um marketplace de campanhas localizadas. A loja paga pela entrega aprovada, você recebe 100% do prêmio e saca no PIX.
             </p>
           </Reveal>
 
@@ -620,7 +620,7 @@ export default function Landing() {
               Grátis pra creator.{" "}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(174,100%,47%)] to-[hsl(174,100%,62%)]">Lojista paga por entrega.</span>
             </h2>
-            <p className="text-xs text-white/40 mt-3 max-w-lg mx-auto">Sem mensalidade pra ninguém. O lojista paga o prêmio das vagas + {PLATFORM_FEE_PCT}% da OnlyShop. O creator fica com {100 - PLATFORM_FEE_PCT}%.</p>
+            <p className="text-xs text-white/40 mt-3 max-w-lg mx-auto">Sem mensalidade pra ninguém. O lojista paga o prêmio das vagas + {PLATFORM_FEE_PCT}% da OnlyShop. O creator recebe 100% do prêmio anunciado.</p>
           </Reveal>
 
           <div className="grid lg:grid-cols-2 gap-4 items-stretch">
@@ -637,7 +637,7 @@ export default function Landing() {
                     <span className="text-xs text-white/35 mb-1.5">pra sempre</span>
                   </div>
                   <ul className="space-y-2.5 mb-6 flex-1">
-                    {["Ver o mapa de campanhas perto de você", "Aceitar vagas sem precisar de seguidor", `Ficar com ${100 - PLATFORM_FEE_PCT}% do prêmio de cada vídeo`, "Sacar via PIX quando o vídeo é aprovado"].map((f) => (
+                    {["Ver o mapa de campanhas perto de você", "Aceitar vagas sem precisar de seguidor", "Receber 100% do prêmio de cada vídeo", "Sacar via PIX quando o vídeo é aprovado"].map((f) => (
                       <li key={f} className="flex items-start gap-2.5 text-sm">
                         <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: CYAN }} />
                         <span className="text-white/60">{f}</span>

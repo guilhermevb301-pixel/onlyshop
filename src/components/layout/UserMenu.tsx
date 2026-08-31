@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Shield, Plus, Store, User as UserIcon, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { getAccounts, removeAccount, type SavedAccount } from "@/lib/accounts";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -13,8 +12,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // Itens secundários + TROCA DE CONTA (PJ ↔ PF): a mesma pessoa tem conta de marca e
-// de influencer e alterna sem deslogar (pedido do Biel). Se o token da outra conta
-// expirou, cai no login — nunca trava.
+// de influencer. Por segurança, a lista guarda só metadados: trocar exige login.
 export function UserMenu({ variant = "icon" }: { variant?: "icon" | "full" }) {
   const { user, profile, userRole, signOut } = useAuth();
   const [switching, setSwitching] = useState<string | null>(null);
@@ -28,17 +26,12 @@ export function UserMenu({ variant = "icon" }: { variant?: "icon" | "full" }) {
   const switchTo = async (acc: SavedAccount) => {
     setSwitching(acc.user_id);
     try {
-      const { error } = await supabase.auth.setSession({
-        access_token: acc.access_token,
-        refresh_token: acc.refresh_token,
-      });
-      if (error) throw error;
-      // Recarrega já no destino do papel da conta.
-      window.location.href = acc.role === "brand" ? "/brands" : "/mapa";
+      await signOut();
+      window.location.href = `/auth?email=${encodeURIComponent(acc.email)}`;
     } catch {
       removeAccount(acc.user_id);
-      toast.error("Sessão expirada nessa conta", { description: "Entre nela de novo." });
-      window.location.href = "/auth";
+      toast.error("Não foi possível trocar de conta", { description: "Entre novamente." });
+      window.location.href = `/auth?email=${encodeURIComponent(acc.email)}`;
     } finally {
       setSwitching(null);
     }

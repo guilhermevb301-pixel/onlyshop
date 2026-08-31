@@ -17,6 +17,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import RoleSelectCard from "@/components/onboarding/RoleSelectCard";
 import LocationStep from "@/components/onboarding/LocationStep";
 import logoImg from "@/assets/color-palette-ref.png";
+import { toast } from "sonner";
 
 // Nichos sugeridos (mesma família usada no match/Discover).
 const NICHES = [
@@ -71,10 +72,13 @@ export default function Onboarding() {
     setPickedRole(r);
     try {
       await chooseRole(r);
-    } catch {
-      // demo/otimista — segue mesmo se a escrita real falhar
+      setStep(1);
+    } catch (error) {
+      setPickedRole(null);
+      toast.error("Não foi possível salvar seu perfil", {
+        description: error instanceof Error ? error.message : "Tente novamente.",
+      });
     }
-    setStep(1);
   };
 
   // Passo 2 concluído: guarda localização e avança.
@@ -88,69 +92,23 @@ export default function Onboarding() {
     setSaving(true);
     try {
       if (pickedRole === "brand") {
-        // Loja: salva nome da loja como display_name do perfil.
         const name = storeName.trim() || "Minha loja";
-        try {
-          await updateProfile({ display_name: name });
-        } catch {
-          // demo / sem Supabase — segue
-        }
-        // Espelha o perfil demo no localStorage pra o match local enxergar a loja.
-        try {
-          localStorage.setItem(
-            "onlyshop_demo_profile",
-            JSON.stringify({ role: "brand", displayName: name })
-          );
-        } catch {
-          // localStorage indisponível — ignora
-        }
-        if (loc) {
-          try {
-            await saveLocation({ ...loc, target: "brand" });
-          } catch {
-            // demo — localização já ficou no localStorage via LocationStep
-          }
-        }
+        await updateProfile({ display_name: name });
+        if (loc) await saveLocation({ ...loc, target: "brand" });
       } else {
-        // Influencer: nome de exibição + nichos (+ gênero/seguidores opcionais).
         const name = displayName.trim() || "Creator";
-        try {
-          // Salva nome + nichos no perfil REAL (antes só ia pro localStorage demo-morto,
-          // então o guia "Complete seu perfil" ficava cravado mesmo tendo preenchido).
-          await updateProfile({ display_name: name, ...(niches.length ? { niches } : {}) } as any);
-        } catch {
-          // demo — segue
-        }
-        // Persiste o perfil completo do influencer pra o match local filtrar por nicho.
-        try {
-          localStorage.setItem(
-            "onlyshop_demo_profile",
-            JSON.stringify({
-              role: "affiliate",
-              displayName: name,
-              niches,
-              gender,
-              followers: Number(followers) || 0,
-            })
-          );
-        } catch {
-          // localStorage indisponível — ignora
-        }
-        if (loc) {
-          try {
-            await saveLocation({ ...loc, target: "profile" });
-          } catch {
-            // demo — segue
-          }
-        }
+        await updateProfile({ display_name: name, ...(niches.length ? { niches } : {}) } as any);
+        if (loc) await saveLocation({ ...loc, target: "profile" });
       }
-    } finally {
-      // Recarrega papel+cidade pro contexto ANTES de navegar — senão needsOnboarding
-      // ainda enxerga "sem cidade" e devolve o usuário pro onboarding (loop).
-      try { await refreshUserData(); } catch { /* ignora */ }
+      await refreshUserData();
       complete();
-      setSaving(false);
       navigate(dest, { replace: true });
+    } catch (error) {
+      toast.error("Não foi possível concluir o cadastro", {
+        description: error instanceof Error ? error.message : "Revise os dados e tente novamente.",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 

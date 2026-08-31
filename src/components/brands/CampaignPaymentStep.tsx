@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { QrCode, CreditCard, Loader2, ShieldCheck, Lock, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { buildFundingRequest } from "@/lib/secureRequests";
 import {
   demo, demoId, PLATFORM_FEE_PCT,
   type Campaign,
@@ -22,7 +23,7 @@ type Method = "pix" | "card";
 
 // Passo 2 do "Publicar e pagar": resumo do custo + método + botão Pagar.
 export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [method, setMethod] = useState<Method>("pix");
   const [paying, setPaying] = useState(false);
 
@@ -39,12 +40,13 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
   const openRealPayment = async (): Promise<boolean> => {
     const payTab = window.open("", "_blank");
     try {
-      const res = await fetch("/api/fund-campaign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: campaign.name, amount: total, campaignId: campaign.id, brandUserId: user?.id }),
-      });
+      if (!session?.access_token) throw new Error("Faça login novamente para pagar.");
+      const res = await fetch(
+        "/api/fund-campaign",
+        buildFundingRequest(campaign.id, session.access_token, crypto.randomUUID()),
+      );
       const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Não foi possível abrir o pagamento.");
       if (data?.init_point) {
         if (payTab) payTab.location.href = data.init_point;
         else window.location.href = data.init_point;

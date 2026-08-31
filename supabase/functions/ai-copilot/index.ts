@@ -1,10 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { authenticateUser, claimEdgeUsage, corsHeaders, errorResponse, json } from "../_shared/tiktok-security.ts";
 
 const SYSTEM_PROMPT = `Você é a IA Nativa da Only Shop — um copiloto de performance para criadores, afiliados e marcas.
 
@@ -24,11 +19,20 @@ Regras:
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders(req) });
   }
 
   try {
+    if (req.method !== "POST") return json(req, { error: "use POST" }, 405);
+    await authenticateUser(req);
+    if (!(await claimEdgeUsage(req, "ai_copilot"))) return json(req, { error: "Limite diário atingido" }, 429);
+    if (Number(req.headers.get("content-length") || 0) > 30_000) return json(req, { error: "Payload muito grande" }, 413);
     const { messages, mode } = await req.json();
+    if (!Array.isArray(messages) || messages.length < 1 || messages.length > 30) return json(req, { error: "Mensagens inválidas" }, 400);
+    const safeMessages = messages.map((message: unknown) => {
+      const row = message && typeof message === "object" ? message as Record<string, unknown> : {};
+      return { role: row.role === "assistant" ? "assistant" : "user", content: String(row.content || "").slice(0, 6000) };
+    });
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
     const OPENAI_MODEL = Deno.env.get("OPENAI_MODEL") ?? "gpt-4o";
@@ -55,7 +59,7 @@ serve(async (req) => {
           model: OPENAI_MODEL,
           messages: [
             { role: "system", content: contextPrompt },
-            ...messages,
+            ...safeMessages,
           ],
           stream: true,
         }),
@@ -66,37 +70,34 @@ serve(async (req) => {
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns segundos." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 429, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
         );
       }
       if (response.status === 401) {
         return new Response(
           JSON.stringify({ error: "Chave da OpenAI inválida. Verifique a OPENAI_API_KEY." }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 502, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: "Créditos insuficientes. Adicione saldo na conta da OpenAI." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 503, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
         );
       }
       const t = await response.text();
       console.error("OpenAI error:", response.status, t);
       return new Response(
         JSON.stringify({ error: "Erro na IA (OpenAI)" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 502, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: { ...corsHeaders(req), "Content-Type": "text/event-stream", "Cache-Control": "no-store" },
     });
   } catch (e) {
     console.error("ai-copilot error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return errorResponse(req, e);
   }
 });

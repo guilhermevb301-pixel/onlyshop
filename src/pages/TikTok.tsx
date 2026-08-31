@@ -26,7 +26,6 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface TikTokConnection {
-  id: string;
   tiktok_username: string | null;
   display_name: string | null;
   avatar_url: string | null;
@@ -36,7 +35,6 @@ interface TikTokConnection {
   video_count: number;
   is_verified: boolean;
   last_synced_at: string | null;
-  access_token: string | null;
 }
 
 interface TikTokVideo {
@@ -67,13 +65,8 @@ export default function TikTok() {
       setLoading(false);
       return;
     }
-    const { data } = await supabase
-      .from("tiktok_connections" as any)
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    setConnection(data as any);
+    const { data } = await supabase.rpc("get_my_tiktok_connection" as never);
+    setConnection(((Array.isArray(data) ? data[0] : data) as TikTokConnection) || null);
     setLoading(false);
   }, [user]);
 
@@ -97,7 +90,7 @@ export default function TikTok() {
   const handleConnect = async () => {
     setConnecting(true);
     try {
-      const redirectUri = `${window.location.origin}/tiktok`;
+      const redirectUri = `${window.location.origin}/tiktok/callback`;
       const result = await tiktokApi.getAuthUrl(redirectUri);
 
       if (result.success && result.auth_url) {
@@ -118,30 +111,12 @@ export default function TikTok() {
     setLoading(true);
 
     try {
-      const redirectUri = `${window.location.origin}/tiktok`;
+      const redirectUri = `${window.location.origin}/tiktok/callback`;
       const result = await tiktokApi.exchangeToken(code, redirectUri);
 
       if (!result.success) throw new Error(result.error);
 
-      const { tokens, user: tiktokUser } = result;
-
-      await supabase.from("tiktok_connections" as any).upsert({
-        user_id: user.id,
-        tiktok_user_id: tiktokUser.tiktok_user_id,
-        tiktok_username: tiktokUser.tiktok_username,
-        display_name: tiktokUser.display_name,
-        avatar_url: tiktokUser.avatar_url,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
-        scopes: tokens.scope?.split(",") || [],
-        followers_count: tiktokUser.followers_count,
-        following_count: tiktokUser.following_count,
-        likes_count: tiktokUser.likes_count,
-        video_count: tiktokUser.video_count,
-        is_verified: tiktokUser.is_verified,
-        last_synced_at: new Date().toISOString(),
-      } as any);
+      const { user: tiktokUser } = result;
 
       toast({ title: "TikTok conectado!", description: `@${tiktokUser.tiktok_username}` });
       fetchConnection();
@@ -153,29 +128,18 @@ export default function TikTok() {
   };
 
   const handleSync = async () => {
-    if (!connection?.access_token) return;
+    if (!connection) return;
     setSyncing(true);
 
     try {
-      const statsResult = await tiktokApi.getUserStats(connection.access_token);
+      const statsResult = await tiktokApi.getUserStats();
       if (statsResult.success && statsResult.data) {
         const s = statsResult.data;
-        await supabase
-          .from("tiktok_connections" as any)
-          .update({
-            followers_count: s.follower_count || 0,
-            following_count: s.following_count || 0,
-            likes_count: s.likes_count || 0,
-            video_count: s.video_count || 0,
-            last_synced_at: new Date().toISOString(),
-          } as any)
-          .eq("id", connection.id);
-
+        setConnection((current) => current ? ({ ...current, followers_count: s.follower_count || 0, following_count: s.following_count || 0, likes_count: s.likes_count || 0, video_count: s.video_count || 0, last_synced_at: new Date().toISOString() }) : current);
         toast({ title: "Métricas atualizadas!" });
-        fetchConnection();
       }
 
-      const videosResult = await tiktokApi.getVideoList(connection.access_token);
+      const videosResult = await tiktokApi.getVideoList();
       if (videosResult.success) {
         setVideos(videosResult.videos || []);
       }
@@ -188,7 +152,7 @@ export default function TikTok() {
 
   const handleDisconnect = async () => {
     if (!connection) return;
-    await supabase.from("tiktok_connections" as any).delete().eq("id", connection.id);
+    await supabase.from("tiktok_connections" as any).delete().eq("user_id", user?.id);
     setConnection(null);
     setVideos([]);
     toast({ title: "TikTok desconectado" });

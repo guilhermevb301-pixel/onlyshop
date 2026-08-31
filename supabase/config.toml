@@ -1,4 +1,16 @@
-project_id = "kzrqryaurwrjjsunpjym"
+project_id = "mvhxyqwicmvnshmqkdan"
 
 [functions.ai-copilot]
-verify_jwt = false
+verify_jwt = true
+
+[functions.tiktok-auth]
+verify_jwt = true
+
+[functions.tiktok-metrics]
+verify_jwt = true
+
+[functions.tiktok-post]
+verify_jwt = true
+
+[functions.tiktok-shop]
+verify_jwt = true

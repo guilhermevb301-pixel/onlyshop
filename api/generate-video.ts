@@ -1,4 +1,7 @@
 // =============================================================================
+import { ApiError, authenticateRequest } from "./_lib/auth";
+import { apiErrorResponse } from "./_lib/supabase";
+import { claimApiUsage } from "./_lib/usage";
 // /api/generate-video — Estúdio IA (Vercel Serverless Function)
 //
 // Gera vídeos de venda pro TikTok Shop usando SÓ a fal.ai (1 chave):
@@ -164,44 +167,34 @@ async function generateInfluencerImage(o: { gender: string; age: string; vibe: s
 
 // ---- handler ----------------------------------------------------------------
 
-const _SB_URL = process.env.SUPABASE_URL;
-const _SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-// Endpoint PAGO (provedor externo cobra por chamada). Sem exigir login, qualquer
-// um na internet dispara e queima o crédito da conta. Falha fechado de propósito.
-async function exigeLogin(req: any, res: any): Promise<boolean> {
-  const token = String(req.headers?.authorization || "").replace(/^Bearer\s+/i, "");
-  if (!token || !_SB_URL || !_SB_KEY) { res.status(401).json({ error: "faça login para usar" }); return false; }
-  try {
-    const u = await (await fetch(`${_SB_URL}/auth/v1/user`, { headers: { apikey: _SB_KEY, Authorization: `Bearer ${token}` } })).json();
-    if (!u?.id) { res.status(401).json({ error: "sessão inválida" }); return false; }
-    return true;
-  } catch { res.status(401).json({ error: "não foi possível validar a sessão" }); return false; }
-}
-
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "use POST" });
-  if (!(await exigeLogin(req, res))) return;
   try {
+    await authenticateRequest(req);
+    if (typeof req.body === "string" && req.body.length > 30_000) throw new ApiError(413, "payload muito grande");
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body ?? {};
     const step = body.step ?? "script";
+    const operation = ({ script: "video_script", clip: "video_clip", merge: "video_merge", "influencer-image": "influencer_image" } as Record<string,string>)[step];
+    if (!operation) throw new ApiError(400, "step inválido");
+    await claimApiUsage(req, operation);
 
     if (step === "script") {
       return res.status(200).json(await generateScript({
-        productName: body.productName ?? "Produto",
-        productDescription: body.productDescription ?? "",
-        personaName: body.personaName ?? "Persona",
-        personaDescription: body.personaDescription ?? "",
+        productName: String(body.productName ?? "Produto").slice(0, 160),
+        productDescription: String(body.productDescription ?? "").slice(0, 4000),
+        personaName: String(body.personaName ?? "Persona").slice(0, 100),
+        personaDescription: String(body.personaDescription ?? "").slice(0, 1200),
       }));
     }
     if (step === "clip") {
       return res.status(200).json(await generateClip({
-        visualPrompt: body.visualPrompt ?? "",
-        narration: body.narration ?? "",
-        personaPhotoUrl: body.personaPhotoUrl ?? "",
+        visualPrompt: String(body.visualPrompt ?? "").slice(0, 3000),
+        narration: String(body.narration ?? "").slice(0, 800),
+        personaPhotoUrl: String(body.personaPhotoUrl ?? "").slice(0, 2000),
       }));
     }
     if (step === "merge") {
-      const clipUrls: string[] = (body.clipUrls ?? []).filter(Boolean);
+      const clipUrls: string[] = (Array.isArray(body.clipUrls) ? body.clipUrls : []).filter((url: unknown) => typeof url === "string" && /^https:\/\//.test(url)).slice(0, 3);
       if (!clipUrls.length) throw new Error("nenhum clipe pra combinar");
       return res.status(200).json(await mergeClips(clipUrls));
     }
@@ -213,8 +206,8 @@ export default async function handler(req: any, res: any) {
         niche: body.niche ?? "lifestyle",
       }));
     }
-    return res.status(400).json({ error: `step inválido: ${step}` });
+    return res.status(400).json({ error: "step inválido" });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    return apiErrorResponse(err, res);
   }
 }

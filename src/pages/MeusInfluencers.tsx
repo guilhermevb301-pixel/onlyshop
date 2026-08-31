@@ -30,7 +30,7 @@ export default function MeusInfluencers() {
     })();
   }, [user]);
 
-  function useInStudio(persona: Persona) {
+  function handleUseInStudio(persona: Persona) {
     navigate("/studio", { state: { persona } });
   }
 
@@ -88,7 +88,7 @@ export default function MeusInfluencers() {
             </div>
           ) : (
             custom.map((p) => (
-              <InfluencerCard key={p.id} persona={p} onUse={() => useInStudio(p)} onDelete={() => setToDelete(p)} />
+              <InfluencerCard key={p.id} persona={p} onUse={() => handleUseInStudio(p)} onDelete={() => setToDelete(p)} />
             ))
           )}
         </div>
@@ -99,7 +99,7 @@ export default function MeusInfluencers() {
         <h2 className="text-sm font-semibold mb-3">Prontos pra usar</h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {PERSONAS.map((p) => (
-            <InfluencerCard key={p.id} persona={p} onUse={() => useInStudio(p)} />
+            <InfluencerCard key={p.id} persona={p} onUse={() => handleUseInStudio(p)} />
           ))}
         </div>
       </section>

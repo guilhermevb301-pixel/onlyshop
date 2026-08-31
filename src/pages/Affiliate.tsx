@@ -133,7 +133,7 @@ export default function Affiliate() {
 
   const campaigns = applications.filter((a) => VISIBLE.includes(a.status));
 
-  // Ganho líquido que cai pro influencer (split 80%) de uma candidatura.
+  // Ganho líquido que cai pro influencer (100% do prêmio) de uma candidatura.
   const payout = (a: CampaignApplication) =>
     computeSplit(a.campaign?.reward_amount || 0).influencer;
 

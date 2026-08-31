@@ -22,9 +22,7 @@ export function TeamPlanCard({ brandId, planTier, planStatus, affiliateCount, on
     setBusy(p.tier);
     try {
       const { error } = await supabase
-        .from("brands")
-        .update({ plan_tier: p.tier, plan_status: "trial", plan_selected_at: new Date().toISOString() } as any)
-        .eq("id", brandId);
+        .rpc("select_my_brand_trial" as never, { _tier: p.tier } as never);
       if (error) throw error;
       toast.success(`Plano ${p.name} ativado`, { description: "Teste liberado. A cobrança só entra quando você confirmar o pagamento." });
       setOpen(false);

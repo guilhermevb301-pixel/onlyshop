@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { Button } from "@/components/ui/button";
@@ -18,14 +18,17 @@ import {
 } from "lucide-react";
 import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
 import logoImg from "@/assets/color-palette-ref.png";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
+  const [searchParams] = useSearchParams();
   const { user, loading, userRole, signIn, signUp } = useAuth();
   const { needsOnboarding } = useOnboarding();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const [loginEmail, setLoginEmail] = useState("");
+  const [loginEmail, setLoginEmail] = useState(() => searchParams.get("email")?.slice(0, 254) || "");
   const [loginPassword, setLoginPassword] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
@@ -75,6 +78,17 @@ export default function Auth() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleForgotPassword = async () => {
+    setError(null);
+    setNotice(null);
+    if (!loginEmail) return setError("Digite seu email primeiro.");
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+    if (resetError) setError("Não foi possível enviar o email agora.");
+    else setNotice("Se esse email estiver cadastrado, o link de recuperação foi enviado.");
   };
 
   return (
@@ -134,6 +148,7 @@ export default function Auth() {
                   <p className="text-xs text-destructive leading-snug">{error}</p>
                 </div>
               )}
+              {notice && <p role="status" className="mb-4 text-xs text-emerald-400">{notice}</p>}
 
               {/* ---------------- LOGIN ---------------- */}
               <TabsContent value="login" className="mt-0">
@@ -181,6 +196,10 @@ export default function Auth() {
                       </button>
                     </div>
                   </div>
+
+                  <button type="button" onClick={handleForgotPassword} className="text-xs text-primary hover:underline">
+                    Esqueci minha senha
+                  </button>
 
                   <Button
                     type="submit"
