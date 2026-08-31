@@ -165,11 +165,10 @@ export function useBrand() {
         }
         return;
       }
-      const { data } = await supabase
-        .from("brands")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // Própria marca via RPC SECURITY DEFINER: as colunas sensíveis de brands
+      // (código de convite, coordenada, plano, créditos) não são mais legíveis
+      // direto pelo cliente — mas o DONO continua vendo a própria linha inteira.
+      const { data } = await supabase.rpc("get_my_brand" as any).maybeSingle();
       const b = (data as Brand | null) ?? null;
       setBrand(b);
       if (b) {
