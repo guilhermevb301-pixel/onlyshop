@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -28,8 +29,12 @@ const AGES = [
 ];
 
 async function callGen(body: Record<string, unknown>) {
+  // Endpoint pago: só com sessão válida (protege o crédito da conta).
+  const { data: { session } } = await supabase.auth.getSession();
   const res = await fetch("/api/generate-video", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || "erro na geração");

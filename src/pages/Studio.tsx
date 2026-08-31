@@ -46,10 +46,13 @@ const DEMO_PRODUCTS: Product[] = [
 ];
 
 // Chama a função serverless da Vercel (/api/generate-video).
+// Manda o token da sessão: geração de vídeo custa crédito pago, então o endpoint
+// só aceita usuário logado (senão qualquer um na internet queima o saldo).
 async function callGen(body: Record<string, unknown>) {
+  const { data: { session } } = await supabase.auth.getSession();
   const res = await fetch("/api/generate-video", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
     body: JSON.stringify(body),
   });
   const data = await res.json();

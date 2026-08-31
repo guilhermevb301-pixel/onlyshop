@@ -163,8 +163,24 @@ async function generateInfluencerImage(o: { gender: string; age: string; vibe: s
 }
 
 // ---- handler ----------------------------------------------------------------
+
+const _SB_URL = process.env.SUPABASE_URL;
+const _SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Endpoint PAGO (provedor externo cobra por chamada). Sem exigir login, qualquer
+// um na internet dispara e queima o crédito da conta. Falha fechado de propósito.
+async function exigeLogin(req: any, res: any): Promise<boolean> {
+  const token = String(req.headers?.authorization || "").replace(/^Bearer\s+/i, "");
+  if (!token || !_SB_URL || !_SB_KEY) { res.status(401).json({ error: "faça login para usar" }); return false; }
+  try {
+    const u = await (await fetch(`${_SB_URL}/auth/v1/user`, { headers: { apikey: _SB_KEY, Authorization: `Bearer ${token}` } })).json();
+    if (!u?.id) { res.status(401).json({ error: "sessão inválida" }); return false; }
+    return true;
+  } catch { res.status(401).json({ error: "não foi possível validar a sessão" }); return false; }
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "use POST" });
+  if (!(await exigeLogin(req, res))) return;
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body ?? {};
     const step = body.step ?? "script";
