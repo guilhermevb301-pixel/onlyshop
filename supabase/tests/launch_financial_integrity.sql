@@ -8,6 +8,8 @@ DECLARE
   brand_id uuid := gen_random_uuid();
   campaign_id uuid := gen_random_uuid();
   application_id uuid := gen_random_uuid();
+  process_campaign_id uuid := gen_random_uuid();
+  process_application_id uuid := gen_random_uuid();
   funding_id uuid := gen_random_uuid();
   result text;
   payload jsonb;
@@ -51,6 +53,36 @@ BEGIN
   IF EXISTS (SELECT 1 FROM public.platform_credits WHERE provider_ref LIKE '%v1.ciphertext%') THEN
     RAISE EXCEPTION 'ciphertext leaked into ledger';
   END IF;
+
+  INSERT INTO public.campaigns(
+    id,brand_id,name,reward_type,reward_amount,slots,platform_fee_pct,total_budget,
+    funded,pay_mode,campaign_kind,phases,status
+  ) VALUES (
+    process_campaign_id,brand_id,'Campanha por processo','per_video',110,1,20,110,
+    true,'escrow','process','{}','active'
+  );
+  INSERT INTO public.campaign_applications(
+    id,campaign_id,influencer_user_id,status,proofs
+  ) VALUES (
+    process_application_id,process_campaign_id,creator_user,'accepted','{}'
+  );
+  INSERT INTO public.platform_credits(
+    user_id,kind,amount,campaign_id,status,provider,provider_ref
+  ) VALUES (
+    brand_user,'campaign_hold',-110,process_campaign_id,'completed','mercadopago','process-hold-test'
+  );
+
+  SELECT public.process_payout_atomic(process_application_id,brand_user,'connection',0) INTO payload;
+  IF payload->>'result' <> 'ok' OR (payload->>'amount')::numeric <> 20 THEN
+    RAISE EXCEPTION 'expected process payout ok/20, got %',payload;
+  END IF;
+  SELECT public.process_payout_atomic(process_application_id,brand_user,'connection',0) INTO payload;
+  IF payload->>'result' <> 'already' THEN
+    RAISE EXCEPTION 'expected process payout already, got %',payload;
+  END IF;
+  SELECT count(*) INTO payout_count FROM public.platform_credits
+   WHERE provider_ref='connect-'||process_application_id::text AND kind='payout';
+  IF payout_count <> 1 THEN RAISE EXCEPTION 'expected one process payout, got %',payout_count; END IF;
 END $test$;
 
 ROLLBACK;
