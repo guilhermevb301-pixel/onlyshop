@@ -1,10 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { TIKTOK_REDIRECT_URI } from "@/lib/tiktok";
+
+vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
 const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
 describe("TikTok token isolation", () => {
+  it("uses the active site origin for the OAuth callback", () => {
+    expect(TIKTOK_REDIRECT_URI).toBe("http://localhost:3000/tiktok/callback");
+  });
+
   it("does not select or send TikTok access tokens from browser code", () => {
     const client = source("src/lib/tiktok.ts");
     const apiClient = source("src/lib/api/tiktok.ts");

@@ -3,7 +3,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // Tem que bater EXATAMENTE com a Redirect URI registrada no app do TikTok.
-export const TIKTOK_REDIRECT_URI = "https://onlyshoptok.vercel.app/tiktok/callback";
+export const TIKTOK_REDIRECT_URI = `${window.location.origin}/tiktok/callback`;
 const STATE_KEY = "onlyshop_tiktok_state";
 
 export type TikTokConnection = {
