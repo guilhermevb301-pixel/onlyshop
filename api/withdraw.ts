@@ -1,6 +1,6 @@
-import { ApiError, authenticateRequest } from "./_lib/auth";
-import { encryptSensitiveValue } from "./_lib/crypto";
-import { apiErrorResponse, supabaseAdminRequest } from "./_lib/supabase";
+import { ApiError, authenticateRequest } from "./_lib/auth.js";
+import { encryptSensitiveValue } from "./_lib/crypto.js";
+import { apiErrorResponse, supabaseAdminRequest } from "./_lib/supabase.js";
 
 export const config = { maxDuration: 30 };
 const MINIMUM = 50;

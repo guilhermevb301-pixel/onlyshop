@@ -1,7 +1,7 @@
 // =============================================================================
-import { ApiError, authenticateRequest } from "./_lib/auth";
-import { apiErrorResponse } from "./_lib/supabase";
-import { claimApiUsage } from "./_lib/usage";
+import { ApiError, authenticateRequest } from "./_lib/auth.js";
+import { apiErrorResponse } from "./_lib/supabase.js";
+import { claimApiUsage } from "./_lib/usage.js";
 // /api/generate-video — Estúdio IA (Vercel Serverless Function)
 //
 // Gera vídeos de venda pro TikTok Shop usando SÓ a fal.ai (1 chave):

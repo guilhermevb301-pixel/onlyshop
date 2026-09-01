@@ -1,4 +1,4 @@
-import { ApiError } from "./auth";
+import { ApiError } from "./auth.js";
 
 export interface SupabaseAdminOptions {
   supabaseUrl?: string;
@@ -36,7 +36,9 @@ export async function supabaseAdminRequest<T = unknown>(
 }
 
 export function apiErrorResponse(error: unknown, res: any) {
-  if (error instanceof ApiError) return res.status(error.status).json({ error: error.message });
+  if (error instanceof ApiError) {
+    return res.status(error.status).json({ error: error.message });
+  }
   console.error("api error", error);
   return res.status(500).json({ error: "Erro interno" });
 }

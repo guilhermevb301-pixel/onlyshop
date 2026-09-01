@@ -1,5 +1,5 @@
-import { ApiError, authenticateRequest } from "./_lib/auth";
-import { apiErrorResponse, supabaseAdminRequest } from "./_lib/supabase";
+import { ApiError, authenticateRequest } from "./_lib/auth.js";
+import { apiErrorResponse, supabaseAdminRequest } from "./_lib/supabase.js";
 
 export const config = { maxDuration: 30 };
 

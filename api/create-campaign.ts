@@ -1,6 +1,6 @@
-import { ApiError, authenticateRequest } from "./_lib/auth";
-import { CampaignInputError, deriveCampaignMoney } from "./_lib/money";
-import { apiErrorResponse, supabaseAdminRequest } from "./_lib/supabase";
+import { ApiError, authenticateRequest } from "./_lib/auth.js";
+import { CampaignInputError, deriveCampaignMoney } from "./_lib/money.js";
+import { apiErrorResponse, supabaseAdminRequest } from "./_lib/supabase.js";
 
 export const config = { maxDuration: 30 };
 

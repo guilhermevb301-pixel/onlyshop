@@ -1,7 +1,7 @@
 // =============================================================================
-import { authenticateRequest } from "./_lib/auth";
-import { apiErrorResponse } from "./_lib/supabase";
-import { claimApiUsage } from "./_lib/usage";
+import { authenticateRequest } from "./_lib/auth.js";
+import { apiErrorResponse } from "./_lib/supabase.js";
+import { claimApiUsage } from "./_lib/usage.js";
 // /api/trends — Em Alta no TikTok (Vercel Serverless Function)
 //
 // Puxa o que está bombando no TikTok (Creative Center) via Apify — sem cookie,

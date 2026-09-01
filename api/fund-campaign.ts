@@ -1,5 +1,5 @@
-import { ApiError, authenticateRequest } from "./_lib/auth";
-import { apiErrorResponse, supabaseAdminRequest } from "./_lib/supabase";
+import { ApiError, authenticateRequest } from "./_lib/auth.js";
+import { apiErrorResponse, supabaseAdminRequest } from "./_lib/supabase.js";
 
 export const config = { maxDuration: 30 };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

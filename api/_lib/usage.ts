@@ -1,4 +1,4 @@
-import { ApiError } from "./auth";
+import { ApiError } from "./auth.js";
 
 export async function claimApiUsage(req: any, operation: string): Promise<void> {
   const url = process.env.SUPABASE_URL;
