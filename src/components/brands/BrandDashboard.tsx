@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SetupGuide } from "@/components/onboarding/SetupGuide";
 import { brandSetupSteps } from "@/lib/setupSteps";
+import { domainToHttpsUrl } from "@/lib/urlValidation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CampaignCard } from "@/components/campaigns/CampaignCard";
 import { CreateCampaignSheet } from "./CreateCampaignSheet";
@@ -61,6 +62,7 @@ function toNear(c: Campaign, brand: Brand): CampaignNear {
 
 export function BrandDashboard({ brand, campaigns, applications, onCreateCampaign, onFunded, onApprove, onCancelCampaign, onApproveApplicant, onRejectApplicant, onRejectDelivery }: Props) {
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+  const websiteHref = domainToHttpsUrl(brand.website);
 
   // Overrides locais de status (reject) — useBrand não expõe reject, então refletimos aqui.
   const [overrides, setOverrides] = useState<Record<string, CampaignApplication["status"]>>({});
@@ -160,9 +162,9 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
               <MapPin className="h-3 w-3 text-accent" /> {brand.city}{brand.state ? `, ${brand.state}` : ""}
             </p>
           )}
-          {brand.website && (
-            <a href={brand.website} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground/60 flex items-center gap-1 hover:text-primary transition-colors">
-              <Globe className="h-3 w-3" /> {brand.website.replace(/https?:\/\//, "")}
+          {brand.website && websiteHref && (
+            <a href={websiteHref} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground/60 flex items-center gap-1 hover:text-primary transition-colors">
+              <Globe className="h-3 w-3" /> {brand.website}
             </a>
           )}
         </div>

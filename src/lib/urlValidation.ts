@@ -25,6 +25,74 @@ export interface UrlValidationResult {
   error?: string;
 }
 
+const DOMAIN_LABEL_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
+/**
+ * Keeps only the public domain portion accepted for brand websites.
+ * The database stores this protocol-free value; callers add https:// only when
+ * creating a browser href or request URL.
+ */
+export function normalizeBrandWebsiteDomain(input: string): string {
+  const raw = (input || "").trim().toLowerCase();
+  if (!raw) return "";
+
+  const withoutProtocol = raw
+    .replace(/^https?:\/\//i, "")
+    .replace(/^\/\//, "");
+  const withoutWww = withoutProtocol.replace(/^www\./i, "");
+  const domainOnly = withoutWww.split(/[/?#]/)[0] ?? "";
+
+  return domainOnly.replace(/\.$/, "");
+}
+
+export function validateBrandWebsiteDomain(domain: string): UrlValidationResult {
+  const value = (domain || "").trim().toLowerCase();
+
+  if (!value) {
+    return { isValid: true };
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return { isValid: false, error: "Informe apenas o domínio, sem http:// ou https://" };
+  }
+
+  if (value.startsWith("www.")) {
+    return { isValid: false, error: "Informe o domínio sem www." };
+  }
+
+  if (value.includes("/") || value.includes("?") || value.includes("#") || value.includes(":") || value.includes("@")) {
+    return { isValid: false, error: "Informe apenas o domínio, por exemplo: empresa.com.br" };
+  }
+
+  if (value.length > 253 || value.endsWith(".")) {
+    return { isValid: false, error: "Domínio inválido" };
+  }
+
+  const labels = value.split(".");
+  const topLevelDomain = labels[labels.length - 1] ?? "";
+  if (labels.length < 2 || topLevelDomain.length < 2 || !/^[a-z]{2,63}$/.test(topLevelDomain)) {
+    return { isValid: false, error: "Domínio inválido" };
+  }
+
+  if (!labels.every((label) => DOMAIN_LABEL_PATTERN.test(label))) {
+    return { isValid: false, error: "Domínio inválido" };
+  }
+
+  return { isValid: true };
+}
+
+export function domainToHttpsUrl(domain: string | null | undefined): string | null {
+  const value = (domain || "").trim().toLowerCase();
+  const validation = validateBrandWebsiteDomain(value);
+  if (!value || !validation.isValid) return null;
+
+  try {
+    return new URL(`https://${value}`).href;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Validates a URL for security concerns
  * @param url - The URL to validate

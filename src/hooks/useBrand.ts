@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { splitLive } from "@/lib/splitMode";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { normalizeBrandWebsiteDomain, validateBrandWebsiteDomain } from "@/lib/urlValidation";
 import {
   demo, demoId,
   type Campaign, type CampaignApplication,
@@ -191,6 +192,12 @@ export function useBrand() {
   const createBrand = async (input: {
     name: string; slug: string; description?: string; logo_url?: string; website?: string;
   }): Promise<Brand | null> => {
+    const cleanWebsite = normalizeBrandWebsiteDomain(input.website ?? "");
+    const websiteValidation = validateBrandWebsiteDomain(cleanWebsite);
+    if (!websiteValidation.isValid) {
+      throw new Error(websiteValidation.error ?? "Website inválido");
+    }
+
     // Demo: grava a marca no localStorage (demoUser não existe em auth.users).
     if (demo.isOn() || !user) {
       const b: Brand = {
@@ -200,7 +207,7 @@ export function useBrand() {
         slug: input.slug,
         description: input.description ?? null,
         logo_url: input.logo_url ?? null,
-        website: input.website ?? null,
+        website: cleanWebsite || null,
         latitude: null,
         longitude: null,
         city: null,
@@ -220,7 +227,7 @@ export function useBrand() {
           _slug: input.slug,
           _description: input.description ?? null,
           _logo_url: input.logo_url ?? null,
-          _website: input.website ?? null,
+          _website: cleanWebsite || null,
         } as never);
       if (error) throw error;
       const created = (Array.isArray(data) ? data[0] : data) as Brand;

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import type { Brand } from "@/hooks/useBrand";
+import { normalizeBrandWebsiteDomain, validateBrandWebsiteDomain } from "@/lib/urlValidation";
 
 interface Props {
   onRegister: (data: { name: string; slug: string; description?: string; website?: string }) => Promise<Brand | null>;
@@ -29,6 +30,10 @@ export function BrandRegistration({ onRegister, onDone }: Props) {
   const handleNameChange = (value: string) => {
     setName(value);
     setSlug(value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""));
+  };
+
+  const handleWebsiteChange = (value: string) => {
+    setWebsite(normalizeBrandWebsiteDomain(value));
   };
 
   // Tenta o GPS e preenche cidade/estado. Sem isso a marca não entra no mapa.
@@ -52,13 +57,19 @@ export function BrandRegistration({ onRegister, onDone }: Props) {
       toast.error("Falta a localização", { description: "Capture sua localização ou preencha a cidade — sem isso sua loja não aparece no mapa." });
       return;
     }
+    const cleanWebsite = normalizeBrandWebsiteDomain(website);
+    const websiteValidation = validateBrandWebsiteDomain(cleanWebsite);
+    if (!websiteValidation.isValid) {
+      toast.error("Website inválido", { description: websiteValidation.error });
+      return;
+    }
     setLoading(true);
     try {
       const brand = await onRegister({
         name,
         slug,
         description: description || undefined,
-        website: website || undefined,
+        website: cleanWebsite || undefined,
       });
 
       // Geocoda cidade/estado -> lat/lon e salva no registro da marca (entra no mapa).
@@ -138,7 +149,18 @@ export function BrandRegistration({ onRegister, onDone }: Props) {
             </div>
             <div className="space-y-2">
               <Label className="text-xs flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> Website</Label>
-              <Input placeholder="https://sualoja.com.br" value={website} onChange={(e) => setWebsite(e.target.value)} type="url" className="rounded-xl border-border/20" />
+              <Input
+                placeholder="empresa.com.br"
+                value={website}
+                onChange={(e) => handleWebsiteChange(e.target.value)}
+                onBlur={(e) => handleWebsiteChange(e.target.value)}
+                type="text"
+                inputMode="url"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                className="rounded-xl border-border/20"
+              />
             </div>
 
             <Button type="submit" className="w-full rounded-full bg-gradient-primary border-0 text-primary-foreground h-11 gap-2" disabled={loading}>
