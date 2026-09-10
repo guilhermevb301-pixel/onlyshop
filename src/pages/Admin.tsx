@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import WaitlistLeads from "@/components/admin/WaitlistLeads";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -270,7 +271,7 @@ export default function Admin() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview" className="gap-2">
             <BarChart3 className="h-4 w-4" /><span className="hidden sm:inline">Visão Geral</span>
           </TabsTrigger>
@@ -280,7 +281,9 @@ export default function Admin() {
           <TabsTrigger value="users" className="gap-2">
             <Users className="h-4 w-4" /><span className="hidden sm:inline">Usuários</span>
           </TabsTrigger>
+          <TabsTrigger value="leads">Leads</TabsTrigger>
         </TabsList>
+        <TabsContent value="leads"><WaitlistLeads /></TabsContent>
 
         {/* Overview — métricas do marketplace */}
         <TabsContent value="overview" className="space-y-6">

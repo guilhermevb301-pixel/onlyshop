@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import WaitlistSection from "@/components/WaitlistSection";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -274,7 +275,7 @@ export default function Landing() {
               <Link to="/auth">Entrar</Link>
             </Button>
             <Button asChild size="sm" className="bg-gradient-primary text-white text-xs h-9 px-5 rounded-full font-semibold border-0 shadow-[var(--shadow-glow-cta)] active:scale-[.98] transition-transform">
-              <Link to="/auth">Criar conta</Link>
+              <a href="#lista-de-espera">Lista de espera</a>
             </Button>
           </div>
         </div>
@@ -307,10 +308,10 @@ export default function Landing() {
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-10 justify-center lg:justify-start">
                 <Button asChild size="lg" className="group bg-gradient-primary text-white w-full sm:w-auto text-sm h-14 px-7 rounded-full font-bold border-0 shadow-[var(--shadow-glow-cta)] hover:-translate-y-0.5 active:scale-[.98] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]">
-                  <Link to="/auth">
-                    Criar conta grátis
+                  <a href="#lista-de-espera">
+                    Entrar na lista de espera
                     <ArrowCircle />
-                  </Link>
+                  </a>
                 </Button>
                 <Button
                   size="lg"
@@ -414,6 +415,8 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      <WaitlistSection />
 
       {/* ═══ SOCIAL PROOF BAR ═══ */}
       <section className="py-4 border-y border-white/[0.05]">
@@ -777,7 +780,7 @@ export default function Landing() {
                   Entra. Aqui ninguém grava de graça.
                 </p>
                 <Button asChild size="lg" className="group bg-gradient-primary text-white rounded-full h-14 px-9 text-sm font-bold border-0 shadow-[var(--shadow-glow-cta)] hover:-translate-y-0.5 active:scale-[.98] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]">
-                  <Link to="/auth">Criar conta grátis<ArrowCircle /></Link>
+                  <a href="#lista-de-espera">Entrar na lista de espera<ArrowCircle /></a>
                 </Button>
                 <p className="text-[10px] text-white/20 mt-5">Sem cartão · Sem mensalidade · Saque via PIX</p>
 

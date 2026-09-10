@@ -23,6 +23,7 @@ const sections: Section[] = [
     content: "Coletamos os seguintes tipos de dados:",
     list: [
       "Dados de cadastro: nome, e-mail, foto de perfil e informações públicas.",
+      "Lista de espera: nome, e-mail, WhatsApp, perfil (Creator ou Empresa) e registro do consentimento para contato. Esses contatos são acessíveis apenas à equipe administradora.",
       "Dados de uso: interações na plataforma, posts, curtidas, comunidades e atividade de afiliado.",
       "Dados de pagamento: informações necessárias para processamento de assinaturas e comissões.",
       "Dados de integrações: informações obtidas via conexão com redes sociais como TikTok.",
@@ -38,6 +39,7 @@ const sections: Section[] = [
       "Processar pagamentos e comissões de afiliados.",
       "Personalizar sua experiência na plataforma.",
       "Enviar comunicações relevantes sobre sua conta.",
+      "Com sua autorização, entrar em contato por e-mail e WhatsApp sobre a lista de espera e novidades da plataforma. Você pode revogar essa autorização a qualquer momento.",
       "Cumprir obrigações legais e regulatórias.",
     ],
   },

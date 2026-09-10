@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      waitlist_leads: {
+        Row: { id: string; position: number; name: string; email: string; whatsapp: string; profile: string; created_at: string; consent_at: string; consent_version: string }
+        Insert: { name: string; email: string; whatsapp: string; profile: string }
+        Update: { name?: string; email?: string; whatsapp?: string; profile?: string }
+        Relationships: []
+      }
       affiliate_invites: {
         Row: {
           affiliate_user_id: string
