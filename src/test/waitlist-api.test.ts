@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import handler from "../../api/[action]";
 import { supabaseAdminRequest } from "../../api/_lib/supabase";
-vi.mock("../../api/_lib/supabase", () => ({ supabaseAdminRequest: vi.fn() }));
+vi.mock("../../api/_lib/supabase", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../../api/_lib/supabase")>(),
+  supabaseAdminRequest: vi.fn(),
+}));
 
 const valid = { name: "Teste Lista", email: "teste@example.com", whatsapp: "15999991234", profile: "creator", consent: true };
 async function request(body: unknown = valid, method = "POST") {
@@ -9,7 +12,7 @@ async function request(body: unknown = valid, method = "POST") {
   await handler({ method, body, query: { action: "waitlist" }, headers: { "x-vercel-forwarded-for": "192.0.2.1" } }, res);
   return res;
 }
-beforeEach(() => { vi.clearAllMocks(); vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-only-secret"); vi.mocked(supabaseAdminRequest).mockResolvedValue(true); });
+beforeEach(() => { vi.clearAllMocks(); vi.stubEnv("SUPABASE_URL", "https://example.supabase.co"); vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-only-secret"); vi.mocked(supabaseAdminRequest).mockResolvedValue(true); });
 describe("waitlist API", () => {
   it("rejects malformed JSON and invalid contacts before persistence", async () => {
     expect((await request("{")).status).toHaveBeenCalledWith(400);
