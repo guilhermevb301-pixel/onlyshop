@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import handler from "../../api/waitlist";
+import handler from "../../api/[action]";
 import { supabaseAdminRequest } from "../../api/_lib/supabase";
 vi.mock("../../api/_lib/supabase", () => ({ supabaseAdminRequest: vi.fn() }));
 
 const valid = { name: "Teste Lista", email: "teste@example.com", whatsapp: "15999991234", profile: "creator", consent: true };
 async function request(body: unknown = valid, method = "POST") {
   const res = { setHeader: vi.fn(), status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
-  await handler({ method, body, headers: { "x-vercel-forwarded-for": "192.0.2.1" } }, res);
+  await handler({ method, body, query: { action: "waitlist" }, headers: { "x-vercel-forwarded-for": "192.0.2.1" } }, res);
   return res;
 }
 beforeEach(() => { vi.clearAllMocks(); vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-only-secret"); vi.mocked(supabaseAdminRequest).mockResolvedValue(true); });
@@ -37,4 +37,15 @@ describe("waitlist API", () => {
     expect(JSON.stringify(res.json.mock.calls)).not.toContain("private error");
   });
   it("rejects other methods", async () => { expect((await request(valid, "GET")).status).toHaveBeenCalledWith(405); });
+  it("keeps campaign creation authenticated in the shared route", async () => {
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
+    await handler({ method: "POST", headers: {}, body: {}, query: { action: "create-campaign" } }, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(supabaseAdminRequest).not.toHaveBeenCalled();
+  });
+  it("returns 404 for unknown shared routes", async () => {
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
+    await handler({ query: { action: "unknown" } }, res);
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
 });

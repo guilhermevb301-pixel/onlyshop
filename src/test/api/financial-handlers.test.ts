@@ -38,7 +38,7 @@ describe("financial handlers", () => {
   it("create-campaign rejects an unauthenticated request", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const { default: handler } = await import("../../../api/create-campaign");
+    const { default: handler } = await import("../../../api/_lib/create-campaign");
     const { res, state } = mockRes();
 
     await handler({ method: "POST", headers: {}, body: {} }, res);
@@ -69,7 +69,7 @@ describe("financial handlers", () => {
       throw new Error(`unexpected fetch ${url}`);
     });
     vi.stubGlobal("fetch", fetchMock);
-    const { default: handler } = await import("../../../api/create-campaign");
+    const { default: handler } = await import("../../../api/_lib/create-campaign");
     const { res, state } = mockRes();
 
     await handler(validReq({
