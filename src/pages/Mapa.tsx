@@ -19,7 +19,7 @@ import type { CampaignNear } from "@/lib/campaigns";
 import { getCurrentLocation, setCurrentLocation, getLocationHistory, removeFromHistory, locationKey, type LocationHistoryItem } from "@/lib/locationHistory";
 import { HelpTip } from "@/components/ui/help-tip";
 
-// Leaflet acessa window e é pesado → carrega só quando o mapa aparece.
+// MapLibre é pesado → carrega só quando o mapa aparece.
 const CampaignMap = lazy(() => import("@/components/map/CampaignMap"));
 
 type View = "map" | "list";
@@ -121,19 +121,16 @@ export default function Mapa() {
   const empty = campaigns.length === 0;
 
   return (
-    <div className="max-w-2xl mx-auto py-2 space-y-4">
+    <div className="max-w-5xl mx-auto py-2 space-y-5">
       {/* cabeçalho */}
       <div className="flex items-center justify-between gap-3 animate-fade-in">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-primary ring-1 ring-white/10 flex items-center justify-center shrink-0 shadow-[var(--shadow-glow-cta)]">
-            <Compass className="h-5 w-5 text-primary-foreground" />
-          </div>
           <div className="min-w-0">
-            <h1 className="text-lg font-bold tracking-tight leading-none flex items-center gap-1.5">Perto de você <HelpTip id="mapa.home" side="bottom" /></h1>
-            <p className="text-xs text-muted-foreground/60 truncate mt-1 flex items-center gap-1">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight leading-none flex items-center gap-1.5">Explore sua região <HelpTip id="mapa.home" side="bottom" /></h1>
+            <button type="button" onClick={changeLocation} aria-label="Mudar localização" className="text-xs text-muted-foreground hover:text-foreground truncate mt-2 flex items-center gap-1 underline underline-offset-4 rounded focus-visible:outline focus-visible:outline-2">
               <MapPin className="h-3 w-3" />
               {loc.city ? `${loc.city}${loc.state ? `, ${loc.state}` : ""}` : "Sua região"}
-            </p>
+            </button>
           </div>
         </div>
 
@@ -148,22 +145,16 @@ export default function Mapa() {
         <MapLoadingSkeleton view={view} />
       ) : (
         <>
-          <SocialProofBar campaigns={campaigns} />
-          {territories.length > 0 && (
-            <div className="mt-3"><TerritoryOwnerBar territories={territories} /></div>
-          )}
-          <div className="mt-3"><MapActivityTicker /></div>
-          <div className="mt-3"><InfluencersNearby lat={loc?.latitude} lon={loc?.longitude} /></div>
-
           {view === "map" ? (
+            <section className="overflow-hidden rounded-2xl border border-white/10 bg-white text-black">
             <div
-              className="relative w-full overflow-hidden rounded-3xl ring-1 ring-white/[0.08] animate-fade-in"
-              style={{ height: "min(62vh, 560px)" }}
+              className="relative w-full overflow-hidden"
+              style={{ height: "clamp(340px, 60dvh, 640px)" }}
             >
               <Suspense
                 fallback={
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <Loader2 className="h-5 w-5 animate-spin text-accent" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-[#e5e7e6]">
+                    <Loader2 className="h-5 w-5 animate-spin text-black" />
                   </div>
                 }
               >
@@ -175,23 +166,24 @@ export default function Mapa() {
                 />
               </Suspense>
 
-              {/* legenda — canto superior direito (não cobre o pino central do usuário) */}
-              <div className="absolute top-3 right-3 z-[400] flex gap-2 text-[10px]">
-                <span className="flex items-center gap-1.5 rounded-full bg-black/65 backdrop-blur px-2.5 py-1.5 text-white ring-1 ring-white/10">
-                  <span className="h-2 w-2 rounded-full bg-primary" /> Você
-                </span>
-                <span className="flex items-center gap-1.5 rounded-full bg-black/65 backdrop-blur px-2.5 py-1.5 text-white ring-1 ring-white/10">
-                  <span className="h-2 w-2 rounded-full bg-accent" /> Campanha
+              <div className="pointer-events-none absolute top-3 left-3 z-10 text-xs">
+                <span className="flex items-center gap-2 rounded-xl bg-white px-3 py-2.5 text-black shadow-sm">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#276ef1]" /> Sua localização
                 </span>
               </div>
-
-              {/* empty state sobreposto: cidade sem campanha não pode ser um quadrado preto mudo */}
-              {empty && (
-                <div className="absolute inset-0 z-[401] flex items-center justify-center bg-black/55 backdrop-blur-sm p-6 animate-fade-in">
-                  <MapEmpty onChangeLocation={changeLocation} />
+            </div>
+            <div className="px-5 py-4 sm:px-6 border-t border-black/10">
+              {empty ? <MapEmpty onChangeLocation={changeLocation} /> : (
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-base font-bold">{campaigns.length} {campaigns.length === 1 ? "campanha na região" : "campanhas na região"}</h2>
+                    <p className="mt-1 text-sm text-[#525957]">Toque em um valor no mapa para ver a campanha.</p>
+                  </div>
+                  <button type="button" onClick={() => setView("list")} className="shrink-0 rounded-xl bg-black px-4 py-3 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">Ver lista</button>
                 </div>
               )}
             </div>
+            </section>
           ) : (
             <div className="space-y-2 animate-fade-in">
               {empty ? (
@@ -210,6 +202,12 @@ export default function Mapa() {
               )}
             </div>
           )}
+          <div className="space-y-3">
+            <SocialProofBar campaigns={campaigns} />
+            {territories.length > 0 && <TerritoryOwnerBar territories={territories} />}
+            <MapActivityTicker />
+            <InfluencersNearby lat={loc.latitude} lon={loc.longitude} />
+          </div>
         </>
       )}
 
@@ -224,10 +222,12 @@ function ToggleBtn({
   return (
     <button
       onClick={onClick}
+      type="button"
+      aria-pressed={active}
       className={cn(
         "flex items-center gap-1.5 rounded-full px-3.5 py-2 min-h-[40px] text-xs font-semibold transition-all duration-300 ease-[var(--ease-fluid)] active:scale-[.96]",
         active
-          ? "bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-cta)]"
+          ? "bg-white text-black shadow-sm"
           : "text-muted-foreground/70 hover:text-foreground"
       )}
     >
@@ -239,17 +239,14 @@ function ToggleBtn({
 // Estado de vazio do MAPA (overlay) — mesmo tom do empty da lista, pra consistência.
 function MapEmpty({ onChangeLocation }: { onChangeLocation: () => void }) {
   return (
-    <div className="text-center max-w-xs">
-      <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center mb-4">
-        <Compass className="h-7 w-7 text-primary" />
-      </div>
-      <h2 className="text-base font-bold tracking-tight text-white">Nenhuma campanha aqui ainda</h2>
-      <p className="text-xs text-white/60 mt-1.5 leading-relaxed">
-        Assim que uma marca pagar perto de você, o pino aparece no mapa.
+    <div className="text-left">
+      <h2 className="text-base font-bold tracking-tight text-black">Nenhuma campanha aqui ainda</h2>
+      <p className="text-sm text-[#525957] mt-1.5 leading-relaxed">
+        Explore outra cidade ou volte mais tarde para ver novas campanhas.
       </p>
       <Button
         variant="outline"
-        className="group mt-5 rounded-full gap-2 border-white/15 bg-white/[0.04] text-white hover:bg-white/[0.08] active:scale-[.98] transition-all duration-300 ease-[var(--ease-fluid)]"
+        className="group mt-4 rounded-xl gap-2 border-black/15 bg-white text-black hover:bg-gray-100 hover:text-black"
         onClick={onChangeLocation}
       >
         Mudar localização
