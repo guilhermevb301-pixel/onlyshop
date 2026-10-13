@@ -69,7 +69,7 @@ export function deriveCampaignMoney(input: Record<string, unknown>, splitLive: b
     totalBudget,
     campaignKind,
     phases,
-    payMode: splitLive ? "split" : "escrow",
-    funded: splitLive,
+    payMode: splitLive && rewardType === "paid" && campaignKind === "standard" ? "split" : "escrow",
+    funded: splitLive && rewardType === "paid" && campaignKind === "standard",
   };
 }

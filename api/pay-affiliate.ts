@@ -16,12 +16,14 @@
 // Env: MP_APP_CLIENT_ID (só p/ saber se o split está ligado), SUPABASE_URL,
 //      SUPABASE_SERVICE_ROLE_KEY, APP_URL.
 // =============================================================================
+import { reconcileSplit } from "./_lib/reconcile-split.js";
+import { getMarketplaceToken } from "./_lib/marketplace-token.js";
 export const config = { maxDuration: 30 };
 
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const APP_URL = process.env.APP_URL || "https://onlyshopbrasil.com.br";
-const SPLIT_ON = !!process.env.MP_APP_CLIENT_ID;          // credenciais existem (dá pra conectar/pagar)
+const SPLIT_ON = !!process.env.MP_APP_CLIENT_ID && !!process.env.MP_APP_CLIENT_SECRET && !!process.env.MP_WEBHOOK_SECRET;
 const SPLIT_LIVE = process.env.MP_SPLIT_LIVE === "true";  // campanha NOVA nasce split (abre pra todo mundo)
 
 const round2 = (v: number) => Math.round((Number(v) || 0) * 100) / 100;
@@ -110,7 +112,7 @@ function money(camp: any): { gross: number; fee: number; net: number } {
 
 export default async function handler(req: any, res: any) {
   // GET = sonda de configuração (o front esconde a UI de split enquanto off).
-  if (req.method === "GET") return res.status(200).json({ configured: SPLIT_ON, live: SPLIT_LIVE });
+  if (req.method === "GET") return res.status(200).json({ configured: SPLIT_ON, live: SPLIT_LIVE, testReady: SPLIT_ON && !!process.env.MP_SPLIT_TEST_BRAND_ID });
   if (req.method !== "POST") return res.status(405).json({ error: "use POST" });
   try {
     if (!SB_URL || !SB_KEY) return res.status(500).json({ error: "Supabase não configurado" });
@@ -125,7 +127,7 @@ export default async function handler(req: any, res: any) {
 
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body ?? {};
     const applicationId = String(body.applicationId || "");
-    if (!applicationId) return res.status(400).json({ error: "applicationId obrigatório" });
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(applicationId)) return res.status(400).json({ error: "applicationId inválido" });
 
     const app = await one(`campaign_applications?id=eq.${applicationId}&select=id,campaign_id,influencer_user_id,status&limit=1`);
     if (!app) return res.status(404).json({ error: "candidatura não encontrada" });
@@ -154,6 +156,22 @@ export default async function handler(req: any, res: any) {
     const sellerToken = await getSellerToken(String(app.influencer_user_id));
     if (!sellerToken) {
       return res.status(409).json({ error: "o creator ainda não conectou o Mercado Pago", needsAffiliateMp: true });
+    }
+    const account = await one(`affiliate_mp_accounts?user_id=eq.${encodeURIComponent(String(app.influencer_user_id))}&select=mp_user_id&limit=1`);
+    const platformResponse = await fetch("https://api.mercadopago.com/users/me", {
+      headers: { Authorization: `Bearer ${await getMarketplaceToken()}` },
+    });
+    if (!platformResponse.ok) return res.status(503).json({ error: "Não foi possível verificar a conta da plataforma" });
+    const platform = await platformResponse.json();
+    if (!account?.mp_user_id || String(account.mp_user_id) === String(platform.id)) {
+      return res.status(409).json({ error: "O creator precisa conectar sua própria conta Mercado Pago, diferente da conta da plataforma.", needsAffiliateMp: true });
+    }
+    if (body.action === "reconcile") {
+      const existing = await one(`split_payments?application_id=eq.${applicationId}&select=id,gross,status&limit=1`);
+      if (!existing) return res.status(200).json({ paid: false });
+      if (existing.status === "paid") return res.status(200).json({ paid: true });
+      if (existing.status !== "pending") return res.status(200).json({ paid: false });
+      return res.status(200).json({ paid: await reconcileSplit(existing, sellerToken, String(account.mp_user_id)) });
     }
 
     const { gross, fee, net } = money(camp);
@@ -192,7 +210,7 @@ export default async function handler(req: any, res: any) {
     // Checkout criado com o token DO AFILIADO + nossa taxa (marketplace_fee).
     const prefRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
-      headers: { Authorization: `Bearer ${sellerToken}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${sellerToken}`, "Content-Type": "application/json", "X-Idempotency-Key": String(split.id) },
       body: JSON.stringify({
         items: [{ title: `OnlyShop - ${String(camp.name || "Campanha").slice(0, 100)}`, quantity: 1, unit_price: gross, currency_id: "BRL" }],
         marketplace_fee: fee,
@@ -200,7 +218,7 @@ export default async function handler(req: any, res: any) {
         statement_descriptor: "ONLYSHOP",
         // O split id vai na URL do webhook: é assim que o webhook sabe de quem é
         // o token pra confirmar o pagamento na API do MP.
-        notification_url: `${APP_URL}/api/mp-webhook?split=${split.id}`,
+        notification_url: `${APP_URL}/api/mp-webhook?split=${split.id}&source_news=webhooks`,
         metadata: { split_id: split.id, application_id: applicationId, campaign_id: camp.id },
         back_urls: {
           success: `${APP_URL}/brands?pago=${encodeURIComponent(applicationId)}`,
@@ -217,10 +235,11 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: pref?.message || "falha ao criar o pagamento" });
     }
 
-    await sb(`split_payments?id=eq.${split.id}`, {
+    const saved = await sb(`split_payments?id=eq.${split.id}`, {
       method: "PATCH", headers: { Prefer: "return=minimal" },
       body: JSON.stringify({ preference_id: pref.id, init_point: pref.init_point, status: "pending" }),
     });
+    if (!saved.ok) return res.status(503).json({ error: "Não foi possível salvar o checkout. Tente novamente." });
 
     return res.status(200).json({ configured: true, init_point: pref.init_point, preference_id: pref.id, gross, fee, net });
   } catch (e) {

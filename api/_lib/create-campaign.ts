@@ -20,13 +20,17 @@ export default async function handler(req: any, res: any) {
   try {
     const user = await authenticateRequest(req);
     const input = typeof req.body === "string" ? JSON.parse(req.body) : req.body ?? {};
-    const money = deriveCampaignMoney(input, process.env.MP_SPLIT_LIVE === "true");
+    let money = deriveCampaignMoney(input, process.env.MP_SPLIT_LIVE === "true");
 
     const brands = await supabaseAdminRequest<Array<{ id: string }>>(
       `brands?user_id=eq.${encodeURIComponent(user.id)}&select=id&limit=1`,
     );
     const brandId = brands[0]?.id;
     if (!brandId) throw new ApiError(403, "crie sua marca antes da campanha");
+    if (process.env.MP_SPLIT_TEST_BRAND_ID === brandId && process.env.MP_APP_CLIENT_ID
+      && process.env.MP_APP_CLIENT_SECRET && process.env.MP_WEBHOOK_SECRET) {
+      money = deriveCampaignMoney(input, true);
+    }
 
     const payload = {
       brand_id: brandId,

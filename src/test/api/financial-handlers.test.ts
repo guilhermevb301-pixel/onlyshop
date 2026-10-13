@@ -102,9 +102,10 @@ describe("financial handlers", () => {
       }
       if (url.includes("/campaign_fundings") && init?.method === "POST") {
         const payload = JSON.parse(String(init.body));
-        expect(payload).toMatchObject({ brand_user_id: "brand-user", expected_amount: 120 });
+        expect(payload).toMatchObject({ brand_user_id: "brand-user", expected_amount: 120, idempotency_key: "11111111-1111-4111-8111-111111111111" });
         return new Response(JSON.stringify([{ id: "22222222-2222-4222-8222-222222222222" }]), { status: 201 });
       }
+      if (url.includes("/campaign_fundings?") && !init?.method) return new Response(JSON.stringify([]));
       if (url.includes("api.mercadopago.com/checkout/preferences")) {
         const payload = JSON.parse(String(init?.body));
         expect(payload.items[0].unit_price).toBe(120);

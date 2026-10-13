@@ -1,5 +1,7 @@
 import { ApiError, authenticateRequest } from "./_lib/auth.js";
 import { apiErrorResponse, supabaseAdminRequest } from "./_lib/supabase.js";
+import { reconcileFunding } from "./_lib/reconcile-funding.js";
+import { getMarketplaceToken } from "./_lib/marketplace-token.js";
 
 export const config = { maxDuration: 30 };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -12,14 +14,13 @@ function header(req: any, name: string): string {
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "use POST" });
   try {
-    const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
-    if (!token) throw new ApiError(503, "Mercado Pago não configurado");
     const user = await authenticateRequest(req);
+    const token = await getMarketplaceToken();
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body ?? {};
     const campaignId = String(body.campaignId ?? "");
     const idempotencyKey = header(req, "idempotency-key");
     if (!UUID.test(campaignId)) throw new ApiError(400, "campaignId inválido");
-    if (!UUID.test(idempotencyKey)) throw new ApiError(400, "Idempotency-Key inválida");
+    if (body.action !== "reconcile" && !UUID.test(idempotencyKey)) throw new ApiError(400, "Idempotency-Key inválida");
 
     const campaigns = await supabaseAdminRequest<any[]>(
       `campaigns?id=eq.${encodeURIComponent(campaignId)}&select=id,name,total_budget,funded,pay_mode,brands(user_id)&limit=1`,
@@ -28,8 +29,19 @@ export default async function handler(req: any, res: any) {
     if (!campaign) throw new ApiError(404, "campanha não encontrada");
     const ownerId = Array.isArray(campaign.brands) ? campaign.brands[0]?.user_id : campaign.brands?.user_id;
     if (ownerId !== user.id) throw new ApiError(403, "você não é dono desta campanha");
+    if (body.action === "reconcile") {
+      const funded = campaign.funded === true || (campaign.pay_mode === "escrow" && await reconcileFunding(campaignId, user.id));
+      return res.status(200).json({ funded });
+    }
     if (campaign.pay_mode !== "escrow") throw new ApiError(409, "campanha split é paga por creator contratado");
     if (campaign.funded === true) throw new ApiError(409, "campanha já financiada");
+    const pending = await supabaseAdminRequest<any[]>(
+      `campaign_fundings?campaign_id=eq.${encodeURIComponent(campaignId)}&brand_user_id=eq.${encodeURIComponent(user.id)}&status=eq.pending&select=id,preference_id,checkout_url&order=created_at.desc&limit=1`,
+    );
+    if (pending[0]?.preference_id && pending[0]?.checkout_url) {
+      if (await reconcileFunding(campaignId, user.id)) throw new ApiError(409, "Pagamento já confirmado. Atualize o painel.");
+      return res.status(200).json({ configured: true, preference_id: pending[0].preference_id, init_point: pending[0].checkout_url });
+    }
     const expectedAmount = Math.round(Number(campaign.total_budget) * 100) / 100;
     if (!Number.isFinite(expectedAmount) || expectedAmount <= 0) throw new ApiError(409, "contrato financeiro inválido");
 
@@ -42,14 +54,14 @@ export default async function handler(req: any, res: any) {
           campaign_id: campaign.id,
           brand_user_id: user.id,
           expected_amount: expectedAmount,
-          idempotency_key: idempotencyKey,
+          idempotency_key: campaignId,
         }),
       },
     );
     let funding = created[0];
     if (!funding) {
       const existing = await supabaseAdminRequest<any[]>(
-        `campaign_fundings?brand_user_id=eq.${encodeURIComponent(user.id)}&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&select=id,status,preference_id,checkout_url&limit=1`,
+        `campaign_fundings?brand_user_id=eq.${encodeURIComponent(user.id)}&idempotency_key=eq.${encodeURIComponent(campaignId)}&select=id,status,preference_id,checkout_url&limit=1`,
       );
       funding = existing[0];
       if (funding?.preference_id && funding?.checkout_url) {
@@ -70,13 +82,13 @@ export default async function handler(req: any, res: any) {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
-        "X-Idempotency-Key": idempotencyKey,
+        "X-Idempotency-Key": String(funding.id),
       },
       body: JSON.stringify({
         items: [{ title: String(campaign.name).slice(0, 120), quantity: 1, unit_price: expectedAmount, currency_id: "BRL" }],
         external_reference: `funding:${funding.id}`,
         statement_descriptor: "ONLYSHOP",
-        notification_url: `${appUrl}/api/mp-webhook`,
+        notification_url: `${appUrl}/api/mp-webhook?source_news=webhooks`,
         metadata: { funding_id: funding.id },
         back_urls: {
           success: `${appUrl}/brands?funding=${encodeURIComponent(funding.id)}`,

@@ -31,22 +31,40 @@ export function PayAffiliateCard({
 
   useEffect(() => {
     if (!on) return;
-    let alive = true;
-    supabase
-      .from("split_payments" as any)
-      .select("application_id,status")
-      .in("status", ["pending", "paid"])
-      .then(({ data }) => {
-        if (alive && data) setSettled(new Set((data as any[]).map((r) => r.application_id)));
-      });
-    return () => { alive = false; };
-  }, [on, paying]);
+    let alive = true, busy = false;
+    const check = async () => {
+      if (!alive || busy || document.visibilityState === "hidden") return;
+      busy = true;
+      try {
+        const { data } = await supabase.from("split_payments" as any).select("application_id,status").in("status", ["pending", "paid"]);
+        if (!alive || !data) return;
+        const rows = data as Array<{ application_id: string; status: string }>;
+        const confirmed = new Set(rows.filter(r => r.status === "paid").map(r => r.application_id));
+        const pendingRows = rows.filter(r => r.status === "pending" && applications.some(a => a.id === r.application_id)).slice(0, 5);
+        if (pendingRows.length) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) for (const row of pendingRows) {
+            if (!alive) return;
+            const response = await fetch("/api/pay-affiliate", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ action: "reconcile", applicationId: row.application_id }) });
+            const result = await response.json().catch(() => ({}));
+            if (response.ok && result.paid) confirmed.add(row.application_id);
+          }
+        }
+        if (alive) setSettled(confirmed);
+      } catch { /* Keep existing payment controls available; retry on return. */ }
+      finally { busy = false; }
+    };
+    void check();
+    const timer = window.setInterval(check, 30_000);
+    window.addEventListener("focus", check);
+    return () => { alive = false; window.clearInterval(timer); window.removeEventListener("focus", check); };
+  }, [on, paying, applications]);
 
   // Só campanhas SPLIT: em escrow a marca já pagou tudo na criação, então "Pagar"
   // não faz sentido (e o servidor recusaria com 409). Contratados ainda não pagos.
   const splitCampaignIds = new Set(campaigns.filter((c) => c.pay_mode === "split").map((c) => c.id));
   const pending = applications.filter(
-    (a) => (a.status === "accepted" || a.status === "approved") && splitCampaignIds.has(a.campaign_id) && !settled.has(a.id)
+    (a) => ["accepted", "approved", "delivered"].includes(a.status) && splitCampaignIds.has(a.campaign_id) && !settled.has(a.id)
   );
   if (!on || pending.length === 0) return null;
 
@@ -83,7 +101,7 @@ export function PayAffiliateCard({
       <div className="rounded-[calc(1.5rem-1px)] bg-card/80 ring-1 ring-inset ring-accent/10 p-4 space-y-2.5">
         <div>
           <p className="text-sm font-bold flex items-center gap-1.5"><Wallet className="h-4 w-4 text-accent" /> Pagar contratados</p>
-          <p className="text-[11px] text-muted-foreground/60 mt-0.5">O dinheiro cai direto na conta do creator, já com a nossa taxa descontada.</p>
+          <p className="text-[11px] text-muted-foreground/60 mt-0.5">Pagamento direto no Mercado Pago do creator. A taxa OnlyShop é adicionada ao valor da campanha; as tarifas do Mercado Pago podem reduzir o líquido recebido.</p>
         </div>
         {pending.map((a) => (
           <div key={a.id} className="flex items-center gap-2 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] p-3">

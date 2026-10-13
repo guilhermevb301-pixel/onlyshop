@@ -183,6 +183,35 @@ export function useBrand() {
     }
   }, [user, fetchCampaigns]);
 
+  const pendingFundingIds = campaigns.filter(c => !c.funded && c.pay_mode === "escrow" && c.status === "active").map(c => c.id).join(",");
+  useEffect(() => {
+    if (!brand || !user || !pendingFundingIds) return;
+    let alive = true, busy = false;
+    const check = async () => {
+      if (!alive || busy || document.visibilityState === "hidden") return;
+      busy = true;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        for (const campaignId of pendingFundingIds.split(",").slice(0, 3)) {
+          if (!alive) return;
+          const response = await fetch("/api/fund-campaign", {
+            method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ action: "reconcile", campaignId }),
+          });
+          const result = await response.json().catch(() => ({}));
+          if (alive && response.ok && result.funded) await fetchCampaigns(brand.id);
+        }
+      } catch { /* Retry on the next visible check without hiding existing campaigns. */ }
+      finally { busy = false; }
+    };
+    void check();
+    const timer = window.setInterval(check, 30_000);
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", check);
+    return () => { alive = false; window.clearInterval(timer); window.removeEventListener("focus", check); document.removeEventListener("visibilitychange", check); };
+  }, [pendingFundingIds, brand, user, fetchCampaigns]);
+
   // Sempre que mudam as campanhas, recarrega as candidaturas delas.
   useEffect(() => {
     if (brand) fetchApplications(campaigns.map((c) => c.id));
@@ -244,7 +273,7 @@ export function useBrand() {
     if (!brand) return null;
     const rtype = input.reward_type ?? "per_video";
     const isProcess = input.campaign_kind === "process";
-    const usaSplit = await splitLive();
+    const usaSplit = await splitLive() && !isProcess && rtype !== "permuta";
     const isPermuta = rtype === "permuta";
     const phases = input.phases ?? (isProcess ? PROCESS_PHASES_DEFAULT : undefined);
     // Process: paga por etapa (reward_amount não usado). Permuta: influencer recebe

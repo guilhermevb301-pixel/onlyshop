@@ -9,9 +9,9 @@
 // Env: MERCADOPAGO_ACCESS_TOKEN, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 // =============================================================================
 import { createHmac, timingSafeEqual } from "crypto";
+import { getMarketplaceToken } from "./_lib/marketplace-token.js";
 export const config = { maxDuration: 30 };
 
-const MP_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN;
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET;
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -127,19 +127,19 @@ async function handleSplit(res: any, splitId: string, paymentId: string) {
   if (split.status === "paid") return res.status(200).json({ ok: true, already: true });
 
   const sellerToken = await getSellerToken(String(split.affiliate_user_id));
-  if (!sellerToken) return res.status(200).json({ ok: false, no_token: true });
+  if (!sellerToken) return res.status(503).json({ ok: false, no_token: true });
 
   const pr = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`, {
     headers: { Authorization: `Bearer ${sellerToken}` },
   });
   const pay = await pr.json();
-  if (!pr.ok) return res.status(200).json({ ok: false, mp: pay?.message || "falha ao consultar" });
+  if (!pr.ok) return res.status(502).json({ ok: false, error: "falha ao consultar pagamento" });
   if (pay?.status !== "approved") return res.status(200).json({ ok: true, status: pay?.status });
-  if (String(pay?.external_reference || "") !== `split:${splitId}`) {
+  if (String(pay?.external_reference || "") !== `split:${splitId}` || pay.currency_id !== "BRL" || Number(pay.transaction_amount_refunded ?? 0) !== 0) {
     return res.status(200).json({ ok: false, mismatch: true });
   }
   const paid = Number(pay?.transaction_amount || 0);
-  if (Math.abs(paid - Number(split.gross)) > 0.01) return res.status(200).json({ ok: false, amount_mismatch: true });
+  if (!Number.isFinite(paid) || Math.abs(paid - Number(split.gross)) > 0.001) return res.status(200).json({ ok: false, amount_mismatch: true });
 
   const rpc = await sb("rpc/confirm_split_payment_atomic", {
     method: "POST",
@@ -174,15 +174,16 @@ export default async function handler(req: any, res: any) {
     const splitId = req.query?.split ? String(req.query.split) : "";
     if (splitId) return await handleSplit(res, splitId, String(paymentId));
 
-    if (!MP_TOKEN) return res.status(503).json({ error: "Mercado Pago não configurado" });
+    const mpToken = await getMarketplaceToken();
 
     // Confirma o pagamento real no Mercado Pago.
     const pr = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: { Authorization: `Bearer ${MP_TOKEN}` },
+      headers: { Authorization: `Bearer ${mpToken}` },
     });
     const pay = await pr.json();
     if (!pr.ok) throw new Error(`Mercado Pago payment lookup: ${pr.status}`);
     if (pay?.status !== "approved") return res.status(200).json({ ok: true, status: pay?.status });
+    if (pay.currency_id !== "BRL" || Number(pay.transaction_amount_refunded ?? 0) !== 0) return res.status(200).json({ ok: false, review: "refunded_or_currency_mismatch" });
 
     const amount = Number(pay.transaction_amount || pay.metadata?.amount || 0);
     const reference = String(pay.external_reference || "");

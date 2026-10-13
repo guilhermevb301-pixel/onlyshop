@@ -123,6 +123,11 @@ export function CreateCampaignSheet({ onCreate, onFunded, triggerLabel, triggerV
         phases: form.campaign_kind === "process" ? PROCESS_PHASES_DEFAULT : undefined,
       });
       if (!camp) throw new Error("Não foi possível criar a campanha.");
+      if (camp.pay_mode === "split") {
+        handleClose(false);
+        toast.success("Campanha publicada", { description: "Aprove um creator no painel para pagar diretamente na conta Mercado Pago dele." });
+        return;
+      }
       setCreated(camp);
       setStep("payment");
     } catch (err: any) {
