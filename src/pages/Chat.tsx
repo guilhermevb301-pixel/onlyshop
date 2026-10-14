@@ -40,6 +40,7 @@ export default function Chat() {
     const conv = conversations.find((c) => c.id === activeConversationId);
     return (
       <ChatView
+        key={activeConversationId}
         conversationId={activeConversationId}
         participant={conv?.participant}
         onBack={() => { setActiveConversationId(null); fetchConversations(); }}

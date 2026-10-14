@@ -46,6 +46,7 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
   const left = Math.max(0, campaign.slots - campaign.slots_filled);
   const { influencer } = computeSplit(campaign.reward_amount);
   const isPermuta = campaign.reward_type === "permuta"; // recebe o produto, sem R$
+  const isProcess = campaign.campaign_kind === "process";
 
   const handleAccept = async () => {
     setLoading(true);
@@ -95,19 +96,18 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
               <p className="text-xs text-muted-foreground/70 mt-0.5">{campaign.brand_name}</p>
             </div>
             <Badge className="gap-1 bg-accent text-accent-foreground border-0 text-xs shrink-0 tabular-nums">
-              <BadgeDollarSign className="h-3.5 w-3.5" />{isPermuta ? "Permuta" : brl(campaign.reward_amount)}
+              <BadgeDollarSign className="h-3.5 w-3.5" />{isPermuta ? "Permuta" : isProcess ? "Por etapas" : brl(campaign.reward_amount)}
             </Badge>
           </div>
           <SheetDescription className="sr-only">
-            Detalhes da campanha {campaign.title} de {campaign.brand_name}: {brl(campaign.reward_amount)} por
-            vídeo, a {fmtKm(campaign.distance_km)} de você, com {left} vaga{left !== 1 ? "s" : ""} restante
+            Detalhes da campanha {campaign.title} de {campaign.brand_name}: {isPermuta ? "parceria por permuta" : isProcess ? "recompensas por etapas" : `${brl(campaign.reward_amount)} por vídeo`}, com {left} vaga{left !== 1 ? "s" : ""} restante
             {left !== 1 ? "s" : ""}.
           </SheetDescription>
         </SheetHeader>
 
         {/* destaques */}
         <div className="grid grid-cols-3 gap-2 mt-5 animate-slide-up opacity-0" style={step(1)}>
-          <Info icon={<BadgeDollarSign className="h-4 w-4 text-accent" />} value={isPermuta ? "Permuta" : brl(campaign.reward_amount)} label={isPermuta ? "tipo" : "por vídeo"} />
+          <Info icon={<BadgeDollarSign className="h-4 w-4 text-accent" />} value={isPermuta ? "Permuta" : isProcess ? "Por etapas" : brl(campaign.reward_amount)} label={isPermuta || isProcess ? "tipo" : "por vídeo"} />
           <Info icon={<Users className="h-4 w-4" />} value={`${left}`} label={`vaga${left !== 1 ? "s" : ""} restante${left !== 1 ? "s" : ""}`} />
           <Info icon={<MapPin className="h-4 w-4 text-accent" />} value={fmtKm(campaign.distance_km)} label="de você" />
         </div>
@@ -140,8 +140,8 @@ export function CampaignSheet({ campaign, open, onOpenChange }: CampaignSheetPro
             </>
           ) : (
             <>
-              <p className="text-3xl font-black text-accent tabular-nums mt-1 leading-none">{brl(influencer)}</p>
-              <p className="text-[10px] text-muted-foreground/55 mt-1.5">por vídeo aprovado · o valor é todo seu</p>
+              <p className="text-3xl font-black text-accent tabular-nums mt-1 leading-none">{isProcess ? "Por etapas" : brl(influencer)}</p>
+              <p className="text-[10px] text-muted-foreground/55 mt-1.5">{isProcess ? "Conexão, vídeos e lives conforme as entregas aprovadas." : "por vídeo aprovado · o valor é todo seu"}</p>
             </>
           )}
         </div>

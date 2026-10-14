@@ -174,8 +174,8 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
           </div>
           <div className="text-[11px] text-muted-foreground/60 leading-relaxed">
             Ao tocar em <strong className="text-foreground">Pagar</strong>, você vai pro
-            <strong className="text-foreground"> Mercado Pago</strong> pagar via PIX. O valor fica
-            reservado até as entregas serem aprovadas.
+            <strong className="text-foreground"> Mercado Pago</strong> pagar via PIX. O valor
+            {isPermuta ? <> é a taxa OnlyShop pela permuta. O creator recebe o produto combinado, sem repasse dessa taxa.</> : <> fica reservado até as entregas serem aprovadas.</>}
           </div>
         </div>
       ) : (
@@ -194,7 +194,7 @@ export function CampaignPaymentStep({ campaign, onPaid, onBack }: Props) {
 
       {/* Selo de segurança */}
       <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground/40">
-        <Lock className="h-3 w-3" /> Pagamento protegido · valor liberado só após a entrega
+        <Lock className="h-3 w-3" /> {isPermuta ? "Taxa da plataforma · creator recebe o produto da marca" : "Pagamento protegido · valor liberado só após a entrega"}
       </div>
 
       {/* Ações */}

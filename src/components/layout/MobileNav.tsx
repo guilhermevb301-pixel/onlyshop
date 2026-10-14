@@ -9,11 +9,12 @@ const INFLUENCER: NavItem[] = [
   { href: "/inicio", icon: LayoutGrid, label: "Início" },
   { href: "/affiliate", icon: BadgeDollarSign, label: "Ganhos" },
   { href: "/mapa", icon: MapPin, label: "", isAction: true },
-  { href: "/rede", icon: Network, label: "Rede" },
+  { href: "/negocios", icon: Network, label: "Negócios" },
   { href: "/wallet", icon: Wallet, label: "Carteira" },
   { href: "/profile", icon: User, label: "Perfil" },
 ];
 const BRAND: NavItem[] = [
+  { href: "/negocios", icon: Network, label: "Negócios" },
   { href: "/brands", icon: Megaphone, label: "Campanhas" },
   { href: "/time", icon: UsersRound, label: "Time" },
   { href: "/mapa", icon: MapPin, label: "", isAction: true },

@@ -259,7 +259,8 @@ export function useBrand() {
           _website: cleanWebsite || null,
         } as never);
       if (error) throw error;
-      const created = (Array.isArray(data) ? data[0] : data) as Brand;
+      const created = (Array.isArray(data) ? (data as unknown as Brand[])[0] : data) as Brand | null;
+      if (!created) throw new Error("Não foi possível criar a marca.");
       setBrand(created);
       return created;
     } catch (e) {

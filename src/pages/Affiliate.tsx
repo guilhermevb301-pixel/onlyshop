@@ -120,10 +120,7 @@ export default function Affiliate() {
   const { startConversation } = useChat();
   const openChatWithBrand = async (a: CampaignApplication) => {
     try {
-      const { data } = await supabase.from("campaigns" as any).select("brand_id, brands(user_id)").eq("id", a.campaign_id).single();
-      const brandUserId = (data as any)?.brands?.user_id;
-      if (!brandUserId) { toast.error("Não foi possível abrir a conversa"); return; }
-      const cid = await startConversation(brandUserId);
+      const cid = await startConversation(null, a.id);
       if (cid) navigate(`/chat?c=${cid}`);
       else toast.error("Não foi possível abrir a conversa");
     } catch {

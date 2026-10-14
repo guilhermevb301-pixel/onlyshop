@@ -66,7 +66,8 @@ export default function TikTok() {
       return;
     }
     const { data } = await supabase.rpc("get_my_tiktok_connection" as never);
-    setConnection(((Array.isArray(data) ? data[0] : data) as TikTokConnection) || null);
+    const result = data as unknown as TikTokConnection | TikTokConnection[] | null;
+    setConnection(Array.isArray(result) ? result[0] ?? null : result);
     setLoading(false);
   }, [user]);
 

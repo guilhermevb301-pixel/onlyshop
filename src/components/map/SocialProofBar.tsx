@@ -47,8 +47,8 @@ export function SocialProofBar({ campaigns }: SocialProofBarProps) {
           {/* gatilho de dinheiro em destaque (maior, cyan, extrabold) */}
           <Stat
             icon={<BadgeDollarSign className="h-4 w-4 text-accent" />}
-            value={brl(totalReward)}
-            label="na mesa hoje"
+            value={totalReward > 0 ? brl(totalReward) : "Parcerias"}
+            label={totalReward > 0 ? "em recompensas" : "na sua região"}
             highlight
           />
           <Stat
@@ -58,8 +58,8 @@ export function SocialProofBar({ campaigns }: SocialProofBarProps) {
           />
           <Stat
             icon={<Flame className="h-3.5 w-3.5 text-primary" />}
-            value={brl(nearestNet)}
-            label="por vídeo"
+            value={nearest?.reward_type === "permuta" ? "Permuta" : nearest?.campaign_kind === "process" ? "Por etapas" : brl(nearestNet)}
+            label={nearest?.reward_type === "permuta" ? "parceria em produto" : nearest?.campaign_kind === "process" ? "por entrega" : "por vídeo"}
           />
         </div>
       </div>

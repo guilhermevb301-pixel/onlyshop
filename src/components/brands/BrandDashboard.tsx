@@ -79,7 +79,7 @@ export function BrandDashboard({ brand, campaigns, applications, onCreateCampaig
   const { startConversation } = useChat();
   const openChat = async (a: CampaignApplication) => {
     try {
-      const cid = await startConversation(a.influencer_user_id);
+      const cid = await startConversation(a.influencer_user_id, a.id);
       if (cid) navigate(`/chat?c=${cid}`);
       else toast.error("Não foi possível abrir a conversa");
     } catch {

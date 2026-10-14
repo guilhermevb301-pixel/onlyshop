@@ -20,10 +20,12 @@ const INFLUENCER_NAV: Item[] = [
   { to: "/rede", icon: Network, label: "Minha rede", accent: true },
   { to: "/wallet", icon: Wallet, label: "Carteira" },
   { to: "/comunidade", icon: Users2, label: "Comunidade" },
+  { to: "/negocios", icon: Users2, label: "Negócios" },
   { to: "/profile", icon: User, label: "Perfil" },
   { to: "/em-breve", icon: Rocket, label: "Em breve" },
 ];
 const BRAND_NAV: Item[] = [
+  { to: "/negocios", icon: Users2, label: "Negócios" },
   { to: "/brands", icon: Megaphone, label: "Minhas campanhas", accent: true },
   { to: "/time", icon: UsersRound, label: "Meu time", accent: true },
   { to: "/mapa", icon: MapPin, label: "Mapa", accent: true },

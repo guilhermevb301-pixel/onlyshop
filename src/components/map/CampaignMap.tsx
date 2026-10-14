@@ -28,7 +28,7 @@ function makeCampaignMarker(campaign: CampaignNear, onSelect: (c: CampaignNear) 
   el.setAttribute("aria-label", `Abrir campanha ${campaign.title}`);
   el.className = "os-campaign-marker";
   const label = document.createElement("span");
-  label.textContent = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 2 }).format(campaign.reward_amount);
+  label.textContent = campaign.reward_type === "permuta" ? "Permuta" : campaign.campaign_kind === "process" ? "Por etapas" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 2 }).format(campaign.reward_amount);
   el.appendChild(label);
   el.addEventListener("click", () => onSelect(campaign));
   return el;

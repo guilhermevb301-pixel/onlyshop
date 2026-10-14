@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, MapPin, TrendingUp, Users, ShoppingBag, Star, ArrowLeft, Trophy, UserPlus, UserCheck, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { BusinessHistory } from "@/components/business/BusinessHistory";
+import { startConversation } from "@/lib/chat";
 
 interface PublicProfileData {
   user_id: string; username: string; display_name: string; avatar_url: string;
@@ -117,26 +119,8 @@ export default function PublicProfile() {
 
   const startChat = async () => {
     if (!user || !profile) return;
-    // Find or create conversation
-    const { data: convs } = await supabase.from("conversation_participants")
-      .select("conversation_id").eq("user_id", user.id);
-    const convIds = convs?.map(c => c.conversation_id) || [];
-    let convId: string | null = null;
-    if (convIds.length) {
-      const { data: shared } = await supabase.from("conversation_participants")
-        .select("conversation_id").eq("user_id", profile.user_id).in("conversation_id", convIds);
-      convId = shared?.[0]?.conversation_id || null;
-    }
-    if (!convId) {
-      const { data: newC } = await supabase.from("conversations").insert({}).select().single();
-      if (newC) {
-        await supabase.from("conversation_participants").insert([
-          { conversation_id: newC.id, user_id: user.id },
-          { conversation_id: newC.id, user_id: profile.user_id },
-        ]);
-        convId = newC.id;
-      }
-    }
+    const convId = await startConversation(user.id, profile.user_id);
+    if (!convId) { toast({ title: "Conversa indisponível", description: "Sigam um ao outro para iniciar a conversa.", variant: "destructive" }); return; }
     window.location.href = `/chat?c=${convId}`;
   };
 
@@ -275,7 +259,8 @@ export default function PublicProfile() {
         )}
 
         <div>
-          <h3 className="font-bold mb-3">Publicações recentes</h3>
+          <BusinessHistory userId={profile.user_id} />
+          <h3 className="font-bold mb-3 mt-6">Publicações recentes</h3>
           {posts.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">Nenhuma publicação ainda</p>
           ) : (

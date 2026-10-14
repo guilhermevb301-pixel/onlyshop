@@ -7,6 +7,7 @@ import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface ChatViewProps {
   conversationId: string;
@@ -21,21 +22,22 @@ interface ChatViewProps {
 
 export function ChatView({ conversationId, participant, onBack }: ChatViewProps) {
   const { user } = useAuth();
-  const { messages, loading, sendMessage } = useMessages(conversationId);
+  const { messages, loading, sendMessage, hasOlder, loadingOlder, loadOlder } = useMessages(conversationId);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const lastMessageId = messages[messages.length - 1]?.id;
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  }, [lastMessageId]);
 
   const handleSend = async () => {
     if (!input.trim() || sending) return;
     setSending(true);
-    await sendMessage(input);
-    setInput("");
-    setSending(false);
+    try { await sendMessage(input); setInput(""); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível enviar a mensagem."); }
+    finally { setSending(false); }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -73,6 +75,7 @@ export function ChatView({ conversationId, participant, onBack }: ChatViewProps)
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3 hide-scrollbar">
+        {hasOlder && <Button variant="ghost" className="w-full" disabled={loadingOlder} onClick={async()=>{ const height=scrollRef.current?.scrollHeight??0; try {await loadOlder();requestAnimationFrame(()=>{if(scrollRef.current)scrollRef.current.scrollTop=scrollRef.current.scrollHeight-height;});}catch(error){toast.error(error instanceof Error?error.message:"Não foi possível carregar o histórico.");} }}>{loadingOlder?"Carregando…":"Carregar mensagens anteriores"}</Button>}
         {loading ? (
           <div className="flex justify-center py-10">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />

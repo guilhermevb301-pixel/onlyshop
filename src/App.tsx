@@ -34,6 +34,7 @@ const Inicio = lazy(() => import("./pages/Inicio"));
 const Mapa = lazy(() => import("./pages/Mapa"));
 const EmBreve = lazy(() => import("./pages/EmBreve"));
 const Feed = lazy(() => import("./pages/Feed"));
+const Negocios = lazy(() => import("./pages/Negocios"));
 const PostDetail = lazy(() => import("./pages/PostDetail"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const MediaKit = lazy(() => import("./pages/MediaKit"));
@@ -89,6 +90,7 @@ const App = () => (
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/em-breve" element={<EmBreve />} />
                 <Route path="/comunidade" element={<Feed />} />
+                <Route path="/negocios" element={<Negocios />} />
                 <Route path="/rede" element={<Rede />} />
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/post/:id" element={<PostDetail />} />

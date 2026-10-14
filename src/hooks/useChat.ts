@@ -142,43 +142,12 @@ export function useChat() {
     fetchConversations();
   }, [fetchConversations]);
 
-  const startConversation = useCallback(async (otherUserId: string) => {
+  const startConversation = useCallback(async (otherUserId: string | null, applicationId?: string) => {
     if (!user) return null;
-
-    // Check if conversation already exists
-    const { data: myConvs } = await supabase
-      .from("conversation_participants")
-      .select("conversation_id")
-      .eq("user_id", user.id);
-
-    if (myConvs) {
-      for (const mc of myConvs) {
-        const { data: otherP } = await supabase
-          .from("conversation_participants")
-          .select("id")
-          .eq("conversation_id", mc.conversation_id)
-          .eq("user_id", otherUserId)
-          .limit(1);
-        if (otherP && otherP.length > 0) return mc.conversation_id;
-      }
-    }
-
-    // Create new conversation
-    const { data: conv, error } = await supabase
-      .from("conversations")
-      .insert({})
-      .select("id")
-      .single();
-
-    if (error || !conv) return null;
-
-    await supabase.from("conversation_participants").insert([
-      { conversation_id: conv.id, user_id: user.id },
-      { conversation_id: conv.id, user_id: otherUserId },
-    ]);
-
+    const { data, error } = await supabase.rpc("start_business_conversation" as any, { _other_user_id: otherUserId, _application_id: applicationId ?? null });
+    if (error) throw new Error(error.message);
     await fetchConversations();
-    return conv.id;
+    return data as unknown as string;
   }, [user, fetchConversations]);
 
   return { conversations, loading, fetchConversations, startConversation };
@@ -188,6 +157,8 @@ export function useMessages(conversationId: string | null) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasOlder, setHasOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   const fetchMessages = useCallback(async () => {
     if (!conversationId || !user) return;
@@ -196,11 +167,13 @@ export function useMessages(conversationId: string | null) {
       .from("messages")
       .select("*")
       .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(100);
+    setHasOlder((data?.length ?? 0) === 100);
 
     setMessages(
-      (data || []).map((m) => ({
+      [...(data || [])].reverse().map((m) => ({
         id: m.id,
         conversationId: m.conversation_id,
         senderId: m.sender_id,
@@ -240,7 +213,7 @@ export function useMessages(conversationId: string | null) {
         },
         (payload) => {
           const m = payload.new as any;
-          setMessages((prev) => [
+          setMessages((prev) => prev.some(message => message.id === m.id) ? prev : [
             ...prev,
             {
               id: m.id,
@@ -262,12 +235,27 @@ export function useMessages(conversationId: string | null) {
 
   const sendMessage = useCallback(async (content: string) => {
     if (!conversationId || !user || !content.trim()) return;
-    await supabase.from("messages").insert({
+    const { error } = await supabase.from("messages").insert({
       conversation_id: conversationId,
       sender_id: user.id,
       content: content.trim(),
     });
+    if (error) throw new Error("Não foi possível enviar a mensagem. Tente novamente.");
   }, [conversationId, user]);
 
-  return { messages, loading, sendMessage, fetchMessages };
+  const loadOlder = useCallback(async () => {
+    const oldest = messages[0];
+    if (!conversationId || !oldest || loadingOlder) return;
+    setLoadingOlder(true);
+    try {
+      const {data,error} = await supabase.from("messages").select("*").eq("conversation_id",conversationId)
+        .or(`created_at.lt.${oldest.createdAt},and(created_at.eq.${oldest.createdAt},id.lt.${oldest.id})`)
+        .order("created_at",{ascending:false}).order("id",{ascending:false}).limit(100);
+      if (error) throw new Error("Não foi possível carregar mensagens anteriores.");
+      setHasOlder(data.length === 100);
+      const older = [...data].reverse().map(m => ({id:m.id,conversationId:m.conversation_id,senderId:m.sender_id,content:m.content,messageType:m.message_type,mediaUrl:m.media_url||undefined,createdAt:m.created_at,readAt:m.read_at||undefined}));
+      setMessages(prev => [...older.filter(m => !prev.some(p => p.id === m.id)),...prev]);
+    } finally { setLoadingOlder(false); }
+  }, [conversationId,messages,loadingOlder]);
+  return { messages, loading, sendMessage, fetchMessages, hasOlder, loadingOlder, loadOlder };
 }

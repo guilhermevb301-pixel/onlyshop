@@ -17,7 +17,8 @@ export async function getTikTokConnection(userId: string): Promise<TikTokConnect
   if (!userId) return null;
   const { data, error } = await supabase.rpc("get_my_tiktok_connection" as never);
   if (error) throw error;
-  return ((Array.isArray(data) ? data[0] : data) as TikTokConnection) || null;
+  const result = data as unknown as TikTokConnection | TikTokConnection[] | null;
+  return Array.isArray(result) ? result[0] ?? null : result;
 }
 
 // 1) Inicia o OAuth: pega a URL de autorização do TikTok e redireciona pra lá.

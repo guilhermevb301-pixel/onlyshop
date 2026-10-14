@@ -38,7 +38,7 @@ export function PayAffiliateCard({
       try {
         const { data } = await supabase.from("split_payments" as any).select("application_id,status").in("status", ["pending", "paid"]);
         if (!alive || !data) return;
-        const rows = data as Array<{ application_id: string; status: string }>;
+        const rows = data as unknown as Array<{ application_id: string; status: string }>;
         const confirmed = new Set(rows.filter(r => r.status === "paid").map(r => r.application_id));
         const pendingRows = rows.filter(r => r.status === "pending" && applications.some(a => a.id === r.application_id)).slice(0, 5);
         if (pendingRows.length) {
